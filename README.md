@@ -1,15 +1,55 @@
 ﻿# English Learning Dashboard
 
-Offline-first dashboard for gamified English learning.
+Офлайн-дашборд для геймифицированного изучения английского языка.
 
-## How to run
+## Как запустить
 
-- Open `index.html` locally or host via GitHub Pages.
-- Data is saved to `localStorage`.
-- Use Export/Import in settings to backup/restore.
+### Локально
+- Откройте `index.html` в любом современном браузере
+- Все данные сохраняются в `localStorage` браузера
+- Используйте Экспорт/Импорт в настройках для резервного копирования
 
-## Development
+### На GitHub Pages
+1. Загрузите папку в репозиторий GitHub
+2. В настройках репозитория включите GitHub Pages:
+   - Settings → Pages → Branch: main, Folder: /root
+3. Откройте `https://<ваш-юзер>.github.io/<repo>/`
 
-- Styles in `styles.css`
-- Scripts in `app.js`
-- Original monolithic file kept as `english-learning-dashboard.html`
+## Функции
+
+- ✅ Отслеживание прогресса обучения
+- ✅ Система уровней и опыта (XP)
+- ✅ Еженедельные цели и достижения
+- ✅ Календарь активности
+- ✅ Система наград и звезд
+- ✅ Аналитика и статистика
+- ✅ Экспорт/импорт данных
+- ✅ Полностью офлайн-работоспособность
+
+## Структура файлов
+
+- `index.html` - главная страница
+- `styles.css` - все стили (включая эмодзи-иконки)
+- `app.js` - вся логика приложения
+- `english-learning-dashboard.html` - исходный монолитный файл
+- `english-learning-progress-2025-08-19.json` - пример данных для импорта
+
+## Особенности
+
+- **Иконки**: Используются эмодзи вместо Font Awesome для офлайн-работы
+- **Аналитика**: Chart.js подгружается по CDN (опционально)
+- **Данные**: Все сохраняется в localStorage браузера
+- **Кодировка**: UTF-8 для корректного отображения кириллицы
+
+## Импорт данных
+
+1. Откройте настройки (⚙️)
+2. Выберите "Импорт данных"
+3. Загрузите JSON файл с вашими данными
+4. Готово!
+
+## Разработка
+
+- Стили в `styles.css`
+- Скрипты в `app.js`
+- Исходный файл сохранен как `english-learning-dashboard.html`

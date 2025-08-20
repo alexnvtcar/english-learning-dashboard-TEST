@@ -1,26 +1,26 @@
 ﻿
             // Available icons for tasks
             const availableIcons = [
-                { class: "fas fa-book", name: "РљРЅРёРіР°" },
-                { class: "fas fa-pencil-alt", name: "РљР°СЂР°РЅРґР°С€" },
-                { class: "fas fa-headphones", name: "РќР°СѓС€РЅРёРєРё" },
-                { class: "fas fa-microphone", name: "РњРёРєСЂРѕС„РѕРЅ" },
-                { class: "fas fa-eye", name: "Р“Р»Р°Р·" },
-                { class: "fas fa-brain", name: "РњРѕР·Рі" },
-                { class: "fas fa-lightbulb", name: "Р›Р°РјРїРѕС‡РєР°" },
-                { class: "fas fa-star", name: "Р—РІРµР·РґР°" },
-                { class: "fas fa-trophy", name: "РўСЂРѕС„РµР№" },
-                { class: "fas fa-medal", name: "РњРµРґР°Р»СЊ" },
-                { class: "fas fa-fire", name: "РћРіРѕРЅСЊ" },
-                { class: "fas fa-rocket", name: "Р Р°РєРµС‚Р°" },
-                { class: "fas fa-graduation-cap", name: "Р”РёРїР»РѕРј" },
-                { class: "fas fa-chalkboard-teacher", name: "РЈС‡РёС‚РµР»СЊ" },
-                { class: "fas fa-language", name: "РЇР·С‹Рє" },
-                { class: "fas fa-spell-check", name: "РџСЂРѕРІРµСЂРєР°" },
-                { class: "fas fa-clock", name: "Р§Р°СЃС‹" },
-                { class: "fas fa-target", name: "Р¦РµР»СЊ" },
-                { class: "fas fa-chart-line", name: "Р“СЂР°С„РёРє" },
-                { class: "fas fa-gamepad", name: "РРіСЂР°" }
+                { class: "fas fa-book", name: "Книга" },
+                { class: "fas fa-pencil-alt", name: "Карандаш" },
+                { class: "fas fa-headphones", name: "Наушники" },
+                { class: "fas fa-microphone", name: "Микрофон" },
+                { class: "fas fa-eye", name: "Глаз" },
+                { class: "fas fa-brain", name: "Мозг" },
+                { class: "fas fa-lightbulb", name: "Лампочка" },
+                { class: "fas fa-star", name: "Звезда" },
+                { class: "fas fa-trophy", name: "Трофей" },
+                { class: "fas fa-medal", name: "Медаль" },
+                { class: "fas fa-fire", name: "Огонь" },
+                { class: "fas fa-rocket", name: "Ракета" },
+                { class: "fas fa-graduation-cap", name: "Диплом" },
+                { class: "fas fa-chalkboard-teacher", name: "Учитель" },
+                { class: "fas fa-language", name: "Язык" },
+                { class: "fas fa-spell-check", name: "Проверка" },
+                { class: "fas fa-clock", name: "Часы" },
+                { class: "fas fa-target", name: "Цель" },
+                { class: "fas fa-chart-line", name: "График" },
+                { class: "fas fa-gamepad", name: "Игра" }
             ];
 
             // Application State
@@ -44,8 +44,8 @@
                 tasks: [
                     {
                         id: 1,
-                        name: "РР·СѓС‡РµРЅРёРµ РЅРѕРІС‹С… СЃР»РѕРІ",
-                        description: "Р’С‹СѓС‡РёС‚СЊ 10 РЅРѕРІС‹С… Р°РЅРіР»РёР№СЃРєРёС… СЃР»РѕРІ",
+                        name: "Изучение новых слов",
+                        description: "Выучить 10 новых английских слов",
                         xpReward: 50,
                         duration: 15,
                         icon: "fas fa-book",
@@ -53,8 +53,8 @@
                     },
                     {
                         id: 2,
-                        name: "Р“СЂР°РјРјР°С‚РёС‡РµСЃРєРёРµ СѓРїСЂР°Р¶РЅРµРЅРёСЏ",
-                        description: "Р’С‹РїРѕР»РЅРёС‚СЊ СѓРїСЂР°Р¶РЅРµРЅРёСЏ РЅР° Present Simple",
+                        name: "Грамматические упражнения",
+                        description: "Выполнить упражнения на Present Simple",
                         xpReward: 75,
                         duration: 20,
                         icon: "fas fa-pencil-alt",
@@ -62,8 +62,8 @@
                     },
                     {
                         id: 3,
-                        name: "РђСѓРґРёСЂРѕРІР°РЅРёРµ",
-                        description: "РџСЂРѕСЃР»СѓС€Р°С‚СЊ РґРёР°Р»РѕРі Рё РѕС‚РІРµС‚РёС‚СЊ РЅР° РІРѕРїСЂРѕСЃС‹",
+                        name: "Аудирование",
+                        description: "Прослушать диалог и ответить на вопросы",
                         xpReward: 60,
                         duration: 25,
                         icon: "fas fa-headphones",
@@ -104,11 +104,11 @@
 
                 const activityData = {};
                 const taskCatalog = [
-                    { name: 'РР·СѓС‡РµРЅРёРµ РЅРѕРІС‹С… СЃР»РѕРІ', xp: 40, category: 'vocabulary' },
-                    { name: 'Р“СЂР°РјРјР°С‚РёС‡РµСЃРєРёРµ СѓРїСЂР°Р¶РЅРµРЅРёСЏ', xp: 60, category: 'grammar' },
-                    { name: 'РђСѓРґРёСЂРѕРІР°РЅРёРµ', xp: 50, category: 'listening' },
-                    { name: 'Р Р°Р·РіРѕРІРѕСЂРЅР°СЏ РїСЂР°РєС‚РёРєР°', xp: 70, category: 'speaking' },
-                    { name: 'Р§С‚РµРЅРёРµ С‚РµРєСЃС‚Р°', xp: 45, category: 'reading' },
+                    { name: 'Изучение новых слов', xp: 40, category: 'vocabulary' },
+                    { name: 'Грамматические упражнения', xp: 60, category: 'grammar' },
+                    { name: 'Аудирование', xp: 50, category: 'listening' },
+                    { name: 'Разговорная практика', xp: 70, category: 'speaking' },
+                    { name: 'Чтение текста', xp: 45, category: 'reading' },
                 ];
 
                 // simulate daily activity with weekly cycles and occasional spikes
@@ -159,7 +159,7 @@
                 for (let i = 0; i < rewardsCount; i++) {
                     const d = new Date(today);
                     d.setDate(d.getDate() - i * 14 - randomInRange(rng, 0, 3));
-                    rewards.push({ id: Date.now() - i, description: 'Р”РµРјРѕ-РЅР°РіСЂР°РґР° #' + (i+1), starsUsed: 3, redeemedAt: d });
+                    rewards.push({ id: Date.now() - i, description: 'Демо-награда #' + (i+1), starsUsed: 3, redeemedAt: d });
                 }
                 const starBank = Math.max(0, totalStars - rewards.length * 3);
 
@@ -180,7 +180,7 @@
                     currentMonth: appState.currentMonth,
                     selectedDate: appState.selectedDate,
                     activityData,
-                    rewardPlan: { description: 'Р”РµРјРѕ: РїРѕС…РѕРґ РІ РєРёРЅРѕ' },
+                    rewardPlan: { description: 'Демо: поход в кино' },
                     resetDate: start,
                     demoAnalytics: { enabled: true },
                 };
@@ -289,16 +289,16 @@
 
             // Welcome modal texts (random unique praise each time)
             const welcomePhrases = [
-                "Fantastic start, Mikhail! Every click is a step toward fluencyвЂ”keep shining!",
-                "Mikhail, your consistency is impressiveвЂ”today's effort will compound into greatness!",
+                "Fantastic start, Mikhail! Every click is a step toward fluency—keep shining!",
+                "Mikhail, your consistency is impressive—today's effort will compound into greatness!",
                 "Brilliant move, Mikhail! Your dedication to English is what champions are made of.",
                 "Mikhail, you're unstoppable! Each lesson sharpens your mind and your voice.",
                 "Outstanding, Mikhail! You're building a skill that will open doors everywhere.",
-                "Great energy, Mikhail! Turning intention into actionвЂ”this is how mastery begins.",
+                "Great energy, Mikhail! Turning intention into action—this is how mastery begins.",
                 "Mikhail, amazing focus! Your future self will thank you for this exact moment.",
-                "Superb, Mikhail! Small wins daily create extraordinary resultsвЂ”let's go!",
+                "Superb, Mikhail! Small wins daily create extraordinary results—let's go!",
                 "You rock, Mikhail! Today's practice brings you closer to confident English.",
-                "Impressive, Mikhail! Momentum is yoursвЂ”one task at a time to the top!"
+                "Impressive, Mikhail! Momentum is yours—one task at a time to the top!"
             ];
 
             function showWelcomeModal() {
@@ -345,7 +345,7 @@
                 box.innerHTML = filtered.map(i => `
                     <div class="autocomplete-item" data-value="${escapeHTML(i)}">
                         <div class="autocomplete-text">${escapeHTML(i)}</div>
-                        <button class="autocomplete-remove" aria-label="РЈРґР°Р»РёС‚СЊ СЃРѕС…СЂР°РЅРµРЅРЅС‹Р№ РІР°СЂРёР°РЅС‚" data-remove="${escapeHTML(i)}">
+                        <button class="autocomplete-remove" aria-label="Удалить сохраненный вариант" data-remove="${escapeHTML(i)}">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -355,7 +355,7 @@
 
             function getXPRequiredForLevel(level) {
                 if (level >= 100) return 0;
-                // РџСЂР°РІРёР»Рѕ Р·Р°РєР°Р·С‡РёРєР°: РґРѕ СЃР»РµРґСѓСЋС‰РµРіРѕ СѓСЂРѕРІРЅСЏ СЃРµР№С‡Р°СЃ С„РёРєСЃРёСЂРѕРІР°РЅРѕ 810 XP
+                // Правило заказчика: до следующего уровня сейчас фиксировано 810 XP
                 return 810;
             }
 
@@ -383,7 +383,7 @@
                 const xpRemaining = Math.max(0, xpNeeded - progress.currentLevelXP);
                 const levelProgress = calculateXPProgress(progress.currentLevelXP, xpNeeded);
                 document.getElementById("levelProgress").style.width = `${levelProgress}%`;
-                document.getElementById("xpProgress").textContent = xpNeeded === 0 ? 'РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ СѓСЂРѕРІРµРЅСЊ' : `${xpRemaining} XP`;
+                document.getElementById("xpProgress").textContent = xpNeeded === 0 ? 'Максимальный уровень' : `${xpRemaining} XP`;
 
                 // Update star bank and earned stars for the current week
                 updateWeeklyStars();
@@ -448,11 +448,11 @@
 
                 const availableStarsEl = document.getElementById("availableStars");
                 if (availableStarsEl) {
-                    availableStarsEl.textContent = `${appState.progress.starBank || 0} в­ђ`;
+                    availableStarsEl.textContent = `${appState.progress.starBank || 0} ⭐`;
                 }
                 // inline available star bank
                 const availableInline = document.getElementById('availableStarsInline');
-                if (availableInline) availableInline.textContent = `${appState.progress.starBank || 0} в­ђ`;
+                if (availableInline) availableInline.textContent = `${appState.progress.starBank || 0} ⭐`;
                 // redeem stars (3) based on this week's earned stars
                 const redeemStars = document.querySelectorAll('#redeemStars .redeem-star');
                 redeemStars.forEach((el, idx) => {
@@ -483,7 +483,7 @@
                 const canRedeem = (appState.progress.starBank || 0) >= 3 && appState.rewardPlan && appState.rewardPlan.description;
                 if (redeemBtn) {
                     redeemBtn.disabled = !canRedeem;
-                    redeemBtn.title = canRedeem ? '' : 'РќСѓР¶РЅРѕ 3 в­ђ Рё Р·Р°РїР»Р°РЅРёСЂРѕРІР°РЅРЅР°СЏ РЅР°РіСЂР°РґР°';
+                    redeemBtn.title = canRedeem ? '' : 'Нужно 3 ⭐ и запланированная награда';
                     // Ensure button is clickable for viewer role
                     if (appState.role === 'viewer') {
                         redeemBtn.style.pointerEvents = '';
@@ -491,7 +491,7 @@
                     }
                 }
                 const planned = document.getElementById('plannedRewardDisplay');
-                if (planned) planned.textContent = appState.rewardPlan && appState.rewardPlan.description ? appState.rewardPlan.description : 'вЂ”';
+                if (planned) planned.textContent = appState.rewardPlan && appState.rewardPlan.description ? appState.rewardPlan.description : '—';
                 const confirmBtn = document.getElementById('confirmRedeemBtn');
                 if (confirmBtn) confirmBtn.disabled = !canRedeem;
 
@@ -500,19 +500,19 @@
                 const hasPlanned = !!(appState.rewardPlan && appState.rewardPlan.description);
                 if (ideaBtn) {
                     ideaBtn.disabled = hasPlanned;
-                    ideaBtn.title = hasPlanned ? 'РќР°РіСЂР°РґР° СѓР¶Рµ Р·Р°РїР»Р°РЅРёСЂРѕРІР°РЅР°. РџРѕР»СѓС‡РёС‚Рµ РµС‘, С‡С‚РѕР±С‹ Р·Р°РїР»Р°РЅРёСЂРѕРІР°С‚СЊ РЅРѕРІСѓСЋ.' : 'РџСЂРёРґСѓРјР°С‚СЊ Рё СЃРѕС…СЂР°РЅРёС‚СЊ РЅР°РіСЂР°РґСѓ';
+                    ideaBtn.title = hasPlanned ? 'Награда уже запланирована. Получите её, чтобы запланировать новую.' : 'Придумать и сохранить награду';
                 }
                 const plannedCard = document.getElementById('plannedRewardCard');
                 const plannedText = document.getElementById('plannedRewardText');
                 if (plannedCard) plannedCard.style.display = hasPlanned ? 'block' : 'none';
-                if (plannedText) plannedText.textContent = hasPlanned ? appState.rewardPlan.description : 'вЂ”';
+                if (plannedText) plannedText.textContent = hasPlanned ? appState.rewardPlan.description : '—';
 
-                // Bank stars visualization (global goal: 3 в­ђ to redeem)
+                // Bank stars visualization (global goal: 3 ⭐ to redeem)
                 const bank = Math.max(0, appState.progress.starBank || 0);
                 const bankStars = [document.getElementById('bankStar1'), document.getElementById('bankStar2'), document.getElementById('bankStar3')];
                 bankStars.forEach((el, idx) => { if (!el) return; if (idx < Math.min(3, bank)) el.classList.add('filled'); else el.classList.remove('filled'); if (bank >= 3) el.classList.add('ready'); else el.classList.remove('ready'); });
                 const bankText = document.getElementById('bankStarsText');
-                if (bankText) bankText.textContent = `${bank} в­ђ`;
+                if (bankText) bankText.textContent = `${bank} ⭐`;
             }
 
             function renderWeeklyChart(weekStartOverride) {
@@ -531,7 +531,7 @@
                     return logs.reduce((s, l) => s + (l.xpEarned || 0), 0);
                 });
                 const maxXP = Math.max(100, ...xpByDay);
-                const dayLabels = ['РџРќ','Р’Рў','РЎР ','Р§Рў','РџРў','РЎР‘','Р’РЎ'];
+                const dayLabels = ['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'];
                 container.innerHTML = days.map((d, idx) => {
                     const val = xpByDay[idx];
                     const h = Math.round((val / maxXP) * 100);
@@ -560,7 +560,7 @@
                 end.setDate(end.getDate() + 6);
                 const fmt = (d) => d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
                 const y = weekStart.getFullYear() === end.getFullYear() ? '' : ` ${end.getFullYear()}`;
-                return `${fmt(weekStart)} вЂ“ ${fmt(end)}${y}`;
+                return `${fmt(weekStart)} – ${fmt(end)}${y}`;
             }
 
             function computeWeekXP(weekStart) {
@@ -680,7 +680,7 @@
                         </div>
                         <div class="task-details">
                             <h4>${escapeHTML(task.name)}</h4>
-                            <p>${escapeHTML(task.description)} вЂў ${task.duration} РјРёРЅ</p>
+                            <p>${escapeHTML(task.description)} • ${task.duration} мин</p>
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
@@ -688,7 +688,7 @@
                             <i class="fas fa-star" style="color: #fbbf24;"></i>
                             +${task.xpReward} XP
                         </div>
-                        <button class="btn-icon-delete" onclick="deleteTask(${task.id})" title="РЈРґР°Р»РёС‚СЊ Р·Р°РґР°РЅРёРµ" aria-label="РЈРґР°Р»РёС‚СЊ Р·Р°РґР°РЅРёРµ">
+                        <button class="btn-icon-delete" onclick="deleteTask(${task.id})" title="Удалить задание" aria-label="Удалить задание">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -704,7 +704,7 @@
                 if (appState.rewards.length === 0) {
                     rewardsList.innerHTML = `
                     <div style="text-align: center; padding: 20px; color: #64748b; font-size: 0.875rem;">
-                        РџРѕРєР° РЅРµС‚ РїРѕР»СѓС‡РµРЅРЅС‹С… РЅР°РіСЂР°Рґ
+                        Пока нет полученных наград
                     </div>
                 `;
                     return;
@@ -713,7 +713,7 @@
                 const cards = appState.rewards.slice(-9).reverse().map(reward => `
                     <div class="reward-card" title="${new Date(reward.redeemedAt).toLocaleDateString('ru-RU')}">
                         <div class="rc-top">
-                            <span class="reward-chip"><i class="fas fa-star"></i> -${reward.starsUsed} в­ђ</span>
+                            <span class="reward-chip"><i class="fas fa-star"></i> -${reward.starsUsed} ⭐</span>
                             <i class="fas fa-gift" style="color:#1e40af;"></i>
                         </div>
                         <div class="reward-title">${escapeHTML(reward.description)}</div>
@@ -724,10 +724,10 @@
             }
 
             function clearRewards() {
-                if (confirm('РЈРґР°Р»РёС‚СЊ Р’РЎР• СЃРѕС…СЂР°РЅРµРЅРЅС‹Рµ РЅР°РіСЂР°РґС‹?')) {
+                if (confirm('Удалить ВСЕ сохраненные награды?')) {
                     appState.rewards = [];
                     renderRewards();
-                    showNotification('Р’СЃРµ РЅР°РіСЂР°РґС‹ СѓРґР°Р»РµРЅС‹', 'info');
+                    showNotification('Все награды удалены', 'info');
                     saveState();
                 }
             }
@@ -741,18 +741,18 @@
                 const month = currentMonth.getMonth();
 
                 const monthNames = [
-                    "РЇРЅРІР°СЂСЊ",
-                    "Р¤РµРІСЂР°Р»СЊ",
-                    "РњР°СЂС‚",
-                    "РђРїСЂРµР»СЊ",
-                    "РњР°Р№",
-                    "РСЋРЅСЊ",
-                    "РСЋР»СЊ",
-                    "РђРІРіСѓСЃС‚",
-                    "РЎРµРЅС‚СЏР±СЂСЊ",
-                    "РћРєС‚СЏР±СЂСЊ",
-                    "РќРѕСЏР±СЂСЊ",
-                    "Р”РµРєР°Р±СЂСЊ",
+                    "Январь",
+                    "Февраль",
+                    "Март",
+                    "Апрель",
+                    "Май",
+                    "Июнь",
+                    "Июль",
+                    "Август",
+                    "Сентябрь",
+                    "Октябрь",
+                    "Ноябрь",
+                    "Декабрь",
                 ];
 
                 monthTitle.textContent = `${monthNames[month]} ${year}`;
@@ -805,7 +805,7 @@
 
                 const dateStr =
                     appState.selectedDate.toLocaleDateString("ru-RU");
-                selectedDateTitle.textContent = `РђРєС‚РёРІРЅРѕСЃС‚СЊ Р·Р° ${dateStr}`;
+                selectedDateTitle.textContent = `Активность за ${dateStr}`;
 
                 const activity = appState.activityData[selectedDateStr];
                 if (activity && activity.length > 0) {
@@ -815,7 +815,7 @@
                     );
                     dayActivity.innerHTML = `
                     <div style="color: #059669; font-weight: 600;">
-                        Р’С‹РїРѕР»РЅРµРЅРѕ Р·Р°РґР°РЅРёР№: ${activity.length} вЂў РџРѕР»СѓС‡РµРЅРѕ XP: +${totalXP}
+                        Выполнено заданий: ${activity.length} • Получено XP: +${totalXP}
                     </div>
                     <div style="margin-top: 8px;">
                         ${activity
@@ -823,7 +823,7 @@
                                 (log, index) => `
                             <div class="activity-item" data-date="${selectedDateStr}" data-index="${index}">
                                 ${escapeHTML(log.taskName)} (+${log.xpEarned} XP)
-                                <button class="activity-delete" onclick="deleteActivity('${selectedDateStr}', ${index})" title="РЈРґР°Р»РёС‚СЊ Р·Р°РїРёСЃСЊ Р°РєС‚РёРІРЅРѕСЃС‚Рё" aria-label="РЈРґР°Р»РёС‚СЊ Р·Р°РїРёСЃСЊ Р°РєС‚РёРІРЅРѕСЃС‚Рё">
+                                <button class="activity-delete" onclick="deleteActivity('${selectedDateStr}', ${index})" title="Удалить запись активности" aria-label="Удалить запись активности">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -835,7 +835,7 @@
                 } else {
                     dayActivity.innerHTML = `
                     <div style="color: #64748b;">
-                        РџРѕРєР° РЅРµС‚ Р°РєС‚РёРІРЅРѕСЃС‚Рё Р·Р° РІС‹Р±СЂР°РЅРЅС‹Р№ РґРµРЅСЊ
+                        Пока нет активности за выбранный день
                     </div>
                 `;
                 }
@@ -843,7 +843,7 @@
 
             // Event Handlers
             function completeTask(e, taskId) {
-                if (appState.role === 'viewer') { showNotification('Р РµР¶РёРј РїСЂРѕСЃРјРѕС‚СЂР°: РґРµР№СЃС‚РІРёРµ РЅРµРґРѕСЃС‚СѓРїРЅРѕ', 'info'); return; }
+                if (appState.role === 'viewer') { showNotification('Режим просмотра: действие недоступно', 'info'); return; }
                 const task = appState.tasks.find((t) => t.id === taskId);
                 if (!task) return;
 
@@ -874,7 +874,7 @@
 
                     if (leveledUp) {
                         showNotification(
-                            `РџРѕР·РґСЂР°РІР»СЏРµРј! Р’С‹ РґРѕСЃС‚РёРіР»Рё ${appState.progress.level} СѓСЂРѕРІРЅСЏ!`,
+                            `Поздравляем! Вы достигли ${appState.progress.level} уровня!`,
                             "success",
                         );
                         document.getElementById("currentLevel").classList.add("level-up");
@@ -882,7 +882,7 @@
                             document.getElementById("currentLevel").classList.remove("level-up");
                         }, 1000);
                     } else {
-                        showNotification(`Р—Р°РґР°РЅРёРµ РІС‹РїРѕР»РЅРµРЅРѕ! +${task.xpReward} XP`, "success");
+                        showNotification(`Задание выполнено! +${task.xpReward} XP`, "success");
                     }
 
                     // Log activity
@@ -921,12 +921,12 @@
                     document.getElementById("taskDuration").value, 10
                 );
 
-                // Р•СЃР»Рё РїРѕР»Рµ РќР°Р·РІР°РЅРёРµ Р·Р°РґР°РЅРёСЏ СЃРѕРґРµСЂР¶РёС‚ СЃРїРµС†РёР°Р»СЊРЅСѓСЋ РєРѕРјР°РЅРґСѓ РѕС‡РёСЃС‚РєРё
-                if (name.trim().toLowerCase() === 'РѕС‡РёСЃС‚РёС‚СЊ' || name.trim().toLowerCase() === 'clear') {
-                    if (confirm('РћС‡РёСЃС‚РёС‚СЊ РІСЃРµ СЃРѕС…СЂР°РЅРµРЅРЅС‹Рµ Р·Р°РґР°РЅРёСЏ?')) {
+                // Если поле Название задания содержит специальную команду очистки
+                if (name.trim().toLowerCase() === 'очистить' || name.trim().toLowerCase() === 'clear') {
+                    if (confirm('Очистить все сохраненные задания?')) {
                         appState.tasks = [];
                         renderTasks();
-                        showNotification('Р’СЃРµ Р·Р°РґР°РЅРёСЏ РѕС‡РёС‰РµРЅС‹', 'info');
+                        showNotification('Все задания очищены', 'info');
                         saveState();
                     }
                     document.getElementById("taskForm").reset();
@@ -951,7 +951,7 @@
                 appState.tasks.push(newTask);
                 renderTasks();
                 hideTaskModal();
-                showNotification("РќРѕРІРѕРµ Р·Р°РґР°РЅРёРµ РґРѕР±Р°РІР»РµРЅРѕ!", "success");
+                showNotification("Новое задание добавлено!", "success");
                 saveState();
 
                 // Reset form
@@ -965,11 +965,11 @@
                 const starsCost = 3;
                 const planned = appState.rewardPlan && appState.rewardPlan.description;
                 if (!planned) {
-                    showNotification('РЎРЅР°С‡Р°Р»Р° РїСЂРёРґСѓРјР°Р№С‚Рµ РЅР°РіСЂР°РґСѓ', 'warning');
+                    showNotification('Сначала придумайте награду', 'warning');
                     return;
                 }
                 if ((appState.progress.starBank || 0) < starsCost) {
-                    showNotification('РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р·РІРµР·Рґ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РЅР°РіСЂР°РґС‹!', 'error');
+                    showNotification('Недостаточно звезд для получения награды!', 'error');
                     return;
                 }
 
@@ -987,7 +987,7 @@
                 renderRewards();
                 updateWeeklyStars();
                 hideRewardModal();
-                showNotification("РќР°РіСЂР°РґР° РїРѕР»СѓС‡РµРЅР°!", "success");
+                showNotification("Награда получена!", "success");
                 saveState();
 
                 // Reset form
@@ -1070,26 +1070,26 @@
             function showRewardModal() {
                 updateRedeemControls();
                 if (!appState.rewardPlan || !appState.rewardPlan.description) {
-                    // Р•СЃР»Рё РЅР°РіСЂР°РґР° РЅРµ Р·Р°РїР»Р°РЅРёСЂРѕРІР°РЅР° вЂ” СЃСЂР°Р·Сѓ РїСЂРѕСЃРёРј РїСЂРёРґСѓРјР°С‚СЊ
+                    // Если награда не запланирована — сразу просим придумать
                     showIdeaModal();
                     return;
                 }
                 if ((appState.progress.starBank || 0) < 3) {
-                    showNotification('РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р·РІРµР·Рґ (РЅСѓР¶РЅРѕ 3 в­ђ)', 'info');
+                    showNotification('Недостаточно звезд (нужно 3 ⭐)', 'info');
                 }
                 const planned = document.getElementById('plannedRewardDisplay');
-                if (planned) planned.textContent = appState.rewardPlan.description || 'вЂ”';
+                if (planned) planned.textContent = appState.rewardPlan.description || '—';
                 const availableStarsEl = document.getElementById('availableStars');
-                if (availableStarsEl) availableStarsEl.textContent = `${appState.progress.starBank || 0} в­ђ`;
+                if (availableStarsEl) availableStarsEl.textContent = `${appState.progress.starBank || 0} ⭐`;
                 const confirmBtn = document.getElementById('confirmRedeemBtn');
                 if (confirmBtn) confirmBtn.disabled = (appState.progress.starBank || 0) < 3;
                 document.getElementById("rewardModal").classList.add("show");
             }
             // Idea Modal
             function showIdeaModal() {
-                // Р‘Р»РѕРєРёСЂСѓРµРј РїРѕРІС‚РѕСЂРЅРѕРµ РїСЂРёРґСѓРјС‹РІР°РЅРёРµ, РµСЃР»Рё СѓР¶Рµ РµСЃС‚СЊ Р·Р°РїР»Р°РЅРёСЂРѕРІР°РЅРЅР°СЏ РЅР°РіСЂР°РґР°
+                // Блокируем повторное придумывание, если уже есть запланированная награда
                 if (appState.rewardPlan && appState.rewardPlan.description) {
-                    showNotification('РќР°РіСЂР°РґР° СѓР¶Рµ Р·Р°РїР»Р°РЅРёСЂРѕРІР°РЅР°. РЎРЅР°С‡Р°Р»Р° РїРѕР»СѓС‡РёС‚Рµ РµС‘, С‡С‚РѕР±С‹ РїСЂРёРґСѓРјР°С‚СЊ РЅРѕРІСѓСЋ.', 'info');
+                    showNotification('Награда уже запланирована. Сначала получите её, чтобы придумать новую.', 'info');
                     return;
                 }
                 document.getElementById('ideaModal').classList.add('show');
@@ -1109,11 +1109,11 @@
                 const desc = document.getElementById('ideaDescription').value.trim();
                 if (!desc) return;
                 const cmd = desc.toLowerCase();
-                if (cmd === 'РѕС‡РёСЃС‚РёС‚СЊ' || cmd === 'clear') {
-                    if (confirm('РЈРґР°Р»РёС‚СЊ Р’РЎР• СЃРѕС…СЂР°РЅРµРЅРЅС‹Рµ РЅР°РіСЂР°РґС‹?')) {
+                if (cmd === 'очистить' || cmd === 'clear') {
+                    if (confirm('Удалить ВСЕ сохраненные награды?')) {
                         appState.rewards = [];
                         renderRewards();
-                        showNotification('Р’СЃРµ РЅР°РіСЂР°РґС‹ РѕС‡РёС‰РµРЅС‹', 'info');
+                        showNotification('Все награды очищены', 'info');
                         saveState();
                     }
                     document.getElementById('ideaForm').reset();
@@ -1125,7 +1125,7 @@
                 addIdea(desc);
                 hideIdeaModal();
                 updateRedeemControls();
-                showNotification('РќР°РіСЂР°РґР° СЃРѕС…СЂР°РЅРµРЅР°!', 'success');
+                showNotification('Награда сохранена!', 'success');
                 saveState();
                 document.getElementById('ideaForm').reset();
             }
@@ -1149,7 +1149,7 @@
                     appState.activityData[today] = [
                         {
                             taskId: 1,
-                            taskName: "РР·СѓС‡РµРЅРёРµ РЅРѕРІС‹С… СЃР»РѕРІ",
+                            taskName: "Изучение новых слов",
                             xpEarned: 50,
                             completedAt: new Date(),
                         },
@@ -1158,13 +1158,13 @@
                     appState.activityData[yesterday] = [
                         {
                             taskId: 2,
-                            taskName: "Р“СЂР°РјРјР°С‚РёС‡РµСЃРєРёРµ СѓРїСЂР°Р¶РЅРµРЅРёСЏ",
+                            taskName: "Грамматические упражнения",
                             xpEarned: 75,
                             completedAt: new Date(Date.now() - 86400000),
                         },
                         {
                             taskId: 3,
-                            taskName: "РђСѓРґРёСЂРѕРІР°РЅРёРµ",
+                            taskName: "Аудирование",
                             xpEarned: 60,
                             completedAt: new Date(Date.now() - 86400000),
                         },
@@ -1189,18 +1189,18 @@
 
             // Delete Task Function
             function deleteTask(taskId) {
-                if (confirm('Р’С‹ СѓРІРµСЂРµРЅС‹, С‡С‚Рѕ С…РѕС‚РёС‚Рµ СѓРґР°Р»РёС‚СЊ СЌС‚Рѕ Р·Р°РґР°РЅРёРµ?')) {
+                if (confirm('Вы уверены, что хотите удалить это задание?')) {
                     appState.tasks = appState.tasks.filter(task => task.id !== taskId);
                     renderTasks();
-                    showNotification('Р—Р°РґР°РЅРёРµ СѓРґР°Р»РµРЅРѕ', 'info');
+                    showNotification('Задание удалено', 'info');
                     saveState();
                 }
             }
 
             // Delete Activity Function with full state recalculation
             function deleteActivity(dateStr, index) {
-                if (appState.role === 'viewer') { showNotification('Р РµР¶РёРј РїСЂРѕСЃРјРѕС‚СЂР°: РґРµР№СЃС‚РІРёРµ РЅРµРґРѕСЃС‚СѓРїРЅРѕ', 'info'); return; }
-                if (!confirm('РЈРґР°Р»РёС‚СЊ СЌС‚Сѓ Р·Р°РїРёСЃСЊ Р°РєС‚РёРІРЅРѕСЃС‚Рё? Р­С‚Рѕ РїРѕРІР»РёСЏРµС‚ РЅР° РІР°С€ РїСЂРѕРіСЂРµСЃСЃ.')) {
+                if (appState.role === 'viewer') { showNotification('Режим просмотра: действие недоступно', 'info'); return; }
+                if (!confirm('Удалить эту запись активности? Это повлияет на ваш прогресс.')) {
                     return;
                 }
 
@@ -1227,7 +1227,7 @@
                 updateRedeemControls();
                 saveState();
 
-                showNotification(`РђРєС‚РёРІРЅРѕСЃС‚СЊ СѓРґР°Р»РµРЅР° (-${deletedXP} XP)`, 'info');
+                showNotification(`Активность удалена (-${deletedXP} XP)`, 'info');
             }
 
             // Recalculate all progress from activity data
@@ -1293,10 +1293,10 @@
             }
 
             function clearTasks() {
-                if (confirm('РЈРґР°Р»РёС‚СЊ Р’РЎР• СЃРѕС…СЂР°РЅРµРЅРЅС‹Рµ Р·Р°РґР°РЅРёСЏ?')) {
+                if (confirm('Удалить ВСЕ сохраненные задания?')) {
                     appState.tasks = [];
                     renderTasks();
-                    showNotification('Р’СЃРµ Р·Р°РґР°РЅРёСЏ СѓРґР°Р»РµРЅС‹', 'info');
+                    showNotification('Все задания удалены', 'info');
                     saveState();
                 }
             }
@@ -1323,16 +1323,16 @@
                     appState.rewardPlan = incoming.rewardPlan || { description: '' };
                     appState.resetDate = incoming.resetDate ? new Date(incoming.resetDate) : (appState.resetDate || new Date());
                     updateProgressDisplay(); renderTasks(); renderRewards(); generateCalendar(); updateDayActivity(); renderWeeklyChart(); updateRedeemControls(); saveState();
-                    showNotification('РЎРѕСЃС‚РѕСЏРЅРёРµ СЃРёРЅС…СЂРѕРЅРёР·РёСЂРѕРІР°РЅРѕ', 'success');
+                    showNotification('Состояние синхронизировано', 'success');
                 } catch (e) {
-                    showNotification('РћС€РёР±РєР° РїСЂРёРјРµРЅРµРЅРёСЏ СЃРѕСЃС‚РѕСЏРЅРёСЏ', 'error');
+                    showNotification('Ошибка применения состояния', 'error');
                 }
             }
 
             
 
             function openDriveHelp() {
-                alert('Google Drive: РёСЃРїРѕР»СЊР·СѓР№С‚Рµ Р­РєСЃРїРѕСЂС‚ РґР»СЏ СЃРѕС…СЂР°РЅРµРЅРёСЏ С„Р°Р№Р»Р° РІ РїСЂРёР»РѕР¶РµРЅРёРµ Drive, Р° Р·Р°С‚РµРј РЅР° РІС‚РѕСЂРѕРј СѓСЃС‚СЂРѕР№СЃС‚РІРµ вЂ“ РРјРїРѕСЂС‚, РІС‹Р±СЂР°РІ С„Р°Р№Р» РёР· Drive. Р­С‚Рѕ РѕС„Р»Р°Р№РЅ-РґСЂСѓР¶РµСЃС‚РІРµРЅРЅС‹Р№ СЂСѓС‡РЅРѕР№ СЃРїРѕСЃРѕР±.');
+                alert('Google Drive: используйте Экспорт для сохранения файла в приложение Drive, а затем на втором устройстве – Импорт, выбрав файл из Drive. Это офлайн-дружественный ручной способ.');
             }
 
 
@@ -1363,30 +1363,30 @@
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
                 
-                showNotification('Р”Р°РЅРЅС‹Рµ СЌРєСЃРїРѕСЂС‚РёСЂРѕРІР°РЅС‹ СѓСЃРїРµС€РЅРѕ!', 'success');
+                showNotification('Данные экспортированы успешно!', 'success');
                 toggleSettingsMenu();
             }
 
             // File System Access API: save/load snapshots to a user-selected index file
             async function saveToFileIndex() {
-                if (!('showSaveFilePicker' in window)) { showNotification('Р‘СЂР°СѓР·РµСЂ РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚ СЃРѕС…СЂР°РЅРµРЅРёРµ РІ С„Р°Р№Р»-РёРЅРґРµРєСЃ', 'error'); return; }
+                if (!('showSaveFilePicker' in window)) { showNotification('Браузер не поддерживает сохранение в файл-индекс', 'error'); return; }
                 try {
                     const handle = await window.showSaveFilePicker({ suggestedName: 'english-learning-index.json', types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
                     const existing = await readJsonFromHandle(handle, []);
                     const snapshot = buildSnapshot();
                     existing.push(snapshot);
                     await writeJsonToHandle(handle, existing);
-                    showNotification('РЎР»РµРїРѕРє СЃРѕС…СЂР°РЅРµРЅ РІ С„Р°Р№Р»-РёРЅРґРµРєСЃ', 'success');
+                    showNotification('Слепок сохранен в файл-индекс', 'success');
                 } catch (e) {
                     // user cancelled or error
                 }
             }
             async function loadFromFileIndex() {
-                if (!('showOpenFilePicker' in window)) { showNotification('Р‘СЂР°СѓР·РµСЂ РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚ Р·Р°РіСЂСѓР·РєСѓ РёР· С„Р°Р№Р»-РёРЅРґРµРєСЃР°', 'error'); return; }
+                if (!('showOpenFilePicker' in window)) { showNotification('Браузер не поддерживает загрузку из файл-индекса', 'error'); return; }
                 try {
                     const [handle] = await window.showOpenFilePicker({ types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
                     const list = await readJsonFromHandle(handle, []);
-                    if (!Array.isArray(list) || list.length === 0) { showNotification('Р¤Р°Р№Р»-РёРЅРґРµРєСЃ РїСѓСЃС‚', 'info'); return; }
+                    if (!Array.isArray(list) || list.length === 0) { showNotification('Файл-индекс пуст', 'info'); return; }
                     renderSnapshotPicker(list, (snap) => { applyImportedSnapshot(snap); hideSnapshotPickerModal(); });
                 } catch (e) {
                     // cancelled
@@ -1395,7 +1395,7 @@
             function buildSnapshot() {
                 return {
                     id: Date.now(),
-                    title: `РЎР»РµРїРѕРє РѕС‚ ${new Date().toLocaleString('ru-RU')}`,
+                    title: `Слепок от ${new Date().toLocaleString('ru-RU')}`,
                     createdAt: new Date().toISOString(),
                     data: {
                         progress: appState.progress,
@@ -1422,10 +1422,10 @@
                 if (!modal || !box) return;
                 box.innerHTML = list.slice().reverse().map(s => `
                     <div class=\"reward-card\" style=\"margin-bottom:8px;\">
-                        <div class=\"rc-top\"><div class=\"reward-title\">${escapeHTML(s.title || ('РЎР»РµРїРѕРє #' + s.id))}</div><div class=\"reward-date-2\">${new Date(s.createdAt).toLocaleString('ru-RU')}</div></div>
+                        <div class=\"rc-top\"><div class=\"reward-title\">${escapeHTML(s.title || ('Слепок #' + s.id))}</div><div class=\"reward-date-2\">${new Date(s.createdAt).toLocaleString('ru-RU')}</div></div>
                         <div style=\"display:flex; gap:8px; justify-content:flex-end; margin-top:6px;\">
-                            <button class=\"btn btn-secondary\" data-id=\"${s.id}\"><i class=\"fas fa-eye\"></i> РџСЂРѕСЃРјРѕС‚СЂ</button>
-                            <button class=\"btn btn-primary\" data-apply=\"${s.id}\"><i class=\"fas fa-check\"></i> РџСЂРёРјРµРЅРёС‚СЊ</button>
+                            <button class=\"btn btn-secondary\" data-id=\"${s.id}\"><i class=\"fas fa-eye\"></i> Просмотр</button>
+                            <button class=\"btn btn-primary\" data-apply=\"${s.id}\"><i class=\"fas fa-check\"></i> Применить</button>
                         </div>
                     </div>
                 `).join('');
@@ -1443,7 +1443,7 @@
             }
             function hideSnapshotPickerModal() { const m = document.getElementById('snapshotPickerModal'); if (m) m.classList.remove('show'); }
             function applyImportedSnapshot(importedData) {
-                if (!importedData || !importedData.progress || !importedData.tasks) { showNotification('РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ СЃР»РµРїРѕРє', 'error'); return; }
+                if (!importedData || !importedData.progress || !importedData.tasks) { showNotification('Некорректный слепок', 'error'); return; }
                 appState.progress = { ...appState.progress, ...importedData.progress };
                 appState.tasks = importedData.tasks || appState.tasks;
                 appState.rewards = importedData.rewards || [];
@@ -1451,7 +1451,7 @@
                 appState.rewardPlan = importedData.rewardPlan || { description: '' };
                 appState.resetDate = importedData.resetDate ? new Date(importedData.resetDate) : (appState.resetDate || new Date());
                 updateProgressDisplay(); renderTasks(); renderRewards(); generateCalendar(); updateDayActivity(); renderWeeklyChart(); updateRedeemControls(); saveState();
-                showNotification('РЎР»РµРїРѕРє РїСЂРёРјРµРЅРµРЅ', 'success');
+                showNotification('Слепок применен', 'success');
             }
 
             // Chart.js optional integration (loaded online) with fallback to existing DOM charts
@@ -1480,7 +1480,7 @@
                     const ctx = cv.getContext('2d');
                     analyticsCharts.push(new Chart(ctx, {
                         type: 'bar',
-                        data: { labels: weeks, datasets: [{ label: 'XP Р·Р° РЅРµРґРµР»СЋ', data: totals, backgroundColor: '#3b82f6' }] },
+                        data: { labels: weeks, datasets: [{ label: 'XP за неделю', data: totals, backgroundColor: '#3b82f6' }] },
                         options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
                     }));
                 }
@@ -1502,7 +1502,7 @@
                         
                         // Validate imported data
                         if (!importedData.progress || !importedData.tasks) {
-                            throw new Error('РќРµРґРѕРїСѓСЃС‚РёРјС‹Р№ С„РѕСЂРјР°С‚ С„Р°Р№Р»Р°');
+                            throw new Error('Недопустимый формат файла');
                         }
 
                         // Restore data
@@ -1521,10 +1521,10 @@
                         updateDayActivity();
                         renderWeeklyChart();
 
-                        showNotification('Р”Р°РЅРЅС‹Рµ РёРјРїРѕСЂС‚РёСЂРѕРІР°РЅС‹ СѓСЃРїРµС€РЅРѕ!', 'success');
+                        showNotification('Данные импортированы успешно!', 'success');
                         saveState();
                     } catch (error) {
-                        showNotification('РћС€РёР±РєР° РїСЂРё РёРјРїРѕСЂС‚Рµ РґР°РЅРЅС‹С…: ' + error.message, 'error');
+                        showNotification('Ошибка при импорте данных: ' + error.message, 'error');
                     }
                 };
                 reader.readAsText(file);
@@ -1535,7 +1535,7 @@
             }
 
             function resetProgress() {
-                if (confirm('Р’С‹ СѓРІРµСЂРµРЅС‹, С‡С‚Рѕ С…РѕС‚РёС‚Рµ СЃР±СЂРѕСЃРёС‚СЊ РІРµСЃСЊ РїСЂРѕРіСЂРµСЃСЃ? Р­С‚Рѕ РґРµР№СЃС‚РІРёРµ РЅРµР»СЊР·СЏ РѕС‚РјРµРЅРёС‚СЊ!')) {
+                if (confirm('Вы уверены, что хотите сбросить весь прогресс? Это действие нельзя отменить!')) {
                     // Reset to initial state
                     appState.progress = {
                         level: 1,
@@ -1549,8 +1549,8 @@
                     appState.tasks = [
                         {
                             id: 1,
-                            name: "РР·СѓС‡РµРЅРёРµ РЅРѕРІС‹С… СЃР»РѕРІ",
-                            description: "Р’С‹СѓС‡РёС‚СЊ 10 РЅРѕРІС‹С… Р°РЅРіР»РёР№СЃРєРёС… СЃР»РѕРІ",
+                            name: "Изучение новых слов",
+                            description: "Выучить 10 новых английских слов",
                             xpReward: 50,
                             duration: 15,
                             icon: "fas fa-book",
@@ -1558,8 +1558,8 @@
                         },
                         {
                             id: 2,
-                            name: "Р“СЂР°РјРјР°С‚РёС‡РµСЃРєРёРµ СѓРїСЂР°Р¶РЅРµРЅРёСЏ",
-                            description: "Р’С‹РїРѕР»РЅРёС‚СЊ СѓРїСЂР°Р¶РЅРµРЅРёСЏ РЅР° Present Simple",
+                            name: "Грамматические упражнения",
+                            description: "Выполнить упражнения на Present Simple",
                             xpReward: 75,
                             duration: 20,
                             icon: "fas fa-pencil-alt",
@@ -1567,8 +1567,8 @@
                         },
                         {
                             id: 3,
-                            name: "РђСѓРґРёСЂРѕРІР°РЅРёРµ",
-                            description: "РџСЂРѕСЃР»СѓС€Р°С‚СЊ РґРёР°Р»РѕРі Рё РѕС‚РІРµС‚РёС‚СЊ РЅР° РІРѕРїСЂРѕСЃС‹",
+                            name: "Аудирование",
+                            description: "Прослушать диалог и ответить на вопросы",
                             xpReward: 60,
                             duration: 25,
                             icon: "fas fa-headphones",
@@ -1588,7 +1588,7 @@
                     updateDayActivity();
                     renderWeeklyChart();
 
-                    showNotification('РџСЂРѕРіСЂРµСЃСЃ СЃР±СЂРѕС€РµРЅ!', 'info');
+                    showNotification('Прогресс сброшен!', 'info');
                     saveState();
                 }
                 toggleSettingsMenu();
@@ -1647,7 +1647,7 @@
                 const btn = document.getElementById('toggleDemoBtn');
                 const enabled = !!(appState.demoAnalytics && appState.demoAnalytics.enabled);
                 if (badge) badge.style.display = enabled ? 'inline-flex' : 'none';
-                if (btn) btn.textContent = enabled ? 'Р’С‹РєР»СЋС‡РёС‚СЊ РґРµРјРѕ' : 'Р”РµРјРѕ';
+                if (btn) btn.textContent = enabled ? 'Выключить демо' : 'Демо';
                 calculateAnalytics();
                 // Try Chart.js
                 tryLoadChartJs().then((ok)=>{ if (ok) { destroyAnalyticsCharts(); renderAnalyticsWithChartJS(); } });
@@ -1744,7 +1744,7 @@
                 });
                 
                 const bestWeekdayIndex = weekdayData.indexOf(Math.max(...weekdayData));
-                const weekdayNames = ['Р’РѕСЃРєСЂРµСЃРµРЅСЊРµ', 'РџРѕРЅРµРґРµР»СЊРЅРёРє', 'Р’С‚РѕСЂРЅРёРє', 'РЎСЂРµРґР°', 'Р§РµС‚РІРµСЂРі', 'РџСЏС‚РЅРёС†Р°', 'РЎСѓР±Р±РѕС‚Р°'];
+                const weekdayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
                 const bestWeekday = weekdayNames[bestWeekdayIndex];
                 
                 // Growth calculation (last 4 weeks)
@@ -1759,10 +1759,10 @@
                 // Predictions
                 const avgXpPerWeek = totalActiveDays > 0 ? (totalXP / (totalActiveDays / 7)) : 0;
                 const xpToMaxLevel = (100 - state.progress.level) * 810;
-                const weeksToMax = avgXpPerWeek > 0 ? Math.ceil(xpToMaxLevel / avgXpPerWeek) : 'в€ћ';
+                const weeksToMax = avgXpPerWeek > 0 ? Math.ceil(xpToMaxLevel / avgXpPerWeek) : '∞';
                 
                 const currentWeekXP = state.progress.weeklyXP;
-                const nextStarXP = currentWeekXP >= 750 ? 'Р’СЃРµ Р·РІРµР·РґС‹ РїРѕР»СѓС‡РµРЅС‹' : 
+                const nextStarXP = currentWeekXP >= 750 ? 'Все звезды получены' : 
                                   currentWeekXP >= 500 ? `${750 - currentWeekXP} XP` : `${500 - currentWeekXP} XP`;
                 
                 return {
@@ -1848,7 +1848,7 @@
                 
                 // Streak stats
                 document.getElementById('currentStreakStat').textContent = `${analytics.currentStreak.studied}/${analytics.currentStreak.total}`;
-                document.getElementById('bestStreak').textContent = `${analytics.bestStreak} РґРЅРµР№`;
+                document.getElementById('bestStreak').textContent = `${analytics.bestStreak} дней`;
                 document.getElementById('consistency').textContent = `${analytics.consistency}%`;
                 
                 // Stars and rewards
@@ -1875,7 +1875,7 @@
                         <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
                             <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 4px;">${xp}</div>
                             <div style="width: 20px; background: linear-gradient(to top, #1e40af, #3b82f6); height: ${height}%; min-height: 4px; border-radius: 2px;"></div>
-                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">Рќ${weekNum}</div>
+                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">Н${weekNum}</div>
                         </div>
                     `;
                 }).join('');
@@ -1936,7 +1936,7 @@
                 if (!container) return;
                 
                 const analytics = computeAnalyticsData();
-                const weekdayLabels = ['Р’СЃ', 'РџРЅ', 'Р’С‚', 'РЎСЂ', 'Р§С‚', 'РџС‚', 'РЎР±'];
+                const weekdayLabels = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
                 const maxXP = Math.max(1, ...analytics.weekdayData);
                 
                 const bars = analytics.weekdayData.map((xp, i) => {
@@ -1972,7 +1972,7 @@
 
             function updatePredictions() {
                 const analytics = computeAnalyticsData();
-                document.getElementById('timeToMax').textContent = typeof analytics.weeksToMax === 'number' ? `${analytics.weeksToMax} РЅРµРґРµР»СЊ` : analytics.weeksToMax;
+                document.getElementById('timeToMax').textContent = typeof analytics.weeksToMax === 'number' ? `${analytics.weeksToMax} недель` : analytics.weeksToMax;
                 document.getElementById('nextStarTime').textContent = analytics.nextStarXP;
                 const monthlyXP = analytics.avgXpPerDay * 30;
                 const monthlyProgress = Math.min(100, (monthlyXP / 1000) * 100);
@@ -1983,18 +1983,18 @@
                 const container = document.getElementById('milestonesContent');
                 const state = getEffectiveState();
                 const milestones = [
-                    { level: 10, achieved: state.progress.level >= 10, title: 'РџРµСЂРІС‹Рµ 10 СѓСЂРѕРІРЅРµР№' },
-                    { level: 25, achieved: state.progress.level >= 25, title: 'Р§РµС‚РІРµСЂС‚СЊ РїСѓС‚Рё' },
-                    { level: 50, achieved: state.progress.level >= 50, title: 'РџРѕР»РѕРІРёРЅР° РїСѓС‚Рё' },
-                    { level: 75, achieved: state.progress.level >= 75, title: 'РўСЂРё С‡РµС‚РІРµСЂС‚Рё' },
-                    { level: 100, achieved: state.progress.level >= 100, title: 'РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ СѓСЂРѕРІРµРЅСЊ' }
+                    { level: 10, achieved: state.progress.level >= 10, title: 'Первые 10 уровней' },
+                    { level: 25, achieved: state.progress.level >= 25, title: 'Четверть пути' },
+                    { level: 50, achieved: state.progress.level >= 50, title: 'Половина пути' },
+                    { level: 75, achieved: state.progress.level >= 75, title: 'Три четверти' },
+                    { level: 100, achieved: state.progress.level >= 100, title: 'Максимальный уровень' }
                 ];
                 
                 container.innerHTML = milestones.map(m => `
                     <div class="stat-row">
                         <span class="stat-label">${m.title}</span>
                         <span class="stat-value" style="color: ${m.achieved ? '#059669' : '#94a3b8'};">
-                            ${m.achieved ? 'вњ“ РџРѕР»СѓС‡РµРЅРѕ' : `РЈСЂРѕРІРµРЅСЊ ${m.level}`}
+                            ${m.achieved ? '✓ Получено' : `Уровень ${m.level}`}
                         </span>
                     </div>
                 `).join('');
@@ -2060,19 +2060,19 @@
                         </div>
                     </div>`;
                 }).join('');
-                container.innerHTML = `<div style="padding:8px 4px;">${rows || '<div style=\"color:#94a3b8;text-align:center\">РќРµС‚ РґР°РЅРЅС‹С…</div>'}</div>`;
+                container.innerHTML = `<div style="padding:8px 4px;">${rows || '<div style=\"color:#94a3b8;text-align:center\">Нет данных</div>'}</div>`;
             }
             function inferCategoryFromTaskName(name) {
                 const n = (name||'').toLowerCase();
-                if (n.includes('СЃР»РѕРІ')) return 'vocabulary';
-                if (n.includes('РіСЂР°РјРјР°С‚')) return 'grammar';
-                if (n.includes('Р°СѓРґРёСЂ')) return 'listening';
-                if (n.includes('С‡С‚РµРЅ')) return 'reading';
-                if (n.includes('СЂР°Р·РіРѕРІРѕСЂ')) return 'speaking';
+                if (n.includes('слов')) return 'vocabulary';
+                if (n.includes('граммат')) return 'grammar';
+                if (n.includes('аудир')) return 'listening';
+                if (n.includes('чтен')) return 'reading';
+                if (n.includes('разговор')) return 'speaking';
                 return null;
             }
             function mapCategoryTitle(cat) {
-                const map = { vocabulary: 'РЎР»РѕРІР°', grammar: 'Р“СЂР°РјРјР°С‚РёРєР°', listening: 'РђСѓРґРёСЂРѕРІР°РЅРёРµ', reading: 'Р§С‚РµРЅРёРµ', speaking: 'Р Р°Р·РіРѕРІРѕСЂ', other: 'Р”СЂСѓРіРѕРµ' };
+                const map = { vocabulary: 'Слова', grammar: 'Грамматика', listening: 'Аудирование', reading: 'Чтение', speaking: 'Разговор', other: 'Другое' };
                 return map[cat] || cat;
             }
             function renderLevelTimeline() {
@@ -2089,7 +2089,7 @@
                     return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;">
                         <div style="font-size:0.75rem;color:#64748b;margin-bottom:4px;">Lv.${cumulative}</div>
                         <div style="width:24px;height:24px;background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:6px;"></div>
-                        <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">Рќ${i+1}</div>
+                        <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">Н${i+1}</div>
                     </div>`;
                 }).join('');
                 container.innerHTML = `<div style="display:flex;align-items:end;gap:8px;height:100%;padding:16px;">${items}</div>`;
@@ -2148,7 +2148,7 @@
                 const badge = document.getElementById('demoBadge');
                 const btn = document.getElementById('toggleDemoBtn');
                 if (badge) badge.style.display = appState.demoAnalytics.enabled ? 'inline-flex' : 'none';
-                if (btn) btn.textContent = appState.demoAnalytics.enabled ? 'Р’С‹РєР»СЋС‡РёС‚СЊ РґРµРјРѕ' : 'Р”РµРјРѕ';
+                if (btn) btn.textContent = appState.demoAnalytics.enabled ? 'Выключить демо' : 'Демо';
                 // Re-render current analytics tab
                 calculateAnalytics();
                 renderProgressCharts();
@@ -2201,7 +2201,7 @@
                 document.getElementById('accountModal').classList.remove('show');
                 applyRolePermissions();
                 if (appState.role === 'viewer') showWelcomeModal();
-                showNotification(appState.role === 'admin' ? 'Р РµР¶РёРј Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°' : 'Р РµР¶РёРј РїСЂРѕСЃРјРѕС‚СЂР°', 'info');
+                showNotification(appState.role === 'admin' ? 'Режим администратора' : 'Режим просмотра', 'info');
             }
 
             // Change Account Modal
@@ -2210,7 +2210,7 @@
                 toggleSettingsMenu(); // Close settings menu
             }
 
-            // Proper offline QR encoder (fallback, РЅРµ РїРµСЂРµРѕРїСЂРµРґРµР»СЏРµС‚ РѕСЃРЅРѕРІРЅСѓСЋ РІРµСЂСЃРёСЋ)
+            // Proper offline QR encoder (fallback, не переопределяет основную версию)
             function drawQrToCanvasFallback(text) {
                 const canvas = document.getElementById('qrCanvas');
                 if (!canvas) return;

@@ -216,54 +216,54 @@
             /* Offline Icon Replacements (emoji-based) */
             .fa, .fas { display: inline-block; width: 1em; height: 1em; line-height: 1em; text-align: center; font-style: normal; }
             .fa::before, .fas::before { display: inline-block; }
-            .fa-cog::before { content: "вљ™пёЏ"; }
-            .fa-chart-line::before { content: "рџ“€"; }
-            .fa-trophy::before { content: "рџЏ†"; }
-            .fa-star::before { content: "в­ђ"; }
-            .fa-fire::before { content: "рџ”Ґ"; }
-            .fa-tasks::before { content: "рџ“‹"; }
-            .fa-plus::before { content: "вћ•"; }
-            .fa-medal::before { content: "рџЏ…"; }
-            .fa-lightbulb::before { content: "рџ’Ў"; }
-            .fa-gift::before { content: "рџЋЃ"; }
-            .fa-calendar-alt::before { content: "рџ“…"; }
-            .fa-chevron-left::before { content: "в—Ђ"; }
-            .fa-chevron-right::before { content: "в–¶"; }
-            .fa-check-circle::before { content: "вњ…"; }
-            .fa-sparkles::before { content: "вњЁ"; }
-            .fa-book::before { content: "рџ“–"; }
-            .fa-pencil-alt::before { content: "вњЏпёЏ"; }
-            .fa-headphones::before { content: "рџЋ§"; }
-            .fa-trash::before { content: "рџ—‘пёЏ"; }
-            .fa-times::before { content: "вњ–"; }
-            .fa-level-up-alt::before { content: "в¬†пёЏ"; }
-            .fa-chart-area::before { content: "рџ“Љ"; }
-            .fa-calendar-check::before { content: "рџ—“пёЏ"; }
-            .fa-chart-bar::before { content: "рџ“Љ"; }
-            .fa-chart-pie::before { content: "рџҐ§"; }
-            .fa-clock::before { content: "вЏ°"; }
-            .fa-trending-up::before { content: "рџ“€"; }
-            .fa-history::before { content: "рџ•"; }
-            .fa-crystal-ball::before { content: "рџ”®"; }
-            .fa-crown::before { content: "рџ‘‘"; }
-            .fa-arrows-rotate::before { content: "рџ”„"; }
-            .fa-download::before { content: "в¬‡пёЏ"; }
-            .fa-upload::before { content: "в¬†пёЏ"; }
-            .fa-pen-to-square::before { content: "рџ“ќ"; }
-            .fa-microphone::before { content: "рџЋ¤"; }
-            .fa-eye::before { content: "рџ‘ЃпёЏ"; }
-            .fa-brain::before { content: "рџ§ "; }
-            .fa-graduation-cap::before { content: "рџЋ“"; }
-            .fa-chalkboard-teacher::before { content: "рџ‘ЁвЂЌрџЏ«"; }
-            .fa-language::before { content: "рџЊђ"; }
-            .fa-spell-check::before { content: "вњ…"; }
-            .fa-target::before { content: "рџЋЇ"; }
-            .fa-gamepad::before { content: "рџЋ®"; }
-            .fa-user-shield::before { content: "рџ›ЎпёЏ"; }
-            .fa-share-alt::before { content: "рџ“¤"; }
-            .fa-google-drive::before { content: "вЃпёЏ"; }
-            .fa-database::before { content: "рџ—„пёЏ"; }
-            .fa-folder-open::before { content: "рџ“‚"; }
+            .fa-cog::before { content: "⚙️"; }
+            .fa-chart-line::before { content: "📈"; }
+            .fa-trophy::before { content: "🏆"; }
+            .fa-star::before { content: "⭐"; }
+            .fa-fire::before { content: "🔥"; }
+            .fa-tasks::before { content: "📋"; }
+            .fa-plus::before { content: "➕"; }
+            .fa-medal::before { content: "🏅"; }
+            .fa-lightbulb::before { content: "💡"; }
+            .fa-gift::before { content: "🎁"; }
+            .fa-calendar-alt::before { content: "📅"; }
+            .fa-chevron-left::before { content: "◀"; }
+            .fa-chevron-right::before { content: "▶"; }
+            .fa-check-circle::before { content: "✅"; }
+            .fa-sparkles::before { content: "✨"; }
+            .fa-book::before { content: "📖"; }
+            .fa-pencil-alt::before { content: "✏️"; }
+            .fa-headphones::before { content: "🎧"; }
+            .fa-trash::before { content: "🗑️"; }
+            .fa-times::before { content: "✖"; }
+            .fa-level-up-alt::before { content: "⬆️"; }
+            .fa-chart-area::before { content: "📊"; }
+            .fa-calendar-check::before { content: "🗓️"; }
+            .fa-chart-bar::before { content: "📊"; }
+            .fa-chart-pie::before { content: "🥧"; }
+            .fa-clock::before { content: "⏰"; }
+            .fa-trending-up::before { content: "📈"; }
+            .fa-history::before { content: "🕘"; }
+            .fa-crystal-ball::before { content: "🔮"; }
+            .fa-crown::before { content: "👑"; }
+            .fa-arrows-rotate::before { content: "🔄"; }
+            .fa-download::before { content: "⬇️"; }
+            .fa-upload::before { content: "⬆️"; }
+            .fa-pen-to-square::before { content: "📝"; }
+            .fa-microphone::before { content: "🎤"; }
+            .fa-eye::before { content: "👁️"; }
+            .fa-brain::before { content: "🧠"; }
+            .fa-graduation-cap::before { content: "🎓"; }
+            .fa-chalkboard-teacher::before { content: "👨‍🏫"; }
+            .fa-language::before { content: "🌐"; }
+            .fa-spell-check::before { content: "✅"; }
+            .fa-target::before { content: "🎯"; }
+            .fa-gamepad::before { content: "🎮"; }
+            .fa-user-shield::before { content: "🛡️"; }
+            .fa-share-alt::before { content: "📤"; }
+            .fa-google-drive::before { content: "☁️"; }
+            .fa-database::before { content: "🗄️"; }
+            .fa-folder-open::before { content: "📂"; }
 
             /* Tasks */
             .task-list {
