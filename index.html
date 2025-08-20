@@ -1,0 +1,971 @@
+﻿<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Р“РµР№РјРёС„РёРєР°С†РёСЏ РёР·СѓС‡РµРЅРёСЏ Р°РЅРіР»РёР№СЃРєРѕРіРѕ СЏР·С‹РєР°</title>
+        <!-- Offline mode: removed external icon/font links -->
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <!-- Settings Panel -->
+        <div class="settings-panel">
+            <button class="settings-btn" onclick="toggleSettingsMenu()" aria-label="РћС‚РєСЂС‹С‚СЊ РЅР°СЃС‚СЂРѕР№РєРё" aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-cog"></i>
+            </button>
+            <button class="analytics-btn" onclick="showAnalyticsModal()" aria-label="РћС‚РєСЂС‹С‚СЊ Р°РЅР°Р»РёС‚РёРєСѓ" title="РђРЅР°Р»РёС‚РёРєР° Рё СЃС‚Р°С‚РёСЃС‚РёРєР°">
+                <i class="fas fa-chart-line"></i>
+            </button>
+            <div class="settings-menu" id="settingsMenu">
+                <div class="settings-item" onclick="showChangeAccountModal()">
+                    <i class="fas fa-user-shield"></i>
+                    РЎРјРµРЅРёС‚СЊ СѓС‡РµС‚РЅСѓСЋ Р·Р°РїРёСЃСЊ
+                </div>
+                                 <div class="settings-item" onclick="exportData()">
+                     <i class="fas fa-download"></i>
+                     Р­РєСЃРїРѕСЂС‚ РґР°РЅРЅС‹С…
+                 </div>
+                 <div class="settings-item" onclick="document.getElementById('importFile').click()">
+                     <i class="fas fa-upload"></i>
+                     РРјРїРѕСЂС‚ РґР°РЅРЅС‹С…
+                 </div>
+                 
+                 <div class="settings-item danger" onclick="clearTasks()">
+                     <i class="fas fa-trash"></i>
+                     РћС‡РёСЃС‚РёС‚СЊ Р·Р°РґР°РЅРёСЏ
+                 </div>
+                 <div class="settings-item danger" onclick="clearRewards()">
+                     <i class="fas fa-gift"></i>
+                     РћС‡РёСЃС‚РёС‚СЊ РЅР°РіСЂР°РґС‹
+                 </div>
+                 <div class="settings-item danger" onclick="resetProgress()">
+                     <i class="fas fa-arrows-rotate"></i>
+                     РЎР±СЂРѕСЃРёС‚СЊ РїСЂРѕРіСЂРµСЃСЃ
+                 </div>
+            </div>
+            <input type="file" id="importFile" class="file-input" accept="application/json,.json" onchange="importData(event)">
+        </div>
+
+        
+
+
+
+        <div class="container">
+            <!-- Main Header -->
+            <div class="card main-header">
+                <h1>РђРІС‚РѕСЂСЃРєР°СЏ РїСЂРѕРіСЂР°РјРјР° РёР·СѓС‡РµРЅРёСЏ Р°РЅРіР»РёР№СЃРєРѕРіРѕ СЏР·С‹РєР°</h1>
+                <p>РР·СѓС‡РµРЅРёРµ Р°РЅРіР»РёР№СЃРєРѕРіРѕ СЏР·С‹РєР°</p>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-3">
+                <div class="card stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="stat-label">РўРµРєСѓС‰РёР№ СѓСЂРѕРІРµРЅСЊ</div>
+                    <div class="stat-value" id="currentLevel">15</div>
+                    <div style="font-size: 0.875rem; color: #64748b">
+                        РџСЂРѕРґРІРёРЅСѓС‚С‹Р№
+                    </div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-label">РћР±С‰РёР№ РѕРїС‹С‚</div>
+                    <div class="stat-value" id="totalXP">4250</div>
+                    <div style="font-size: 0.875rem; color: #64748b">XP</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="stat-label">РЎРµСЂРёСЏ</div>
+                    <div class="stat-value" id="currentStreak">0 / 0</div>
+                    <div id="streakSubtitle" style="font-size: 0.875rem; color: #64748b">
+                        СѓС‡РµР±РЅС‹С… РґРЅРµР№ СЃ РЅР°С‡Р°Р»Р° (РџРЅвЂ“РџС‚)
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2">
+                <!-- Progress Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-chart-line"></i>
+                            РџСЂРѕРіСЂРµСЃСЃ РѕР±СѓС‡РµРЅРёСЏ
+                        </h2>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <button class="calendar-nav" id="weekPrevBtn" onclick="changeWeek(-1)" title="РџСЂРµРґС‹РґСѓС‰Р°СЏ РЅРµРґРµР»СЏ">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <div class="month-title" id="weekRangeLabel" style="text-align:left; min-width: 220px;">
+                                    РўРµРєСѓС‰Р°СЏ РЅРµРґРµР»СЏ
+                                </div>
+                                <button class="calendar-nav" id="weekNextBtn" onclick="changeWeek(1)" title="РЎР»РµРґСѓСЋС‰Р°СЏ РЅРµРґРµР»СЏ">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div
+                            style="
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                margin-bottom: 12px;
+                            "
+                        >
+                            <span style="font-weight: 600; color: #1e293b"
+                                >Р”Рѕ СЃР»РµРґСѓСЋС‰РµРіРѕ СѓСЂРѕРІРЅСЏ</span
+                            >
+                            <span
+                                style="font-weight: 600; color: #1e40af"
+                                id="xpProgress"
+                                >вЂ”</span
+                            >
+                        </div>
+                        <div class="progress-container">
+                            <div
+                                class="progress-bar"
+                                id="levelProgress"
+                                style="width: 0%"
+                            ></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 32px">
+                        <h3
+                            style="
+                                font-size: 1rem;
+                                font-weight: 600;
+                                color: #1e293b;
+                                margin-bottom: 16px;
+                            "
+                        >
+                            Р•Р¶РµРЅРµРґРµР»СЊРЅС‹Рµ С†РµР»Рё
+                        </h3>
+                        <div
+                            style="
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                margin-bottom: 12px;
+                            "
+                        >
+                            <span>РќРµРґРµР»СЊРЅС‹Р№ РїСЂРѕРіСЂРµСЃСЃ</span>
+                            <span
+                                style="font-weight: 600; color: #1e40af"
+                                id="weeklyProgress"
+                                >вЂ”</span
+                            >
+                        </div>
+                        <div class="progress-container" id="weeklyProgressContainer">
+                            <div class="progress-marker" id="marker500" style="left: calc(500/750 * 100%);">
+                                <div class="progress-label">500 XP</div>
+                            </div>
+                            <div class="progress-marker right" id="marker750" style="left: 100%;">
+                                <div class="progress-label">750 XP</div>
+                            </div>
+                            <div class="progress-bar" id="weeklyBar" style="width: 0%"></div>
+                        </div>
+
+                        
+
+                        <div id="weeklyChart" class="weekly-chart" aria-label="XP Р·Р° РґРЅРё РЅРµРґРµР»Рё"></div>
+
+                        <div style="margin-top: 24px;">
+                            <h3
+                                style="
+                                    font-size: 1rem;
+                                    font-weight: 600;
+                                    color: #1e293b;
+                                    margin-bottom: 12px;
+                                "
+                            >
+                                РџСЂРѕРіСЂРµСЃСЃ Р·Р° РјРµСЃСЏС†
+                            </h3>
+                            <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 8px;">
+                                <span>РњРµСЃСЏС‡РЅС‹Р№ РїСЂРѕРіСЂРµСЃСЃ</span>
+                                <span id="monthlyProgressText" style="font-weight:600; color:#1e40af;">вЂ”</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar" id="monthlyBar" style="width: 0%"></div>
+                            </div>
+                            <div id="monthlyInlineChart" class="weekly-chart" aria-label="XP РїРѕ РґРЅСЏРј РјРµСЃСЏС†Р°" style="grid-template-columns: repeat( auto-fit, minmax(16px, 1fr) );"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks Section -->
+                <div class="card">
+                    <div
+                        class="card-header"
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                        "
+                    >
+                        <h2 class="card-title">
+                            <i class="fas fa-tasks"></i>
+                            Р—Р°РґР°РЅРёСЏ
+                        </h2>
+                        <button
+                            class="btn btn-primary"
+                            onclick="showTaskModal()"
+                        >
+                            <i class="fas fa-plus"></i>
+                            Р”РѕР±Р°РІРёС‚СЊ
+                        </button>
+                    </div>
+
+                    <div class="task-list" id="taskList">
+                        <!-- Tasks will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2">
+                <!-- Achievements and Rewards -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-medal"></i>
+                            Р”РѕСЃС‚РёР¶РµРЅРёСЏ Рё РЅР°РіСЂР°РґС‹
+                        </h2>
+                    </div>
+
+                    <div>
+                        <h3
+                            style="
+                                font-size: 0.875rem;
+                                font-weight: 600;
+                                color: #64748b;
+                                text-transform: uppercase;
+                                letter-spacing: 0.05em;
+                                margin-bottom: 12px;
+                            "
+                        >
+                            РџРѕР»СѓС‡РµРЅРЅС‹Рµ РґРѕСЃС‚РёР¶РµРЅРёСЏ
+                        </h3>
+                        <div class="achievements">
+                            <div class="achievement-badge">
+                                <i class="fas fa-fire"></i>
+                                РћРіРЅРµРЅРЅР°СЏ СЃРµСЂРёСЏ
+                            </div>
+                            <div class="achievement-badge">
+                                <i class="fas fa-star"></i>
+                                РџРµСЂРІС‹Рµ С€Р°РіРё
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 32px">
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                            <h3 style="font-size: 0.875rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                                РџРѕСЃР»РµРґРЅРёРµ РЅР°РіСЂР°РґС‹
+                            </h3>
+                            <div style="display:flex; gap: 8px; flex-wrap: wrap;">
+                                <div class="redeem-stars-container" aria-label="Р‘Р°РЅРє Р·РІРµР·Рґ" title="Р’Р°С€Рё РЅР°РєРѕРїР»РµРЅРЅС‹Рµ Р·РІРµР·РґС‹ РґР»СЏ РЅР°РіСЂР°РґС‹">
+                                    <i class="fas fa-star redeem-star" id="bankStar1"></i>
+                                    <i class="fas fa-star redeem-star" id="bankStar2"></i>
+                                    <i class="fas fa-star redeem-star" id="bankStar3"></i>
+                                </div>
+                                <div style="min-width: 70px; text-align: right; font-weight:600; color:#1e40af;" id="bankStarsText">0 в­ђ</div>
+                                <button class="btn btn-secondary" id="ideaBtn" onclick="showIdeaModal()" title="РџСЂРёРґСѓРјР°С‚СЊ Рё СЃРѕС…СЂР°РЅРёС‚СЊ РЅР°РіСЂР°РґСѓ">
+                                    <i class="fas fa-lightbulb"></i>
+                                    РџСЂРёРґСѓРјР°С‚СЊ РЅР°РіСЂР°РґСѓ
+                                </button>
+                                <button class="btn btn-primary" onclick="showRewardModal()" id="redeemBtn">
+                                    <i class="fas fa-gift"></i>
+                                    РџРѕР»СѓС‡РёС‚СЊ
+                                </button>
+                            </div>
+                        </div>
+                        <div id="plannedRewardCard" style="display:none; background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:12px; border-radius:10px; margin-bottom:12px;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                                <div style="display:flex; align-items:center; gap:8px; font-weight:600;">
+                                    <i class="fas fa-pen-to-square"></i>
+                                    Р—Р°РїР»Р°РЅРёСЂРѕРІР°РЅРЅР°СЏ РЅР°РіСЂР°РґР°:
+                                </div>
+                                <div style="font-size:0.9rem; color:#78350f;" id="plannedRewardText">вЂ”</div>
+                            </div>
+                        </div>
+                        <div id="rewardsList">
+                            <div
+                                style="
+                                    text-align: center;
+                                    padding: 20px;
+                                    color: #64748b;
+                                    font-size: 0.875rem;
+                                "
+                            >
+                                РџРѕРєР° РЅРµС‚ РїРѕР»СѓС‡РµРЅРЅС‹С… РЅР°РіСЂР°Рґ
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            РљР°Р»РµРЅРґР°СЂСЊ Р°РєС‚РёРІРЅРѕСЃС‚Рё
+                        </h2>
+                    </div>
+
+                    <div class="calendar-header">
+                        <button class="calendar-nav" onclick="changeMonth(-1)">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div class="month-title" id="monthTitle">
+                            РЇРЅРІР°СЂСЊ 2025
+                        </div>
+                        <button class="calendar-nav" onclick="changeMonth(1)">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+
+                    <div
+                        style="
+                            display: grid;
+                            grid-template-columns: repeat(7, 1fr);
+                            gap: 8px;
+                            margin-bottom: 8px;
+                            font-size: 0.75rem;
+                            font-weight: 600;
+                            color: #64748b;
+                            text-align: center;
+                        "
+                    >
+                        <div>РџРќ</div>
+                        <div>Р’Рў</div>
+                        <div>РЎР </div>
+                        <div>Р§Рў</div>
+                        <div>РџРў</div>
+                        <div>РЎР‘</div>
+                        <div>Р’РЎ</div>
+                    </div>
+
+                    <div class="calendar" id="calendar">
+                        <!-- Calendar days will be generated here -->
+                    </div>
+
+                    <div
+                        style="
+                            margin-top: 20px;
+                            padding-top: 16px;
+                            border-top: 1px solid #e2e8f0;
+                        "
+                    >
+                        <h4
+                            style="
+                                font-weight: 600;
+                                color: #1e293b;
+                                margin-bottom: 12px;
+                            "
+                            id="selectedDateTitle"
+                        >
+                            РђРєС‚РёРІРЅРѕСЃС‚СЊ Р·Р° СЃРµРіРѕРґРЅСЏ
+                        </h4>
+                        <div
+                            id="dayActivity"
+                            style="font-size: 0.875rem; color: #64748b"
+                        >
+                            РџРѕРєР° РЅРµС‚ Р°РєС‚РёРІРЅРѕСЃС‚Рё Р·Р° РІС‹Р±СЂР°РЅРЅС‹Р№ РґРµРЅСЊ
+                        </div>
+                    </div>
+                </div>
+                
+
+            </div>
+        </div>
+
+
+
+        <!-- Task Modal -->
+        <div class="modal" id="taskModal">
+            <div class="modal-content" style="position: relative" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle">
+                <button class="close-btn" onclick="hideTaskModal()">
+                    &times;
+                </button>
+                <div class="modal-header">
+                    <h3 class="modal-title" id="taskModalTitle">Р”РѕР±Р°РІРёС‚СЊ РЅРѕРІРѕРµ Р·Р°РґР°РЅРёРµ</h3>
+                </div>
+
+                <form id="taskForm" onsubmit="addTask(event)" autocomplete="off">
+                    <div class="form-group">
+                        <label class="form-label">РќР°Р·РІР°РЅРёРµ Р·Р°РґР°РЅРёСЏ</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="taskName"
+                            name="taskName"
+                            placeholder="РќР°РїСЂРёРјРµСЂ: РР·СѓС‡РµРЅРёРµ РЅРѕРІС‹С… СЃР»РѕРІ"
+                            autocomplete="off"
+                            autocapitalize="off"
+                            autocorrect="off"
+                            spellcheck="false"
+                            inputmode="text"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">РћРїРёСЃР°РЅРёРµ</label>
+                        <textarea
+                            class="form-input"
+                            id="taskDescription"
+                            name="taskDescription"
+                            rows="3"
+                            placeholder="РљСЂР°С‚РєРѕРµ РѕРїРёСЃР°РЅРёРµ Р·Р°РґР°РЅРёСЏ"
+                            autocomplete="off"
+                            autocapitalize="off"
+                            autocorrect="off"
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">РРєРѕРЅРєР° Р·Р°РґР°РЅРёСЏ</label>
+                        <div class="icon-selector" id="iconSelector">
+                            <!-- Icons will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 16px;
+                        "
+                    >
+                        <div class="form-group">
+                            <label class="form-label">РќР°РіСЂР°РґР° (XP)</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="taskXP"
+                                name="taskXP"
+                                value="50"
+                                min="10"
+                                max="500"
+                                autocomplete="off"
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Р”Р»РёС‚РµР»СЊРЅРѕСЃС‚СЊ (РјРёРЅ)</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="taskDuration"
+                                name="taskDuration"
+                                value="15"
+                                min="5"
+                                max="120"
+                                autocomplete="off"
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            display: flex;
+                            gap: 12px;
+                            justify-content: flex-end;
+                            margin-top: 24px;
+                        "
+                    >
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            onclick="hideTaskModal()"
+                        >
+                            РћС‚РјРµРЅР°
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Р”РѕР±Р°РІРёС‚СЊ Р·Р°РґР°РЅРёРµ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Reward Modal -->
+        <div class="modal" id="rewardModal">
+            <div class="modal-content" style="position: relative" role="dialog" aria-modal="true" aria-labelledby="rewardModalTitle">
+                <button class="close-btn" onclick="hideRewardModal()">
+                    &times;
+                </button>
+                <div class="modal-header">
+                    <h3 class="modal-title" id="rewardModalTitle">РџРѕР»СѓС‡РёС‚СЊ РЅР°РіСЂР°РґСѓ</h3>
+                </div>
+
+                <form id="rewardForm" onsubmit="addReward(event)">
+                    <div class="form-group">
+                        <label class="form-label">Р—Р°РїР»Р°РЅРёСЂРѕРІР°РЅРЅР°СЏ РЅР°РіСЂР°РґР°</label>
+                        <div id="plannedRewardDisplay" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; color: #1e293b;">
+                            вЂ”
+                        </div>
+                    </div>
+
+                    <div style="padding: 16px; background: #f0f9ff; border-radius: 8px; margin: 16px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Р”РѕСЃС‚СѓРїРЅРѕ Р·РІРµР·Рґ:</span>
+                            <span style="font-weight: 600; color: #1e40af" id="availableStars">0 в­ђ</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                            <span>РўСЂРµР±СѓРµС‚СЃСЏ РґР»СЏ РЅР°РіСЂР°РґС‹:</span>
+                            <span style="font-weight: 600; color: #1e293b">3 в­ђ</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                        <button type="button" class="btn btn-secondary" onclick="hideRewardModal()"><i class="fas fa-times"></i> РћС‚РјРµРЅР°</button>
+                        <button type="submit" class="btn btn-primary" id="confirmRedeemBtn">
+                            <i class="fas fa-gift"></i>
+                            РџРѕР»СѓС‡РёС‚СЊ РЅР°РіСЂР°РґСѓ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Idea Modal -->
+        <div class="modal" id="ideaModal">
+            <div class="modal-content" style="position: relative" role="dialog" aria-modal="true" aria-labelledby="ideaModalTitle">
+                <button class="close-btn" onclick="hideIdeaModal()">&times;</button>
+                <div class="modal-header">
+                    <h3 class="modal-title" id="ideaModalTitle">РџСЂРёРґСѓРјР°С‚СЊ РЅР°РіСЂР°РґСѓ</h3>
+                </div>
+                <form id="ideaForm" onsubmit="saveRewardIdea(event)">
+                    <div class="form-group">
+                        <label class="form-label">РќР°Р·РІР°РЅРёРµ РЅР°РіСЂР°РґС‹</label>
+                        <div class="autocomplete-wrap">
+                            <input type="text" class="form-input" id="ideaDescription" placeholder="РќР°РїСЂРёРјРµСЂ: РџРѕС…РѕРґ РІ РєРёРЅРѕ" required autocomplete="off" />
+                            <div class="autocomplete-list" id="ideaAutocomplete"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                        <button type="button" class="btn btn-secondary" onclick="hideIdeaModal()"><i class="fas fa-times"></i> РћС‚РјРµРЅР°</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check"></i>
+                            РЎРѕС…СЂР°РЅРёС‚СЊ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Notification -->
+        <div class="notification" id="notification" role="status" aria-live="polite" aria-atomic="true">
+            <i class="fas fa-check-circle"></i>
+            <span id="notificationMessage"></span>
+        </div>
+
+        <!-- Account Modal -->
+        <div class="modal" id="accountModal">
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle" style="max-width:520px; position:relative;">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="accountModalTitle">Р’С‹Р±РµСЂРёС‚Рµ СѓС‡РµС‚РЅСѓСЋ Р·Р°РїРёСЃСЊ</h3>
+                </div>
+                <div style="display:flex; gap:12px; flex-direction:column;">
+                    <button class="btn btn-primary" onclick="selectAccount('viewer')" style="justify-content:center;">
+                        <i class="fas fa-user"></i> РњРёС…Р°РёР» (С‚РѕР»СЊРєРѕ РїСЂРѕСЃРјРѕС‚СЂ)
+                    </button>
+                                         <button class="btn btn-secondary" onclick="selectAccount('admin')" style="justify-content:center; background: #fbbf24; color: #92400e; border-color: #f59e0b;">
+                         <i class="fas fa-crown"></i> Admin (РїРѕР»РЅС‹Рµ РїСЂР°РІР°)
+                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Modal -->
+        <div class="modal analytics-modal" id="analyticsModal">
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="analyticsModalTitle">
+                <button class="close-btn" onclick="hideAnalyticsModal()">&times;</button>
+                
+                <div class="analytics-header">
+                    <div class="analytics-title" id="analyticsModalTitle">
+                        <i class="fas fa-chart-line"></i>
+                        РђРЅР°Р»РёС‚РёРєР° РѕР±СѓС‡РµРЅРёСЏ
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span id="demoBadge" class="demo-badge" style="display: none;">Р”РµРјРѕ</span>
+                        <button class="btn btn-secondary" id="toggleDemoBtn" onclick="toggleDemoAnalytics()" title="Р’РєР»СЋС‡РёС‚СЊ РґРµРјРѕ РІРёР·СѓР°Р»РёР·Р°С†РёСЋ">Р”РµРјРѕ</button>
+                    </div>
+                </div>
+
+                <div class="analytics-tabs">
+                    <button class="analytics-tab active" onclick="switchAnalyticsTab('overview')">РћР±Р·РѕСЂ</button>
+                    <button class="analytics-tab" onclick="switchAnalyticsTab('progress')">РџСЂРѕРіСЂРµСЃСЃ</button>
+                    <button class="analytics-tab" onclick="switchAnalyticsTab('patterns')">РџР°С‚С‚РµСЂРЅС‹</button>
+                    <button class="analytics-tab" onclick="switchAnalyticsTab('achievements')">Р”РѕСЃС‚РёР¶РµРЅРёСЏ</button>
+                </div>
+
+                <!-- Overview Tab -->
+                <div class="tab-content active" id="overview-tab">
+                    <div class="analytics-grid">
+                        <!-- Total Stats Card -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #1e40af, #3b82f6);">
+                                        <i class="fas fa-trophy"></i>
+                                    </div>
+                                    РћР±С‰Р°СЏ СЃС‚Р°С‚РёСЃС‚РёРєР°
+                                </div>
+                            </div>
+                            <div id="totalStatsContent">
+                                <div class="stat-row">
+                                    <span class="stat-label">Р’СЃРµРіРѕ РґРЅРµР№ СЃ Р°РєС‚РёРІРЅРѕСЃС‚СЊСЋ</span>
+                                    <span class="stat-value" id="totalActiveDays">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Р’СЃРµРіРѕ Р·Р°РґР°РЅРёР№ РІС‹РїРѕР»РЅРµРЅРѕ</span>
+                                    <span class="stat-value" id="totalTasksCompleted">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">РЎСЂРµРґРЅРµРµ XP РІ РґРµРЅСЊ</span>
+                                    <span class="stat-value" id="avgXpPerDay">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Р›СѓС‡С€РёР№ РґРµРЅСЊ (XP)</span>
+                                    <span class="stat-value" id="bestDay">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Level Progress Ring -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
+                                        <i class="fas fa-level-up-alt"></i>
+                                    </div>
+                                    РџСЂРѕРіСЂРµСЃСЃ СѓСЂРѕРІРЅСЏ
+                                </div>
+                            </div>
+                            <div class="progress-ring" id="levelProgressRing">
+                                <svg viewBox="0 0 120 120">
+                                    <circle class="progress-ring-bg" cx="60" cy="60" r="52"></circle>
+                                    <circle class="progress-ring-fill" cx="60" cy="60" r="52" 
+                                            stroke-dasharray="0 327" id="levelRingFill"></circle>
+                                </svg>
+                                <div class="progress-ring-text" id="levelRingText">Lv.1</div>
+                            </div>
+                        </div>
+
+                        <!-- Weekly XP Trend -->
+                        <div class="analytics-card" style="grid-column: span 2;">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
+                                        <i class="fas fa-chart-area"></i>
+                                    </div>
+                                    РўСЂРµРЅРґ XP РїРѕ РЅРµРґРµР»СЏРј
+                                </div>
+                            </div>
+                            <div class="chart-container chart-large" id="weeklyTrendChart"></div>
+                        </div>
+
+                        <!-- Learning Streak -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #dc2626, #ef4444);">
+                                        <i class="fas fa-fire"></i>
+                                    </div>
+                                    РЎС‚Р°С‚РёСЃС‚РёРєР° СЃРµСЂРёР№
+                                </div>
+                            </div>
+                            <div id="streakStatsContent">
+                                <div class="stat-row">
+                                    <span class="stat-label">РўРµРєСѓС‰Р°СЏ СЃРµСЂРёСЏ</span>
+                                    <span class="stat-value" id="currentStreakStat">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Р›СѓС‡С€Р°СЏ СЃРµСЂРёСЏ</span>
+                                    <span class="stat-value" id="bestStreak">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">РљРѕРЅСЃРёСЃС‚РµРЅС‚РЅРѕСЃС‚СЊ</span>
+                                    <span class="stat-value" id="consistency">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stars Analytics -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                    Р—РІРµР·РґС‹ Рё РЅР°РіСЂР°РґС‹
+                                </div>
+                            </div>
+                            <div id="starsStatsContent">
+                                <div class="stat-row">
+                                    <span class="stat-label">Р’СЃРµРіРѕ Р·РІРµР·Рґ Р·Р°СЂР°Р±РѕС‚Р°РЅРѕ</span>
+                                    <span class="stat-value" id="totalStarsEarned">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Р—РІРµР·Рґ РїРѕС‚СЂР°С‡РµРЅРѕ</span>
+                                    <span class="stat-value" id="starsSpent">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">РќР°РіСЂР°Рґ РїРѕР»СѓС‡РµРЅРѕ</span>
+                                    <span class="stat-value" id="rewardsCount">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Tab -->
+                <div class="tab-content" id="progress-tab">
+                    <div class="analytics-grid">
+                        <!-- Activity Heatmap -->
+                        <div class="analytics-card" style="grid-column: span 2;">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </div>
+                                    РљР°СЂС‚Р° Р°РєС‚РёРІРЅРѕСЃС‚Рё (РїРѕСЃР»РµРґРЅРёР№ РіРѕРґ)
+                                </div>
+                            </div>
+                            <div id="activityHeatmap" class="heatmap"></div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 0.85rem; color: #64748b;">
+                                <span>РњРµРЅСЊС€Рµ</span>
+                                <div style="display: flex; gap: 3px;">
+                                    <div class="heatmap-cell"></div>
+                                    <div class="heatmap-cell" data-level="1"></div>
+                                    <div class="heatmap-cell" data-level="2"></div>
+                                    <div class="heatmap-cell" data-level="3"></div>
+                                    <div class="heatmap-cell" data-level="4"></div>
+                                    <div class="heatmap-cell" data-level="5"></div>
+                                </div>
+                                <span>Р‘РѕР»СЊС€Рµ</span>
+                            </div>
+                        </div>
+
+                        <!-- Monthly Progress -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </div>
+                                    XP РїРѕ РјРµСЃСЏС†Р°Рј
+                                </div>
+                            </div>
+                            <div class="chart-container" id="monthlyXpChart"></div>
+                        </div>
+
+                        <!-- Task Distribution -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #ec4899, #f472b6);">
+                                        <i class="fas fa-chart-pie"></i>
+                                    </div>
+                                    РўРёРїС‹ Р·Р°РґР°РЅРёР№
+                                </div>
+                            </div>
+                            <div class="chart-container chart-small" id="taskDistributionChart"></div>
+                        </div>
+
+                        <!-- Level Timeline -->
+                        <div class="analytics-card" style="grid-column: span 2;">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #1e40af, #3b82f6);">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    РҐСЂРѕРЅРѕР»РѕРіРёСЏ СѓСЂРѕРІРЅРµР№
+                                </div>
+                            </div>
+                            <div class="chart-container" id="levelTimelineChart"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patterns Tab -->
+                <div class="tab-content" id="patterns-tab">
+                    <div class="analytics-grid">
+                        <!-- Daily Pattern -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8);">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    Р”РЅРё РЅРµРґРµР»Рё
+                                </div>
+                            </div>
+                            <div class="chart-container" id="weekdayPatternChart"></div>
+                        </div>
+
+                        <!-- Performance Trends -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+                                        <i class="fas fa-trending-up"></i>
+                                    </div>
+                                    Р­С„С„РµРєС‚РёРІРЅРѕСЃС‚СЊ
+                                </div>
+                            </div>
+                            <div id="performanceContent">
+                                <div class="stat-row">
+                                    <span class="stat-label">РЎР°РјС‹Р№ РїСЂРѕРґСѓРєС‚РёРІРЅС‹Р№ РґРµРЅСЊ РЅРµРґРµР»Рё</span>
+                                    <span class="stat-value" id="bestWeekday">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">РЎСЂРµРґРЅРµРµ Р·Р°РґР°РЅРёР№ РІ РґРµРЅСЊ</span>
+                                    <span class="stat-value" id="avgTasksPerDay">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Р РѕСЃС‚ XP (РїРѕСЃР»РµРґРЅРёРµ 4 РЅРµРґРµР»Рё)</span>
+                                    <span class="stat-value" id="xpGrowth">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Study Sessions -->
+                        <div class="analytics-card" style="grid-column: span 2;">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
+                                        <i class="fas fa-history"></i>
+                                    </div>
+                                    РСЃС‚РѕСЂРёСЏ СЃРµСЃСЃРёР№ РѕР±СѓС‡РµРЅРёСЏ
+                                </div>
+                            </div>
+                            <div class="chart-container" id="sessionsChart"></div>
+                        </div>
+
+                        <!-- Prediction -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
+                                        <i class="fas fa-crystal-ball"></i>
+                                    </div>
+                                    РџСЂРѕРіРЅРѕР·С‹
+                                </div>
+                            </div>
+                            <div id="predictionContent">
+                                <div class="stat-row">
+                                    <span class="stat-label">Р”Рѕ 100 СѓСЂРѕРІРЅСЏ</span>
+                                    <span class="stat-value" id="timeToMax">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">РЎР»РµРґСѓСЋС‰Р°СЏ Р·РІРµР·РґР° С‡РµСЂРµР·</span>
+                                    <span class="stat-value" id="nextStarTime">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">РњРµСЃСЏС‡РЅР°СЏ С†РµР»СЊ (1000 XP)</span>
+                                    <span class="stat-value" id="monthlyGoal">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Achievements Tab -->
+                <div class="tab-content" id="achievements-tab">
+                    <div class="analytics-grid">
+                        <!-- Milestones -->
+                        <div class="analytics-card" style="grid-column: span 2;">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+                                        <i class="fas fa-medal"></i>
+                                    </div>
+                                    РљР»СЋС‡РµРІС‹Рµ РґРѕСЃС‚РёР¶РµРЅРёСЏ
+                                </div>
+                            </div>
+                            <div id="milestonesContent"></div>
+                        </div>
+
+                        <!-- Records -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #dc2626, #ef4444);">
+                                        <i class="fas fa-crown"></i>
+                                    </div>
+                                    Р РµРєРѕСЂРґС‹
+                                </div>
+                            </div>
+                            <div id="recordsContent">
+                                <div class="stat-row">
+                                    <span class="stat-label">РњР°РєСЃРёРјСѓРј XP Р·Р° РґРµРЅСЊ</span>
+                                    <span class="stat-value" id="maxDayXp">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">РњР°РєСЃРёРјСѓРј Р·Р°РґР°РЅРёР№ Р·Р° РґРµРЅСЊ</span>
+                                    <span class="stat-value" id="maxDayTasks">-</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Р›СѓС‡С€Р°СЏ РЅРµРґРµР»СЏ (XP)</span>
+                                    <span class="stat-value" id="bestWeekXp">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Progress Comparison -->
+                        <div class="analytics-card" style="grid-column: span 2;">
+                            <div class="analytics-card-header">
+                                <div class="analytics-card-title">
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #1e40af, #3b82f6);">
+                                        <i class="fas fa-chart-area"></i>
+                                    </div>
+                                    РЎСЂР°РІРЅРµРЅРёРµ РїРµСЂРёРѕРґРѕРІ
+                                </div>
+                            </div>
+                            <div class="chart-container" id="comparisonChart"><canvas id="comparisonChartCanvas" class="chart-large" aria-label="РЎСЂР°РІРЅРµРЅРёРµ РїРµСЂРёРѕРґРѕРІ"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Welcome Modal -->
+        <div class="modal" id="welcomeModal">
+            <div class="modal-content" style="position: relative; max-width: 640px;" role="dialog" aria-modal="true" aria-labelledby="welcomeModalTitle">
+                <button class="close-btn" onclick="hideWelcomeModal()">&times;</button>
+                <div class="welcome-hero">
+                    <i class="fas fa-sparkles"></i>
+                    <div class="welcome-title" id="welcomeModalTitle">Welcome, Mikhail!</div>
+                </div>
+                <div class="welcome-text" id="welcomeMessage">
+                    Great to see you! You're on a powerful journey to master EnglishвЂ”let's make today count.
+                </div>
+                <div class="welcome-actions">
+                    <button class="btn btn-secondary" onclick="hideWelcomeModal()">Close</button>
+                    <button class="btn btn-primary" onclick="hideWelcomeModal()"><i class="fas fa-bolt"></i> Let's go!</button>
+                </div>
+            </div>
+        </div>
+
+        
+
+        <script src="app.js"></script>
+    </body>
+</html>
+
