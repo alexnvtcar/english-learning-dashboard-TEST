@@ -300,13 +300,14 @@
                 try {
                     console.log('📥 Начинаем загрузку из Firebase...');
                     
-                    const userRef = doc(db, 'users', appState.userName);
-                    const docSnap = await getDoc(userRef);
+                    // Загружаем общие данные из коллекции 'shared-data'
+                    const sharedRef = doc(db, 'shared-data', 'main');
+                    const docSnap = await getDoc(sharedRef);
                     
                     if (docSnap.exists()) {
                         const firestoreData = docSnap.data();
                         
-                        console.log('📊 Данные найдены в Firebase:', {
+                        console.log('📊 Общие данные найдены в Firebase:', {
                             lastUpdated: firestoreData.lastUpdated,
                             lastSavedBy: firestoreData.lastSavedBy,
                             version: firestoreData.version,
@@ -320,7 +321,8 @@
                         const localSettings = {
                             userName: appState.userName,
                             role: appState.role,
-                            isVerified: appState.isVerified
+                            isVerified: appState.isVerified,
+                            pinCodes: appState.pinCodes // Сохраняем PIN-коды локально
                         };
                         
                         // Обновляем локальное состояние
@@ -334,7 +336,7 @@
                         updateDayActivity();
                         renderWeeklyChart();
                         
-                        console.log('✅ Данные успешно загружены из Firebase');
+                        console.log('✅ Общие данные успешно загружены из Firebase');
                         // Уведомление о загрузке показывается только при синхронизации
                         
                         // Показываем детальную информацию о загрузке
@@ -342,7 +344,7 @@
                         
                         return true;
                     } else {
-                        console.log('📭 Данные пользователя не найдены в Firebase');
+                        console.log('📭 Общие данные не найдены в Firebase');
                         // Уведомление показывается только при синхронизации
                         return false;
                     }
@@ -2494,6 +2496,9 @@
 
             // Account selection & role handling
             function selectAccount(role) {
+                const previousRole = appState.role;
+                const previousUserName = appState.userName;
+                
                 appState.role = role === 'admin' ? 'admin' : 'viewer';
                 
                 // Устанавливаем имя пользователя в зависимости от роли
@@ -2506,7 +2511,7 @@
                 // Сохраняем состояние только локально
                 saveState();
                 
-                console.log(`✅ Учетная запись установлена: ${appState.userName} (${appState.role})`);
+                console.log(`✅ Учетная запись изменена: ${previousUserName} (${previousRole}) → ${appState.userName} (${appState.role})`);
                 
                 // При выборе учетной записи загружаем последние данные из Firebase
                 if (navigator.onLine && isFirebaseAvailable()) {
@@ -3095,20 +3100,20 @@
                         }
                     };
                     
-                    // Сохраняем в Firestore
-                    const userRef = doc(db, 'users', appState.userName);
-                    await setDoc(userRef, dataToSave, { merge: true });
-                    
-                    // Обновляем локальное состояние
-                    appState.saveStats = dataToSave.saveStats;
-                    
-                    console.log('✅ Данные успешно сохранены в Firebase');
-                    showNotification('Данные сохранены в Firebase', 'success');
-                    
-                    // Показываем детальную информацию о сохранении
-                    showSaveDetails(dataToSave);
-                    
-                    return true;
+                                    // Сохраняем в Firestore в общую коллекцию
+                const sharedRef = doc(db, 'shared-data', 'main');
+                await setDoc(sharedRef, dataToSave, { merge: true });
+                
+                // Обновляем локальное состояние
+                appState.saveStats = dataToSave.saveStats;
+                
+                console.log('✅ Общие данные успешно сохранены в Firebase');
+                showNotification('Данные сохранены в Firebase', 'success');
+                
+                // Показываем детальную информацию о сохранении
+                showSaveDetails(dataToSave);
+                
+                return true;
                 } catch (error) {
                     console.error('❌ Ошибка сохранения в Firebase:', error);
                     
@@ -3314,13 +3319,14 @@
                 try {
                     console.log('📥 Начинаем загрузку из Firebase...');
                     
-                    const userRef = doc(db, 'users', appState.userName);
-                    const docSnap = await getDoc(userRef);
+                    // Загружаем общие данные из коллекции 'shared-data'
+                    const sharedRef = doc(db, 'shared-data', 'main');
+                    const docSnap = await getDoc(sharedRef);
                     
                     if (docSnap.exists()) {
                         const firestoreData = docSnap.data();
                         
-                        console.log('📊 Данные найдены в Firebase:', {
+                        console.log('📊 Общие данные найдены в Firebase:', {
                             lastUpdated: firestoreData.lastUpdated,
                             lastSavedBy: firestoreData.lastSavedBy,
                             version: firestoreData.version,
@@ -3334,7 +3340,8 @@
                         const localSettings = {
                             userName: appState.userName,
                             role: appState.role,
-                            isVerified: appState.isVerified
+                            isVerified: appState.isVerified,
+                            pinCodes: appState.pinCodes // Сохраняем PIN-коды локально
                         };
                         
                         // Обновляем локальное состояние
@@ -3348,7 +3355,7 @@
                         updateDayActivity();
                         renderWeeklyChart();
                         
-                        console.log('✅ Данные успешно загружены из Firebase');
+                        console.log('✅ Общие данные успешно загружены из Firebase');
                         // Уведомление о загрузке показывается только при синхронизации
                         
                         // Показываем детальную информацию о загрузке
@@ -3356,7 +3363,7 @@
                         
                         return true;
                     } else {
-                        console.log('📭 Данные пользователя не найдены в Firebase');
+                        console.log('📭 Общие данные не найдены в Firebase');
                         // Уведомление показывается только при синхронизации
                         return false;
                     }
@@ -3408,7 +3415,7 @@
                     const loadResult = await loadStateFromFirestore();
                     
                     if (loadResult) {
-                        console.log('✅ Данные загружены из Firebase');
+                        console.log('✅ Общие данные загружены из Firebase');
                         showNotification('Данные загружены из Firebase', 'success');
                         
                         // Затем сохраняем текущее состояние (обновляем Firebase)
@@ -3425,7 +3432,7 @@
                             showNotification('Синхронизация завершена с предупреждениями', 'warning');
                         }
                     } else {
-                        console.log('⚠️ Не удалось загрузить данные из Firebase');
+                        console.log('⚠️ Не удалось загрузить общие данные из Firebase');
                         showNotification('Не удалось загрузить данные из Firebase', 'warning');
                     }
                     
@@ -3444,13 +3451,13 @@
                 modal.innerHTML = `
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h3>💾 Данные сохранены в Firebase</h3>
+                            <h3>💾 Общие данные сохранены в Firebase</h3>
                             <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
                         </div>
                         <div class="modal-body">
                             <div class="save-details">
                                 <div class="detail-item">
-                                    <strong>Пользователь:</strong> ${data.userName}
+                                    <strong>Сохранено пользователем:</strong> ${data.userName}
                                 </div>
                                 <div class="detail-item">
                                     <strong>Время сохранения:</strong> ${new Date(data.lastUpdated).toLocaleString('ru-RU')}
@@ -3470,6 +3477,9 @@
                                 <div class="detail-item">
                                     <strong>Язык:</strong> ${data.deviceInfo.language}
                                 </div>
+                                <div class="detail-item">
+                                    <strong>Тип данных:</strong> Общие данные для всех пользователей
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -3487,14 +3497,11 @@
                 modal.innerHTML = `
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h3>📥 Данные загружены из Firebase</h3>
+                            <h3>📥 Общие данные загружены из Firebase</h3>
                             <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
                         </div>
                         <div class="modal-body">
                             <div class="load-details">
-                                <div class="detail-item">
-                                    <strong>Пользователь:</strong> ${data.userName || 'Не указан'}
-                                </div>
                                 <div class="detail-item">
                                     <strong>Последнее обновление:</strong> ${data.lastUpdated ? new Date(data.lastUpdated).toLocaleString('ru-RU') : 'Не указано'}
                                 </div>
@@ -3515,6 +3522,9 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Активность:</strong> ${Object.keys(data.activityData || {}).length} дней
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Тип данных:</strong> Общие данные для всех пользователей
                                 </div>
                             </div>
                         </div>
@@ -3646,7 +3656,7 @@
                             <div class="sync-summary">
                                 <div class="summary-item success">
                                     <span class="summary-icon">✅</span>
-                                    <span class="summary-text">Данные загружены из Firebase</span>
+                                    <span class="summary-text">Общие данные загружены из Firebase</span>
                                 </div>
                                 <div class="summary-item success">
                                     <span class="summary-icon">💾</span>
@@ -3659,6 +3669,10 @@
                                 <div class="summary-item info">
                                     <span class="summary-icon">🕐</span>
                                     <span class="summary-text">Время: ${new Date().toLocaleString('ru-RU')}</span>
+                                </div>
+                                <div class="summary-item info">
+                                    <span class="summary-icon">👥</span>
+                                    <span class="summary-text">Данные синхронизированы для всех пользователей</span>
                                 </div>
                             </div>
                         </div>
