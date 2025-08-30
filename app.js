@@ -1427,6 +1427,9 @@
                 }
                 
                 console.log('✅ Приложение инициализировано');
+                
+                // Проверяем, нужна ли первичная синхронизация
+                checkFirstTimeSync();
             }
 
             // Delete Task Function
@@ -2505,6 +2508,20 @@
                 
                 console.log(`✅ Учетная запись установлена: ${appState.userName} (${appState.role})`);
                 
+                // При выборе учетной записи загружаем последние данные из Firebase
+                if (navigator.onLine && isFirebaseAvailable()) {
+                    console.log('🔄 Загружаем последние данные при выборе учетной записи...');
+                    loadStateFromFirestore().then(success => {
+                        if (success) {
+                            console.log('✅ Данные загружены при выборе учетной записи');
+                        } else {
+                            console.log('⚠️ Не удалось загрузить данные при выборе учетной записи');
+                        }
+                    }).catch(error => {
+                        console.log('❌ Ошибка загрузки данных при выборе учетной записи:', error);
+                    });
+                }
+                
                 document.getElementById('accountModal').classList.remove('show');
                 
                 // Убираем затемнение и показываем основной контент
@@ -2815,6 +2832,21 @@
                         // Применяем роли только после успешной верификации
                         applyRolePermissions();
                         
+                        // При входе загружаем последние данные из Firebase
+                        if (navigator.onLine && isFirebaseAvailable()) {
+                            console.log('🔄 Загружаем последние данные при входе...');
+                            loadStateFromFirestore().then(success => {
+                                if (success) {
+                                    console.log('✅ Данные загружены при входе');
+                                    showNotification('Данные синхронизированы', 'success');
+                                } else {
+                                    console.log('⚠️ Не удалось загрузить данные при входе');
+                                }
+                            }).catch(error => {
+                                console.log('❌ Ошибка загрузки данных при входе:', error);
+                            });
+                        }
+                        
                         showNotification('Вход выполнен успешно!', 'success');
                         
                         // Show welcome modal for Mikhail
@@ -2843,7 +2875,23 @@
                 
                 // Save PIN code
                 appState.pinCodes[appState.userName] = setupPin;
-                saveState(); // Сохраняем только локально
+                
+                // Сохраняем локально
+                saveState();
+                
+                // При смене PIN-кода обязательно сохраняем в Firebase
+                if (isChangingPin && navigator.onLine && isFirebaseAvailable()) {
+                    console.log('🔄 Сохраняем новый PIN-код в Firebase...');
+                    saveStateToFirestore().then(success => {
+                        if (success) {
+                            console.log('✅ PIN-код успешно сохранен в Firebase');
+                        } else {
+                            console.log('⚠️ Не удалось сохранить PIN-код в Firebase');
+                        }
+                    }).catch(error => {
+                        console.error('❌ Ошибка сохранения PIN-кода в Firebase:', error);
+                    });
+                }
                 
                 hideSetupPinModal();
                 
@@ -3622,6 +3670,151 @@
                 document.body.appendChild(modal);
             }
 
+            // Check if first time sync is needed
+            async function checkFirstTimeSync() {
+                // Проверяем, была ли уже первичная синхронизация
+                const hasSyncedBefore = localStorage.getItem('has-synced-before');
+                
+                if (!hasSyncedBefore && navigator.onLine && isFirebaseAvailable()) {
+                    console.log('🔄 Первичная синхронизация...');
+                    
+                    // Показываем модальное окно первичной синхронизации
+                    showFirstTimeSyncModal();
+                }
+            }
+            
+            // Show first time sync modal
+            function showFirstTimeSyncModal() {
+                // Скрываем фон
+                const overlay = document.getElementById('modalOverlay');
+                const container = document.querySelector('.container');
+                if (overlay) overlay.classList.add('show');
+                if (container) container.classList.add('hidden');
+                
+                const modal = document.createElement('div');
+                modal.className = 'modal show';
+                modal.id = 'firstTimeSyncModal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>🔄 Первичная синхронизация</h3>
+                        </div>
+                        <div class="modal-body">
+                            <div class="sync-animation">
+                                <div class="sync-spinner">🔄</div>
+                                <p>Загружаем последние данные из Firebase...</p>
+                                <div class="sync-progress">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // Запускаем анимацию и синхронизацию
+                startFirstTimeSync();
+            }
+            
+            // Start first time sync
+            async function startFirstTimeSync() {
+                try {
+                    // Анимация прогресса
+                    const progressFill = document.querySelector('.progress-fill');
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += 2;
+                        if (progressFill) progressFill.style.width = progress + '%';
+                        if (progress >= 100) clearInterval(progressInterval);
+                    }, 50);
+                    
+                    // Выполняем синхронизацию
+                    const syncResult = await syncWithFirestore();
+                    
+                    // Останавливаем анимацию
+                    clearInterval(progressInterval);
+                    if (progressFill) progressFill.style.width = '100%';
+                    
+                    if (syncResult) {
+                        // Показываем успешную синхронизацию
+                        showFirstTimeSyncSuccess();
+                        
+                        // Отмечаем, что первичная синхронизация выполнена
+                        localStorage.setItem('has-synced-before', 'true');
+                    } else {
+                        // Показываем ошибку синхронизации
+                        showFirstTimeSyncError();
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка первичной синхронизации:', error);
+                    showFirstTimeSyncError();
+                }
+            }
+            
+            // Show first time sync success
+            function showFirstTimeSyncSuccess() {
+                const modal = document.getElementById('firstTimeSyncModal');
+                if (!modal) return;
+                
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>✅ Синхронизация завершена</h3>
+                        </div>
+                        <div class="modal-body">
+                            <div class="sync-success">
+                                <div class="success-icon">✅</div>
+                                <p>Данные успешно загружены из Firebase!</p>
+                                <p>Теперь вы можете работать с последними сохраненными данными.</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="closeFirstTimeSyncModal()">Продолжить</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Show first time sync error
+            function showFirstTimeSyncError() {
+                const modal = document.getElementById('firstTimeSyncModal');
+                if (!modal) return;
+                
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>⚠️ Ошибка синхронизации</h3>
+                        </div>
+                        <div class="modal-body">
+                            <div class="sync-error">
+                                <div class="error-icon">⚠️</div>
+                                <p>Не удалось загрузить данные из Firebase.</p>
+                                <p>Вы можете продолжить работу с локальными данными или попробовать синхронизироваться позже.</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="closeFirstTimeSyncModal()">Продолжить</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Close first time sync modal
+            function closeFirstTimeSyncModal() {
+                const modal = document.getElementById('firstTimeSyncModal');
+                if (modal) {
+                    modal.remove();
+                }
+                
+                // Показываем фон
+                const overlay = document.getElementById('modalOverlay');
+                const container = document.querySelector('.container');
+                if (overlay) overlay.classList.remove('show');
+                if (container) container.classList.remove('hidden');
+            }
+            
             // Test Firebase connection
             async function testFirebaseConnection() {
                 if (!isFirebaseAvailable()) {
