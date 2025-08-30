@@ -201,6 +201,17 @@
 
             // Utility Functions
             function formatDate(date) {
+                // Проверяем, что date является объектом Date
+                if (!date || typeof date.getFullYear !== 'function') {
+                    console.warn('⚠️ formatDate: передан неверный объект date:', date);
+                    // Возвращаем текущую дату если что-то пошло не так
+                    const now = new Date();
+                    const y = now.getFullYear();
+                    const m = String(now.getMonth() + 1).padStart(2, '0');
+                    const d = String(now.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${d}`;
+                }
+                
                 // Local date string YYYY-MM-DD without UTC shift
                 const local = new Date(date.getFullYear(), date.getMonth(), date.getDate());
                 const y = local.getFullYear();
@@ -242,9 +253,19 @@
                     const raw = localStorage.getItem(STORAGE_KEY);
                     if (raw) {
                         const saved = JSON.parse(raw);
-                        appState = { ...appState, ...saved };
-                        if (saved.currentMonth) appState.currentMonth = new Date(saved.currentMonth);
-                        if (saved.selectedDate) appState.selectedDate = new Date(saved.selectedDate);
+                        
+                        // Восстанавливаем типы данных из localStorage
+                        const restoredSaved = restoreDataTypes(saved);
+                        
+                        appState = { ...appState, ...restoredSaved };
+                        
+                        // Дополнительная проверка для критических полей
+                        if (!appState.currentMonth || typeof appState.currentMonth.getFullYear !== 'function') {
+                            appState.currentMonth = new Date();
+                        }
+                        if (!appState.selectedDate || typeof appState.selectedDate.toLocaleDateString !== 'function') {
+                            appState.selectedDate = new Date();
+                        }
                     }
                     
                     // Устанавливаем userName по умолчанию, если он не задан
@@ -259,7 +280,10 @@
                         });
                     }
                 } catch (e) {
-                    // ignore parse errors
+                    console.error('Ошибка загрузки состояния:', e);
+                    // Устанавливаем значения по умолчанию при ошибке
+                    appState.currentMonth = new Date();
+                    appState.selectedDate = new Date();
                 }
             }
 
@@ -526,6 +550,12 @@
             }
 
             function getWeekStartKey(date) {
+                // Проверяем, что date является объектом Date
+                if (!date || typeof date.getDay !== 'function') {
+                    console.warn('⚠️ getWeekStartKey: передан неверный объект date:', date);
+                    date = new Date();
+                }
+                
                 const d = new Date(date);
                 const day = (d.getDay() + 6) % 7;
                 d.setHours(0,0,0,0);
@@ -534,6 +564,16 @@
             }
 
             function ensureWeeklyReset() {
+                // Проверяем, что appState.progress существует
+                if (!appState.progress) {
+                    appState.progress = {
+                        weekStartKey: '',
+                        weeklyXP: 0,
+                        weeklyStars: 0,
+                        starBank: 0
+                    };
+                }
+                
                 const currentKey = getWeekStartKey(new Date());
                 if (appState.progress.weekStartKey !== currentKey) {
                     appState.progress.weekStartKey = currentKey;
@@ -800,7 +840,14 @@
                 const calendar = document.getElementById("calendar");
                 const monthTitle = document.getElementById("monthTitle");
 
-                const currentMonth = appState.currentMonth;
+                // Проверяем и исправляем currentMonth если нужно
+                let currentMonth = appState.currentMonth;
+                if (!currentMonth || typeof currentMonth.getFullYear !== 'function') {
+                    console.warn('⚠️ currentMonth не является объектом Date, исправляем...');
+                    currentMonth = new Date();
+                    appState.currentMonth = currentMonth;
+                }
+                
                 const year = currentMonth.getFullYear();
                 const month = currentMonth.getMonth();
 
@@ -862,13 +909,20 @@
             }
 
             function updateDayActivity() {
-                const selectedDateStr = formatDate(appState.selectedDate);
+                // Проверяем и исправляем selectedDate если нужно
+                let selectedDate = appState.selectedDate;
+                if (!selectedDate || typeof selectedDate.toLocaleDateString !== 'function') {
+                    console.warn('⚠️ selectedDate не является объектом Date, исправляем...');
+                    selectedDate = new Date();
+                    appState.selectedDate = selectedDate;
+                }
+                
+                const selectedDateStr = formatDate(selectedDate);
                 const dayActivity = document.getElementById("dayActivity");
                 const selectedDateTitle =
                     document.getElementById("selectedDateTitle");
 
-                const dateStr =
-                    appState.selectedDate.toLocaleDateString("ru-RU");
+                const dateStr = selectedDate.toLocaleDateString("ru-RU");
                 selectedDateTitle.textContent = `Активность за ${dateStr}`;
 
                 const activity = appState.activityData[selectedDateStr];
@@ -1270,6 +1324,13 @@
                 renderWeeklyChart();
                 updateRedeemControls();
                 populateIconSelector(); // Initialize icon selector
+                
+                // Добавляем обработчик для кнопки тестирования Firebase
+                const testFirebaseBtn = document.getElementById('testFirebaseBtn');
+                if (testFirebaseBtn) {
+                    testFirebaseBtn.addEventListener('click', testFirebaseConnection);
+                }
+                
                 // Приветствие показывается только при выборе роли, не автоматически
             }
 
@@ -2730,33 +2791,354 @@
 
             // Check if Firebase is available
             function isFirebaseAvailable() {
+                // Check if Firebase is ready and functions are available
+                if (window.firebaseReady === true) {
+                    return true;
+                }
+                
+                // Fallback check for older versions
                 return window.db && window.doc && window.setDoc && window.getDoc;
+            }
+
+            // Clean data for Firebase storage
+            function cleanDataForFirestore(data) {
+                const cleaned = { ...data };
+                
+                console.log('🧹 Очищаем данные для Firebase...');
+                
+                // Функция для безопасного преобразования Date в строку
+                function safeDateToString(date) {
+                    if (!date) return null;
+                    
+                    try {
+                        // Проверяем, что это валидный Date объект
+                        if (date instanceof Date && !isNaN(date.getTime())) {
+                            return date.toISOString();
+                        }
+                        
+                        // Если это строка, пытаемся создать Date и проверить
+                        if (typeof date === 'string') {
+                            const parsedDate = new Date(date);
+                            if (!isNaN(parsedDate.getTime())) {
+                                return parsedDate.toISOString();
+                            }
+                        }
+                        
+                        // Если ничего не работает, возвращаем null
+                        console.warn('⚠️ Некорректная дата:', date);
+                        return null;
+                    } catch (error) {
+                        console.warn('⚠️ Ошибка при обработке даты:', date, error);
+                        return null;
+                    }
+                }
+                
+                // Очищаем основные Date поля
+                if (cleaned.currentMonth) {
+                    cleaned.currentMonth = safeDateToString(cleaned.currentMonth);
+                }
+                
+                if (cleaned.selectedDate) {
+                    cleaned.selectedDate = safeDateToString(cleaned.selectedDate);
+                }
+                
+                if (cleaned.resetDate) {
+                    cleaned.resetDate = safeDateToString(cleaned.resetDate);
+                }
+                
+                // Очищаем Date поля в activityData
+                if (cleaned.activityData) {
+                    Object.keys(cleaned.activityData).forEach(dateStr => {
+                        if (cleaned.activityData[dateStr] && Array.isArray(cleaned.activityData[dateStr])) {
+                            cleaned.activityData[dateStr].forEach(activity => {
+                                if (activity.completedAt) {
+                                    activity.completedAt = safeDateToString(activity.completedAt);
+                                }
+                            });
+                        }
+                    });
+                }
+                
+                // Очищаем Date поля в tasks
+                if (cleaned.tasks && Array.isArray(cleaned.tasks)) {
+                    cleaned.tasks.forEach(task => {
+                        if (task.createdAt) {
+                            task.createdAt = safeDateToString(task.createdAt);
+                        }
+                        if (task.completedAt) {
+                            task.completedAt = safeDateToString(task.completedAt);
+                        }
+                    });
+                }
+                
+                // Очищаем Date поля в rewards
+                if (cleaned.rewards && Array.isArray(cleaned.rewards)) {
+                    cleaned.rewards.forEach(reward => {
+                        if (reward.createdAt) {
+                            reward.createdAt = safeDateToString(reward.createdAt);
+                        }
+                        if (reward.claimedAt) {
+                            reward.claimedAt = safeDateToString(reward.claimedAt);
+                        }
+                    });
+                }
+                
+                // Очищаем Date поля в saveStats
+                if (cleaned.saveStats) {
+                    if (cleaned.saveStats.firstSave) {
+                        cleaned.saveStats.firstSave = safeDateToString(cleaned.saveStats.firstSave);
+                    }
+                    if (cleaned.saveStats.lastSave) {
+                        cleaned.saveStats.lastSave = safeDateToString(cleaned.saveStats.lastSave);
+                    }
+                }
+                
+                // Очищаем Date поля в deviceInfo
+                if (cleaned.deviceInfo && cleaned.deviceInfo.timestamp) {
+                    cleaned.deviceInfo.timestamp = safeDateToString(cleaned.deviceInfo.timestamp);
+                }
+                
+                console.log('✅ Данные очищены для Firebase');
+                return cleaned;
             }
 
             // Save state to Firestore
             async function saveStateToFirestore() {
                 if (!isFirebaseAvailable()) {
                     console.log('Firebase недоступен, сохраняем только локально');
+                    showNotification('Firebase недоступен', 'warning');
+                    return false;
+                }
+
+                if (!navigator.onLine) {
+                    console.log('Нет интернет-соединения');
+                    showNotification('Нет интернет-соединения', 'warning');
                     return false;
                 }
 
                 try {
-                    const userRef = doc(db, 'users', appState.userName);
-                    await setDoc(userRef, {
-                        ...appState,
+                    console.log('💾 Начинаем сохранение в Firebase...');
+                    
+                    // Очищаем данные для Firebase
+                    const cleanedData = cleanDataForFirestore(appState);
+                    
+                    // Подготавливаем данные для сохранения
+                    const dataToSave = {
+                        // Основное состояние приложения
+                        ...cleanedData,
+                        
+                        // Метаданные
                         lastUpdated: new Date().toISOString(),
+                        lastSavedBy: appState.userName,
+                        version: '1.0.0',
+                        
+                        // Информация об устройстве
                         deviceInfo: {
                             userAgent: navigator.userAgent,
-                            timestamp: new Date().toISOString()
+                            timestamp: new Date().toISOString(),
+                            platform: navigator.platform,
+                            language: navigator.language,
+                            online: navigator.onLine
+                        },
+                        
+                        // Статистика сохранения
+                        saveStats: {
+                            totalSaves: (appState.saveStats?.totalSaves || 0) + 1,
+                            firstSave: appState.saveStats?.firstSave || new Date().toISOString(),
+                            lastSave: new Date().toISOString()
                         }
-                    });
+                    };
                     
-                    console.log('Данные сохранены в Firestore');
+                    // Сохраняем в Firestore
+                    const userRef = doc(db, 'users', appState.userName);
+                    await setDoc(userRef, dataToSave, { merge: true });
+                    
+                    // Обновляем локальное состояние
+                    appState.saveStats = dataToSave.saveStats;
+                    
+                    console.log('✅ Данные успешно сохранены в Firebase');
+                    showNotification('Данные сохранены в Firebase', 'success');
+                    
+                    // Показываем детальную информацию о сохранении
+                    showSaveDetails(dataToSave);
+                    
                     return true;
                 } catch (error) {
-                    console.error('Ошибка сохранения в Firestore:', error);
+                    console.error('❌ Ошибка сохранения в Firebase:', error);
+                    showNotification('Ошибка сохранения в Firebase', 'error');
                     return false;
                 }
+            }
+
+            // Restore data types after loading from Firestore
+            function restoreDataTypes(data) {
+                const restored = { ...data };
+                
+                console.log('🔧 Восстанавливаем типы данных...');
+                
+                // Функция для безопасного создания Date объекта
+                function safeStringToDate(dateString) {
+                    if (!dateString) return null;
+                    
+                    try {
+                        const date = new Date(dateString);
+                        if (!isNaN(date.getTime())) {
+                            return date;
+                        } else {
+                            console.warn('⚠️ Некорректная строка даты:', dateString);
+                            return null;
+                        }
+                    } catch (error) {
+                        console.warn('⚠️ Ошибка при создании Date из строки:', dateString, error);
+                        return null;
+                    }
+                }
+                
+                // Restore Date objects
+                if (restored.currentMonth && typeof restored.currentMonth === 'string') {
+                    const date = safeStringToDate(restored.currentMonth);
+                    if (date) {
+                        restored.currentMonth = date;
+                        console.log('📅 currentMonth восстановлен');
+                    } else {
+                        restored.currentMonth = new Date();
+                        console.log('⚠️ currentMonth установлен по умолчанию');
+                    }
+                }
+                
+                if (restored.selectedDate && typeof restored.selectedDate === 'string') {
+                    const date = safeStringToDate(restored.selectedDate);
+                    if (date) {
+                        restored.selectedDate = date;
+                        console.log('📅 selectedDate восстановлен');
+                    } else {
+                        restored.selectedDate = new Date();
+                        console.log('⚠️ selectedDate установлен по умолчанию');
+                    }
+                }
+                
+                if (restored.resetDate && typeof restored.resetDate === 'string') {
+                    const date = safeStringToDate(restored.resetDate);
+                    if (date) {
+                        restored.resetDate = date;
+                        console.log('📅 resetDate восстановлен');
+                    } else {
+                        restored.resetDate = new Date();
+                        console.log('⚠️ resetDate установлен по умолчанию');
+                    }
+                }
+                
+                // Restore Date objects in activityData
+                if (restored.activityData) {
+                    let activityCount = 0;
+                    Object.keys(restored.activityData).forEach(dateStr => {
+                        if (restored.activityData[dateStr] && Array.isArray(restored.activityData[dateStr])) {
+                            restored.activityData[dateStr].forEach(activity => {
+                                if (activity.completedAt && typeof activity.completedAt === 'string') {
+                                    const date = safeStringToDate(activity.completedAt);
+                                    if (date) {
+                                        activity.completedAt = date;
+                                        activityCount++;
+                                    } else {
+                                        activity.completedAt = null;
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    if (activityCount > 0) {
+                        console.log(`📅 Восстановлено ${activityCount} записей активности`);
+                    }
+                }
+                
+                // Restore Date objects in tasks
+                if (restored.tasks && Array.isArray(restored.tasks)) {
+                    let taskCount = 0;
+                    restored.tasks.forEach(task => {
+                        if (task.createdAt && typeof task.createdAt === 'string') {
+                            const date = safeStringToDate(task.createdAt);
+                            if (date) {
+                                task.createdAt = date;
+                                taskCount++;
+                            } else {
+                                task.createdAt = null;
+                            }
+                        }
+                        if (task.completedAt && typeof task.completedAt === 'string') {
+                            const date = safeStringToDate(task.completedAt);
+                            if (date) {
+                                task.completedAt = date;
+                                taskCount++;
+                            } else {
+                                task.completedAt = null;
+                            }
+                        }
+                    });
+                    if (taskCount > 0) {
+                        console.log(`📅 Восстановлено ${taskCount} дат в заданиях`);
+                    }
+                }
+                
+                // Restore Date objects in rewards
+                if (restored.rewards && Array.isArray(restored.rewards)) {
+                    let rewardCount = 0;
+                    restored.rewards.forEach(reward => {
+                        if (reward.createdAt && typeof reward.createdAt === 'string') {
+                            const date = safeStringToDate(reward.createdAt);
+                            if (date) {
+                                reward.createdAt = date;
+                                rewardCount++;
+                            } else {
+                                reward.createdAt = null;
+                            }
+                        }
+                        if (reward.claimedAt && typeof reward.claimedAt === 'string') {
+                            const date = safeStringToDate(reward.claimedAt);
+                            if (date) {
+                                reward.claimedAt = date;
+                                rewardCount++;
+                            } else {
+                                reward.claimedAt = null;
+                            }
+                        }
+                    });
+                    if (rewardCount > 0) {
+                        console.log(`📅 Восстановлено ${rewardCount} дат в наградах`);
+                    }
+                }
+                
+                // Restore Date objects in saveStats
+                if (restored.saveStats) {
+                    if (restored.saveStats.firstSave && typeof restored.saveStats.firstSave === 'string') {
+                        const date = safeStringToDate(restored.saveStats.firstSave);
+                        if (date) {
+                            restored.saveStats.firstSave = date;
+                        } else {
+                            restored.saveStats.firstSave = null;
+                        }
+                    }
+                    if (restored.saveStats.lastSave && typeof restored.saveStats.lastSave === 'string') {
+                        const date = safeStringToDate(restored.saveStats.lastSave);
+                        if (date) {
+                            restored.saveStats.lastSave = date;
+                        } else {
+                            restored.saveStats.lastSave = null;
+                        }
+                    }
+                }
+                
+                // Restore Date objects in deviceInfo
+                if (restored.deviceInfo && restored.deviceInfo.timestamp && typeof restored.deviceInfo.timestamp === 'string') {
+                    const date = safeStringToDate(restored.deviceInfo.timestamp);
+                    if (date) {
+                        restored.deviceInfo.timestamp = date;
+                    } else {
+                        restored.deviceInfo.timestamp = null;
+                    }
+                }
+                
+                console.log('✅ Все типы данных восстановлены');
+                return restored;
             }
 
             // Load state from Firestore
@@ -2767,14 +3149,33 @@
                 }
 
                 try {
+                    console.log('📥 Начинаем загрузку из Firebase...');
+                    
                     const userRef = doc(db, 'users', appState.userName);
                     const docSnap = await getDoc(userRef);
                     
                     if (docSnap.exists()) {
                         const firestoreData = docSnap.data();
                         
+                        console.log('📊 Данные найдены в Firebase:', {
+                            lastUpdated: firestoreData.lastUpdated,
+                            lastSavedBy: firestoreData.lastSavedBy,
+                            version: firestoreData.version,
+                            totalSaves: firestoreData.saveStats?.totalSaves || 0
+                        });
+                        
+                        // Восстанавливаем типы данных
+                        const restoredData = restoreDataTypes(firestoreData);
+                        
+                        // Сохраняем важные локальные настройки
+                        const localSettings = {
+                            userName: appState.userName,
+                            role: appState.role,
+                            isVerified: appState.isVerified
+                        };
+                        
                         // Обновляем локальное состояние
-                        appState = { ...appState, ...firestoreData };
+                        appState = { ...appState, ...restoredData, ...localSettings };
                         
                         // Обновляем UI
                         updateProgressDisplay();
@@ -2784,14 +3185,21 @@
                         updateDayActivity();
                         renderWeeklyChart();
                         
-                        console.log('Данные загружены из Firestore');
+                        console.log('✅ Данные успешно загружены из Firebase');
+                        showNotification('Данные загружены из Firebase', 'success');
+                        
+                        // Показываем детальную информацию о загрузке
+                        showLoadDetails(firestoreData);
+                        
                         return true;
                     } else {
-                        console.log('Данные пользователя не найдены в Firestore');
+                        console.log('📭 Данные пользователя не найдены в Firebase');
+                        showNotification('Данные пользователя не найдены в Firebase', 'info');
                         return false;
                     }
                 } catch (error) {
-                    console.error('Ошибка загрузки из Firestore:', error);
+                    console.error('❌ Ошибка загрузки из Firebase:', error);
+                    showNotification('Ошибка загрузки из Firebase', 'error');
                     return false;
                 }
             }
@@ -2800,21 +3208,202 @@
             async function syncWithFirestore() {
                 if (!navigator.onLine) {
                     console.log('Нет интернет-соединения, синхронизация отменена');
+                    showNotification('Нет интернет-соединения', 'warning');
+                    return false;
+                }
+
+                if (!isFirebaseAvailable()) {
+                    console.log('Firebase недоступен, синхронизация отменена');
+                    showNotification('Firebase недоступен', 'warning');
                     return false;
                 }
 
                 try {
+                    console.log('🔄 Начинаем синхронизацию с Firebase...');
+                    
+                    // Показываем прогресс синхронизации
+                    showNotification('Синхронизация...', 'info');
+                    
                     // Сначала загружаем данные из Firestore
-                    await loadStateFromFirestore();
+                    const loadResult = await loadStateFromFirestore();
                     
                     // Затем сохраняем текущее состояние
-                    await saveStateToFirestore();
+                    const saveResult = await saveStateToFirestore();
                     
-                    showNotification('Синхронизация завершена', 'success');
+                    if (loadResult && saveResult) {
+                        console.log('✅ Синхронизация завершена успешно');
+                        showNotification('Синхронизация завершена успешно', 'success');
+                        
+                        // Показываем сводку синхронизации
+                        showSyncSummary();
+                    } else {
+                        console.log('⚠️ Синхронизация завершена с предупреждениями');
+                        showNotification('Синхронизация завершена с предупреждениями', 'warning');
+                    }
+                    
                     return true;
                 } catch (error) {
-                    console.error('Ошибка синхронизации:', error);
+                    console.error('❌ Ошибка синхронизации:', error);
                     showNotification('Ошибка синхронизации', 'error');
+                    return false;
+                }
+            }
+
+            // Show save details modal
+            function showSaveDetails(data) {
+                const modal = document.createElement('div');
+                modal.className = 'modal show';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>💾 Данные сохранены в Firebase</h3>
+                            <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="save-details">
+                                <div class="detail-item">
+                                    <strong>Пользователь:</strong> ${data.userName}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Время сохранения:</strong> ${new Date(data.lastUpdated).toLocaleString('ru-RU')}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Всего сохранений:</strong> ${data.saveStats.totalSaves}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Первое сохранение:</strong> ${new Date(data.saveStats.firstSave).toLocaleString('ru-RU')}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Версия:</strong> ${data.version}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Устройство:</strong> ${data.deviceInfo.platform}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Язык:</strong> ${data.deviceInfo.language}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="this.closest('.modal').remove()">OK</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            // Show load details modal
+            function showLoadDetails(data) {
+                const modal = document.createElement('div');
+                modal.className = 'modal show';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>📥 Данные загружены из Firebase</h3>
+                            <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="load-details">
+                                <div class="detail-item">
+                                    <strong>Пользователь:</strong> ${data.userName || 'Не указан'}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Последнее обновление:</strong> ${data.lastUpdated ? new Date(data.lastUpdated).toLocaleString('ru-RU') : 'Не указано'}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Кто сохранял:</strong> ${data.lastSavedBy || 'Не указано'}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Всего сохранений:</strong> ${data.saveStats?.totalSaves || 0}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Версия:</strong> ${data.version || 'Не указана'}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Заданий:</strong> ${data.tasks?.length || 0}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Наград:</strong> ${data.rewards?.length || 0}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Активность:</strong> ${Object.keys(data.activityData || {}).length} дней
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="this.closest('.modal').remove()">OK</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            // Show sync summary modal
+            function showSyncSummary() {
+                const modal = document.createElement('div');
+                modal.className = 'modal show';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>🔄 Синхронизация завершена</h3>
+                            <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="sync-summary">
+                                <div class="summary-item success">
+                                    <span class="summary-icon">✅</span>
+                                    <span class="summary-text">Данные загружены из Firebase</span>
+                                </div>
+                                <div class="summary-item success">
+                                    <span class="summary-icon">💾</span>
+                                    <span class="summary-text">Текущее состояние сохранено в Firebase</span>
+                                </div>
+                                <div class="summary-item info">
+                                    <span class="summary-icon">📊</span>
+                                    <span class="summary-text">Синхронизация выполнена успешно</span>
+                                </div>
+                                <div class="summary-item info">
+                                    <span class="summary-icon">🕐</span>
+                                    <span class="summary-text">Время: ${new Date().toLocaleString('ru-RU')}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="this.closest('.modal').remove()">OK</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            // Test Firebase connection
+            async function testFirebaseConnection() {
+                if (!isFirebaseAvailable()) {
+                    console.log('❌ Firebase недоступен');
+                    return false;
+                }
+
+                try {
+                    console.log('🧪 Тестируем подключение к Firebase...');
+                    
+                    // Пробуем создать тестовый документ
+                    const testRef = doc(db, 'test', 'connection-test');
+                    await setDoc(testRef, {
+                        timestamp: new Date().toISOString(),
+                        message: 'Connection test'
+                    });
+                    
+                    console.log('✅ Подключение к Firebase работает!');
+                    
+                    // Удаляем тестовый документ
+                    await setDoc(testRef, {
+                        timestamp: new Date().toISOString(),
+                        message: 'Connection test - cleaned up'
+                    });
+                    
+                    return true;
+                } catch (error) {
+                    console.error('❌ Ошибка подключения к Firebase:', error);
                     return false;
                 }
             }

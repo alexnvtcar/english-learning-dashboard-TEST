@@ -29,9 +29,17 @@
                     🚪
                     Выйти из профиля
                 </div>
+                <div class="settings-item" onclick="saveStateToFirestore()">
+                    💾
+                    Сохранить в Firebase
+                </div>
                 <div class="settings-item" onclick="syncWithFirestore()">
                     🔄
                     Синхронизировать
+                </div>
+                <div class="settings-item" onclick="testFirebaseConnection()">
+                    🧪
+                    Тест Firebase
                 </div>
                                  <div class="settings-item" onclick="exportData()">
                      💾
@@ -1108,6 +1116,22 @@
             window.setDoc = setDoc;
             window.getDoc = getDoc;
             window.collection = collection;
+            
+            // Debug logging
+            console.log('🔥 Firebase initialized successfully!');
+            console.log('📱 App ID:', firebaseConfig.appId);
+            console.log('🌐 Project ID:', firebaseConfig.projectId);
+            console.log('💾 Firestore DB:', db);
+            console.log('🔧 Available functions:', { doc, setDoc, getDoc, collection });
+            
+            // Check if Firebase is available globally
+            if (window.db && window.doc && window.setDoc && window.getDoc) {
+                console.log('✅ Firebase functions are globally available');
+                window.firebaseReady = true;
+            } else {
+                console.error('❌ Firebase functions are not properly exposed');
+                window.firebaseReady = false;
+            }
         </script>
         
         <!-- App Script -->

@@ -1371,4 +1371,68 @@
                 transform: none;
                 box-shadow: none;
             }
+            
+            /* Save/Load Details Modal Styles */
+            .save-details,
+            .load-details {
+                padding: 16px 0;
+            }
+            
+            .detail-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .detail-item:last-child {
+                border-bottom: none;
+            }
+            
+            .detail-item strong {
+                color: #374151;
+                font-weight: 600;
+            }
+            
+            .detail-item:not(strong) {
+                color: #6b7280;
+                text-align: right;
+            }
+            
+            /* Sync Summary Styles */
+            .sync-summary {
+                padding: 16px 0;
+            }
+            
+            .summary-item {
+                display: flex;
+                align-items: center;
+                padding: 12px 0;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .summary-item:last-child {
+                border-bottom: none;
+            }
+            
+            .summary-icon {
+                font-size: 1.2rem;
+                margin-right: 12px;
+                width: 24px;
+                text-align: center;
+            }
+            
+            .summary-text {
+                color: #374151;
+                font-weight: 500;
+            }
+            
+            .summary-item.success {
+                color: #059669;
+            }
+            
+            .summary-item.info {
+                color: #3b82f6;
+            }
         
