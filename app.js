@@ -231,10 +231,10 @@
 
             const STORAGE_KEY = 'english-learning-app-state-v1';
             const IDEAS_KEY = 'english-learning-reward-ideas-v1';
-            // Save state locally and optionally to Firebase
-            function saveState(saveToFirebase = false) {
+            // Save state locally only (no automatic Firebase saving)
+            function saveState() {
                 try {
-                    console.log('💾 Сохраняем состояние...');
+                    console.log('💾 Сохраняем состояние локально...');
                     
                     // Сохраняем локально
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
@@ -243,14 +243,6 @@
                     localStorage.setItem('current-user', appState.userName);
                     
                     console.log('✅ Состояние сохранено локально');
-                    
-                    // Сохраняем в Firebase если запрошено и доступно
-                    if (saveToFirebase && navigator.onLine && appState.isVerified && isFirebaseAvailable()) {
-                        console.log('🔄 Запрашиваем сохранение в Firebase...');
-                        saveStateToFirestore().catch(error => {
-                            console.log('Ошибка сохранения в Firebase:', error);
-                        });
-                    }
                 } catch (e) {
                     console.error('❌ Ошибка сохранения состояния:', e);
                 }
@@ -343,7 +335,7 @@
                         renderWeeklyChart();
                         
                         console.log('✅ Данные успешно загружены из Firebase');
-                        showNotification('Данные загружены из Firebase', 'success');
+                        // Уведомление о загрузке показывается только при синхронизации
                         
                         // Показываем детальную информацию о загрузке
                         showLoadDetails(firestoreData);
@@ -351,7 +343,7 @@
                         return true;
                     } else {
                         console.log('📭 Данные пользователя не найдены в Firebase');
-                        showNotification('Данные пользователя не найдены в Firebase', 'info');
+                        // Уведомление показывается только при синхронизации
                         return false;
                     }
                 } catch (error) {
@@ -801,7 +793,7 @@
                 if (newOffset > 0) return; // prevent going to future
                 appState.progressView.weekOffset = newOffset;
                 updateProgressWeekSection();
-                saveState();
+                // Автоматическое сохранение отключено
             }
 
             function updateWeeklyStarsDisplayForXP(weeklyXP) {
@@ -923,7 +915,7 @@
                     appState.rewards = [];
                     renderRewards();
                     showNotification('Все награды удалены', 'info');
-                    saveState();
+                    // Автоматическое сохранение отключено
                 }
             }
 
@@ -1111,7 +1103,7 @@
                     generateCalendar();
                     updateDayActivity();
                     renderWeeklyChart();
-                    saveState();
+                    // Автоматическое сохранение отключено
 
                     taskElement.classList.remove("task-completed");
                 }, 600);
@@ -1136,7 +1128,7 @@
                         appState.tasks = [];
                         renderTasks();
                         showNotification('Все задания очищены', 'info');
-                        saveState();
+                        // Автоматическое сохранение отключено
                     }
                     document.getElementById("taskForm").reset();
                     return;
@@ -1161,7 +1153,7 @@
                 renderTasks();
                 hideTaskModal();
                 showNotification("Новое задание добавлено!", "success");
-                saveState();
+                // Автоматическое сохранение отключено
 
                 // Reset form
                 document.getElementById("taskForm").reset();
@@ -1197,7 +1189,7 @@
                 updateWeeklyStars();
                 hideRewardModal();
                 showNotification("Награда получена!", "success");
-                saveState();
+                // Автоматическое сохранение отключено
 
                 // Reset form
                 document.getElementById("rewardForm").reset();
@@ -1208,7 +1200,7 @@
                 appState.selectedDate = new Date(dateStr);
                 generateCalendar();
                 updateDayActivity();
-                saveState();
+                // Автоматическое сохранение отключено
                 renderWeeklyChart();
             }
 
@@ -1219,7 +1211,7 @@
                     1,
                 );
                 generateCalendar();
-                saveState();
+                // Автоматическое сохранение отключено
                 renderWeeklyChart();
             }
 
@@ -1443,7 +1435,7 @@
                     appState.tasks = appState.tasks.filter(task => task.id !== taskId);
                     renderTasks();
                     showNotification('Задание удалено', 'info');
-                    saveState();
+                    // Автоматическое сохранение отключено
                 }
             }
 
@@ -1475,7 +1467,7 @@
                 updateDayActivity();
                 renderWeeklyChart();
                 updateRedeemControls();
-                saveState();
+                // Автоматическое сохранение отключено
 
                 showNotification(`Активность удалена (-${deletedXP} XP)`, 'info');
             }
@@ -1547,7 +1539,7 @@
                     appState.tasks = [];
                     renderTasks();
                     showNotification('Все задания удалены', 'info');
-                    saveState();
+                    // Автоматическое сохранение отключено
                 }
             }
 
@@ -1578,7 +1570,7 @@
                         appState.userName = incoming.userName;
                     }
                     
-                    updateProgressDisplay(); renderTasks(); renderRewards(); generateCalendar(); updateDayActivity(); renderWeeklyChart(); updateRedeemControls(); saveState();
+                    updateProgressDisplay(); renderTasks(); renderRewards(); generateCalendar(); updateDayActivity(); renderWeeklyChart(); updateRedeemControls(); // Автоматическое сохранение отключено
                     showNotification('Состояние синхронизировано', 'success');
                 } catch (e) {
                     showNotification('Ошибка применения состояния', 'error');
@@ -1874,7 +1866,7 @@
                     renderWeeklyChart();
 
                     showNotification('Прогресс сброшен!', 'info');
-                    saveState();
+                    // Автоматическое сохранение отключено
                 }
                 toggleSettingsMenu();
             }
@@ -2508,11 +2500,8 @@
                     appState.userName = 'Admin';
                 }
                 
-                // Сохраняем состояние локально и в Firebase
-                saveState(true);
-                
-                // Сохраняем текущего пользователя отдельно
-                localStorage.setItem('current-user', appState.userName);
+                // Сохраняем состояние только локально
+                saveState();
                 
                 console.log(`✅ Учетная запись установлена: ${appState.userName} (${appState.role})`);
                 
@@ -2826,24 +2815,6 @@
                         // Применяем роли только после успешной верификации
                         applyRolePermissions();
                         
-                        // Автоматически загружаем данные из Firebase при входе
-                        if (navigator.onLine && isFirebaseAvailable()) {
-                            console.log('🔄 Автоматическая загрузка данных при входе...');
-                            loadStateFromFirestore().then(success => {
-                                if (success) {
-                                    console.log('✅ Данные загружены при входе');
-                                    showNotification('Данные загружены из Firebase', 'success');
-                                } else {
-                                    console.log('⚠️ Не удалось загрузить данные при входе');
-                                }
-                            }).catch(error => {
-                                console.log('❌ Ошибка загрузки данных при входе:', error);
-                            });
-                        }
-                        
-                        // Запускаем автосинхронизацию после входа
-                        startAutoSync();
-                        
                         showNotification('Вход выполнен успешно!', 'success');
                         
                         // Show welcome modal for Mikhail
@@ -2872,7 +2843,7 @@
                 
                 // Save PIN code
                 appState.pinCodes[appState.userName] = setupPin;
-                saveState(true); // Сохраняем в Firebase
+                saveState(); // Сохраняем только локально
                 
                 hideSetupPinModal();
                 
@@ -2885,19 +2856,6 @@
                     showNotification('PIN-код установлен успешно!', 'success');
                     // Auto-verify user
                     appState.isVerified = true;
-                    
-                    // Автоматически загружаем данные из Firebase при первой установке PIN
-                    if (navigator.onLine && isFirebaseAvailable()) {
-                        console.log('🔄 Загрузка данных при первой установке PIN...');
-                        loadStateFromFirestore().then(success => {
-                            if (success) {
-                                console.log('✅ Данные загружены при установке PIN');
-                                showNotification('Данные загружены из Firebase', 'success');
-                            }
-                        }).catch(error => {
-                            console.log('❌ Ошибка загрузки данных при установке PIN:', error);
-                        });
-                    }
                     
                     // Применяем роли после успешной установки PIN-кода
                     applyRolePermissions();
@@ -2921,7 +2879,7 @@
                 // Останавливаем автосинхронизацию
                 stopAutoSync();
                 
-                saveState();
+                // Автоматическое сохранение отключено
                 showNotification('Выход выполнен', 'info');
             }
 
@@ -3343,7 +3301,7 @@
                         renderWeeklyChart();
                         
                         console.log('✅ Данные успешно загружены из Firebase');
-                        showNotification('Данные загружены из Firebase', 'success');
+                        // Уведомление о загрузке показывается только при синхронизации
                         
                         // Показываем детальную информацию о загрузке
                         showLoadDetails(firestoreData);
@@ -3351,7 +3309,7 @@
                         return true;
                     } else {
                         console.log('📭 Данные пользователя не найдены в Firebase');
-                        showNotification('Данные пользователя не найдены в Firebase', 'info');
+                        // Уведомление показывается только при синхронизации
                         return false;
                     }
                 } catch (error) {
@@ -3403,6 +3361,7 @@
                     
                     if (loadResult) {
                         console.log('✅ Данные загружены из Firebase');
+                        showNotification('Данные загружены из Firebase', 'success');
                         
                         // Затем сохраняем текущее состояние (обновляем Firebase)
                         const saveResult = await saveStateToFirestore();
@@ -3712,18 +3671,8 @@
             let autoSyncInterval = null;
 
             function startAutoSync() {
-                if (autoSyncInterval) {
-                    clearInterval(autoSyncInterval);
-                }
-                
-                // Синхронизируем каждые 2 минуты
-                autoSyncInterval = setInterval(async () => {
-                    if (appState.isVerified && navigator.onLine) {
-                        await syncWithFirestore();
-                    }
-                }, 120000); // 2 минуты
-                
-                console.log('Автосинхронизация запущена');
+                // Автосинхронизация отключена - синхронизация только по кнопке
+                console.log('Автосинхронизация отключена');
             }
 
             function stopAutoSync() {
