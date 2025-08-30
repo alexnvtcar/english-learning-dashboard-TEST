@@ -4121,11 +4121,18 @@
                 console.log('Автосинхронизация отключена');
             }
 
-            function stopAutoSync() {
-                if (autoSyncInterval) {
-                    clearInterval(autoSyncInterval);
-                    autoSyncInterval = null;
-                    console.log('Автосинхронизация остановлена');
-                }
+                    function stopAutoSync() {
+            if (autoSyncInterval) {
+                clearInterval(autoSyncInterval);
+                autoSyncInterval = null;
+                console.log('Автосинхронизация остановлена');
             }
+        }
+
+        // Initialize the app when DOM is loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
         
