@@ -1,25 +1,26 @@
-﻿            // Available icons for tasks (replaced Font Awesome with emojis)
+﻿
+            // Available icons for tasks
             const availableIcons = [
-                { class: "📚", name: "Книга" },
-                { class: "✏️", name: "Карандаш" },
-                { class: "🎧", name: "Наушники" },
-                { class: "🎤", name: "Микрофон" },
-                { class: "👁️", name: "Глаз" },
-                { class: "🧠", name: "Мозг" },
-                { class: "💡", name: "Лампочка" },
-                { class: "⭐", name: "Звезда" },
-                { class: "🏆", name: "Трофей" },
-                { class: "🏅", name: "Медаль" },
-                { class: "🔥", name: "Огонь" },
-                { class: "🚀", name: "Ракета" },
-                { class: "🎓", name: "Диплом" },
-                { class: "👨‍🏫", name: "Учитель" },
-                { class: "🗣️", name: "Язык" },
-                { class: "✅", name: "Проверка" },
-                { class: "⏰", name: "Часы" },
-                { class: "🎯", name: "Цель" },
-                { class: "📈", name: "График" },
-                { class: "🎮", name: "Игра" }
+                { class: "fas fa-book", name: "Книга" },
+                { class: "fas fa-pencil-alt", name: "Карандаш" },
+                { class: "fas fa-headphones", name: "Наушники" },
+                { class: "fas fa-microphone", name: "Микрофон" },
+                { class: "fas fa-eye", name: "Глаз" },
+                { class: "fas fa-brain", name: "Мозг" },
+                { class: "fas fa-lightbulb", name: "Лампочка" },
+                { class: "fas fa-star", name: "Звезда" },
+                { class: "fas fa-trophy", name: "Трофей" },
+                { class: "fas fa-medal", name: "Медаль" },
+                { class: "fas fa-fire", name: "Огонь" },
+                { class: "fas fa-rocket", name: "Ракета" },
+                { class: "fas fa-graduation-cap", name: "Диплом" },
+                { class: "fas fa-chalkboard-teacher", name: "Учитель" },
+                { class: "fas fa-language", name: "Язык" },
+                { class: "fas fa-spell-check", name: "Проверка" },
+                { class: "fas fa-clock", name: "Часы" },
+                { class: "fas fa-target", name: "Цель" },
+                { class: "fas fa-chart-line", name: "График" },
+                { class: "fas fa-gamepad", name: "Игра" }
             ];
 
             // Application State
@@ -29,12 +30,6 @@
                     username: "demo",
                 },
                 role: 'viewer',
-                userName: 'Михаил',
-                pinCodes: {
-                    'Михаил': null,
-                    'Admin': null
-                },
-                isVerified: false,
                 progress: {
                     level: 15,
                     totalXP: 4250,
@@ -53,7 +48,7 @@
                         description: "Выучить 10 новых английских слов",
                         xpReward: 50,
                         duration: 15,
-                        icon: "📚",
+                        icon: "fas fa-book",
                         category: "vocabulary",
                     },
                     {
@@ -62,7 +57,7 @@
                         description: "Выполнить упражнения на Present Simple",
                         xpReward: 75,
                         duration: 20,
-                        icon: "✏️",
+                        icon: "fas fa-pencil-alt",
                         category: "grammar",
                     },
                     {
@@ -71,7 +66,7 @@
                         description: "Прослушать диалог и ответить на вопросы",
                         xpReward: 60,
                         duration: 25,
-                        icon: "🎧",
+                        icon: "fas fa-headphones",
                         category: "listening",
                     },
                 ],
@@ -170,7 +165,6 @@
 
                 return {
                     user: appState.user,
-                    userName: appState.userName || 'Михаил',
                     progress: {
                         level,
                         totalXP,
@@ -237,10 +231,6 @@
                         if (saved.currentMonth) appState.currentMonth = new Date(saved.currentMonth);
                         if (saved.selectedDate) appState.selectedDate = new Date(saved.selectedDate);
                     }
-                    // Устанавливаем userName по умолчанию, если он не задан
-                    if (!appState.userName) {
-                        appState.userName = 'Михаил';
-                    }
                 } catch (e) {
                     // ignore parse errors
                 }
@@ -248,38 +238,17 @@
 
             function applyRolePermissions() {
                 const isViewer = appState.role === 'viewer';
-                const isMikhail = appState.userName === 'Михаил';
-                
-                // Отключаем только функции наград для не-Михаила (но сохраняем функционал Админа)
-                const rewardControls = [
-                    'button[onclick^="showRewardModal"]',
-                    'button[onclick^="showIdeaModal"]',
-                ];
-                rewardControls.forEach(sel => document.querySelectorAll(sel).forEach(el => {
-                    if (el && el.closest) {
-                        // Отключаем элементы наград только для пользователей, которые НЕ Михаил
-                        if (!isMikhail && !el.closest('#accountModal') && !el.closest('.progress-container')) {
-                            el.setAttribute('disabled', 'true');
-                            el.style.pointerEvents = 'none';
-                            el.style.opacity = '0.6';
-                        } else {
-                            el.removeAttribute('disabled');
-                            el.style.pointerEvents = '';
-                            el.style.opacity = '';
-                        }
-                    }
-                }));
-                
-                // Для Админа сохраняем полный функционал управления заданиями и прогрессом
-                const adminControls = [
+                // Disable interactive controls for viewer (avoid disabling account modal and progress navigation)
+                const controls = [
                     '.btn-icon-delete', '.activity-delete',
                     'button[onclick^="showTaskModal"]',
+                    'button[onclick^="showRewardModal"]',
+                    'button[onclick^="showIdeaModal"]',
                     '#settingsMenu .settings-item.danger',
                     '#importFile',
                 ];
-                adminControls.forEach(sel => document.querySelectorAll(sel).forEach(el => {
+                controls.forEach(sel => document.querySelectorAll(sel).forEach(el => {
                     if (el && el.closest) {
-                        // Отключаем элементы только для viewer (Михаил), но не для Админа
                         if (isViewer && !el.closest('#accountModal') && !el.closest('.progress-container')) {
                             el.setAttribute('disabled', 'true');
                             el.style.pointerEvents = 'none';
@@ -291,7 +260,6 @@
                         }
                     }
                 }));
-                
                 // Special case: allow progress navigation for viewer
                 const progressNav = document.querySelectorAll('#weekPrevBtn, #weekNextBtn');
                 progressNav.forEach(el => {
@@ -321,36 +289,21 @@
 
             // Welcome modal texts (random unique praise each time)
             const welcomePhrases = [
-                "Fantastic start, {name}! Every click is a step toward fluency—keep shining!",
-                "{name}, your consistency is impressive—today's effort will compound into greatness!",
-                "Brilliant move, {name}! Your dedication to English is what champions are made of.",
-                "{name}, you're unstoppable! Each lesson sharpens your mind and your voice.",
-                "Outstanding, {name}! You're building a skill that will open doors everywhere.",
-                "Great energy, {name}! Turning intention into action—this is how mastery begins.",
-                "{name}, amazing focus! Your future self will thank you for this exact moment.",
-                "Superb, {name}! Small wins daily create extraordinary results—let's go!",
-                "You rock, {name}! Today's practice brings you closer to confident English.",
-                "Impressive, {name}! Momentum is yours—one task at a time to the top!"
+                "Fantastic start, Mikhail! Every click is a step toward fluency—keep shining!",
+                "Mikhail, your consistency is impressive—today's effort will compound into greatness!",
+                "Brilliant move, Mikhail! Your dedication to English is what champions are made of.",
+                "Mikhail, you're unstoppable! Each lesson sharpens your mind and your voice.",
+                "Outstanding, Mikhail! You're building a skill that will open doors everywhere.",
+                "Great energy, Mikhail! Turning intention into action—this is how mastery begins.",
+                "Mikhail, amazing focus! Your future self will thank you for this exact moment.",
+                "Superb, Mikhail! Small wins daily create extraordinary results—let's go!",
+                "You rock, Mikhail! Today's practice brings you closer to confident English.",
+                "Impressive, Mikhail! Momentum is yours—one task at a time to the top!"
             ];
 
             function showWelcomeModal() {
-                // Получаем текущее состояние (включая демо-режим)
-                const currentState = getEffectiveState();
-                
-                // Показываем приветствие только для Михаила
-                if (currentState.userName !== 'Михаил') {
-                    return;
-                }
-                
                 const idx = Math.floor(Math.random() * welcomePhrases.length);
-                const msg = welcomePhrases[idx].replace('{name}', currentState.userName || 'Михаил');
-                
-                // Обновляем заголовок модального окна
-                const welcomeTitle = document.getElementById('welcomeModalTitle');
-                if (welcomeTitle) {
-                    welcomeTitle.textContent = `Welcome, ${currentState.userName}!`;
-                }
-                
+                const msg = welcomePhrases[idx];
                 const welcomeEl = document.getElementById('welcomeMessage');
                 if (welcomeEl) welcomeEl.textContent = msg;
                 document.getElementById('welcomeModal').classList.add('show');
@@ -393,7 +346,7 @@
                     <div class="autocomplete-item" data-value="${escapeHTML(i)}">
                         <div class="autocomplete-text">${escapeHTML(i)}</div>
                         <button class="autocomplete-remove" aria-label="Удалить сохраненный вариант" data-remove="${escapeHTML(i)}">
-                            ❌
+                            <i class="fas fa-times"></i>
                         </button>
                     </div>
                 `).join('');
@@ -723,7 +676,7 @@
                 <div class="task-item">
                     <div class="task-info" onclick="completeTask(event, ${task.id})" onkeydown="if(event.key==='Enter'||event.key===' '){completeTask(event, ${task.id})}" role="button" tabindex="0" style="flex: 1; cursor: pointer;">
                         <div class="task-icon">
-                            ${task.icon}
+                            <i class="${task.icon}"></i>
                         </div>
                         <div class="task-details">
                             <h4>${escapeHTML(task.name)}</h4>
@@ -732,11 +685,11 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <div class="task-reward">
-                            ⭐
+                            <i class="fas fa-star" style="color: #fbbf24;"></i>
                             +${task.xpReward} XP
                         </div>
                         <button class="btn-icon-delete" onclick="deleteTask(${task.id})" title="Удалить задание" aria-label="Удалить задание">
-                            🗑️
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
@@ -760,8 +713,8 @@
                 const cards = appState.rewards.slice(-9).reverse().map(reward => `
                     <div class="reward-card" title="${new Date(reward.redeemedAt).toLocaleDateString('ru-RU')}">
                         <div class="rc-top">
-                            <span class="reward-chip">⭐ -${reward.starsUsed} ⭐</span>
-                            🎁
+                            <span class="reward-chip"><i class="fas fa-star"></i> -${reward.starsUsed} ⭐</span>
+                            <i class="fas fa-gift" style="color:#1e40af;"></i>
                         </div>
                         <div class="reward-title">${escapeHTML(reward.description)}</div>
                         <div class="reward-date-2">${new Date(reward.redeemedAt).toLocaleDateString('ru-RU')}</div>
@@ -871,7 +824,7 @@
                             <div class="activity-item" data-date="${selectedDateStr}" data-index="${index}">
                                 ${escapeHTML(log.taskName)} (+${log.xpEarned} XP)
                                 <button class="activity-delete" onclick="deleteActivity('${selectedDateStr}', ${index})" title="Удалить запись активности" aria-label="Удалить запись активности">
-                                    ❌
+                                    <i class="fas fa-times"></i>
                                 </button>
                             </div>
                         `,
@@ -1071,7 +1024,7 @@
                          onclick="selectIcon(${index})" 
                          title="${icon.name}"
                          data-icon="${icon.class}">
-                        ${icon.class}
+                        <i class="${icon.class}"></i>
                     </div>
                 `).join('');
             }
@@ -1091,7 +1044,7 @@
 
             function getSelectedIcon() {
                 const selectedOption = document.querySelector('.icon-option.selected');
-                return selectedOption ? selectedOption.getAttribute('data-icon') : '📚';
+                return selectedOption ? selectedOption.getAttribute('data-icon') : 'fas fa-book';
             }
 
             // Modal Functions
@@ -1220,10 +1173,6 @@
 
                 // Force account selection (always show on load, default viewer)
                 if (!appState.role) appState.role = 'viewer';
-                // Устанавливаем userName по умолчанию, если он не задан
-                if (!appState.userName) {
-                    appState.userName = 'Михаил';
-                }
                 document.getElementById('accountModal').classList.add('show');
 
                 updateProgressDisplay();
@@ -1234,7 +1183,7 @@
                 renderWeeklyChart();
                 updateRedeemControls();
                 populateIconSelector(); // Initialize icon selector
-                // Приветствие показывается только при выборе роли, не автоматически
+                if (appState.role === 'viewer') showWelcomeModal();
                 applyRolePermissions();
             }
 
@@ -1373,12 +1322,6 @@
                     appState.activityData = incoming.activityData || {};
                     appState.rewardPlan = incoming.rewardPlan || { description: '' };
                     appState.resetDate = incoming.resetDate ? new Date(incoming.resetDate) : (appState.resetDate || new Date());
-                    
-                    // Сохраняем имя пользователя, если оно есть в импортируемых данных
-                    if (incoming.userName) {
-                        appState.userName = incoming.userName;
-                    }
-                    
                     updateProgressDisplay(); renderTasks(); renderRewards(); generateCalendar(); updateDayActivity(); renderWeeklyChart(); updateRedeemControls(); saveState();
                     showNotification('Состояние синхронизировано', 'success');
                 } catch (e) {
@@ -1404,8 +1347,6 @@
                     activityData: appState.activityData,
                     rewardPlan: appState.rewardPlan,
                     resetDate: appState.resetDate,
-                    userName: appState.userName,
-                    pinCodes: appState.pinCodes,
                     exportDate: new Date().toISOString(),
                     version: '1.0'
                 };
@@ -1463,8 +1404,6 @@
                         activityData: appState.activityData,
                         rewardPlan: appState.rewardPlan,
                         resetDate: appState.resetDate,
-                        userName: appState.userName,
-                        pinCodes: appState.pinCodes,
                         version: '1.0'
                     }
                 };
@@ -1485,8 +1424,8 @@
                     <div class=\"reward-card\" style=\"margin-bottom:8px;\">
                         <div class=\"rc-top\"><div class=\"reward-title\">${escapeHTML(s.title || ('Слепок #' + s.id))}</div><div class=\"reward-date-2\">${new Date(s.createdAt).toLocaleString('ru-RU')}</div></div>
                         <div style=\"display:flex; gap:8px; justify-content:flex-end; margin-top:6px;\">
-                            <button class=\"btn btn-secondary\" data-id=\"${s.id}\">👁️ Просмотр</button>
-                            <button class=\"btn btn-primary\" data-apply=\"${s.id}\">✅ Применить</button>
+                            <button class=\"btn btn-secondary\" data-id=\"${s.id}\"><i class=\"fas fa-eye\"></i> Просмотр</button>
+                            <button class=\"btn btn-primary\" data-apply=\"${s.id}\"><i class=\"fas fa-check\"></i> Применить</button>
                         </div>
                     </div>
                 `).join('');
@@ -1511,12 +1450,6 @@
                 appState.activityData = importedData.activityData || {};
                 appState.rewardPlan = importedData.rewardPlan || { description: '' };
                 appState.resetDate = importedData.resetDate ? new Date(importedData.resetDate) : (appState.resetDate || new Date());
-                if (importedData.userName) {
-                    appState.userName = importedData.userName;
-                }
-                if (importedData.pinCodes) {
-                    appState.pinCodes = { ...appState.pinCodes, ...importedData.pinCodes };
-                }
                 updateProgressDisplay(); renderTasks(); renderRewards(); generateCalendar(); updateDayActivity(); renderWeeklyChart(); updateRedeemControls(); saveState();
                 showNotification('Слепок применен', 'success');
             }
@@ -1579,16 +1512,6 @@
                         appState.activityData = importedData.activityData || {};
                         appState.rewardPlan = importedData.rewardPlan || { description: "" };
                         appState.resetDate = importedData.resetDate ? new Date(importedData.resetDate) : (appState.resetDate || new Date());
-                        
-                        // Сохраняем имя пользователя, если оно есть в импортируемых данных
-                        if (importedData.userName) {
-                            appState.userName = importedData.userName;
-                        }
-                        
-                        // Сохраняем PIN-коды, если они есть в импортируемых данных
-                        if (importedData.pinCodes) {
-                            appState.pinCodes = { ...appState.pinCodes, ...importedData.pinCodes };
-                        }
 
                         // Update UI
                         updateProgressDisplay();
@@ -1630,7 +1553,7 @@
                             description: "Выучить 10 новых английских слов",
                             xpReward: 50,
                             duration: 15,
-                            icon: "📚",
+                            icon: "fas fa-book",
                             category: "vocabulary",
                         },
                         {
@@ -1639,7 +1562,7 @@
                             description: "Выполнить упражнения на Present Simple",
                             xpReward: 75,
                             duration: 20,
-                            icon: "✏️",
+                            icon: "fas fa-pencil-alt",
                             category: "grammar",
                         },
                         {
@@ -1648,7 +1571,7 @@
                             description: "Прослушать диалог и ответить на вопросы",
                             xpReward: 60,
                             duration: 25,
-                            icon: "🎧",
+                            icon: "fas fa-headphones",
                             category: "listening",
                         }
                     ];
@@ -1656,15 +1579,6 @@
                     appState.rewards = [];
                     appState.activityData = {};
                     appState.resetDate = new Date();
-                    
-                    // Сбрасываем имя пользователя к значению по умолчанию
-                    appState.userName = 'Михаил';
-                    
-                    // Сбрасываем PIN-коды
-                    appState.pinCodes = {
-                        'Михаил': null,
-                        'Admin': null
-                    };
 
                     // Update UI
                     updateProgressDisplay();
@@ -2283,23 +2197,11 @@
             // Account selection & role handling
             function selectAccount(role) {
                 appState.role = role === 'admin' ? 'admin' : 'viewer';
-                
-                // Устанавливаем имя пользователя в зависимости от роли
-                if (role === 'viewer') {
-                    appState.userName = 'Михаил';
-                } else {
-                    appState.userName = 'Admin';
-                }
-                
                 saveState();
                 document.getElementById('accountModal').classList.remove('show');
                 applyRolePermissions();
-                
-                // Показываем верификацию для входа
-                appState.isVerified = false;
-                showVerificationModal();
-                
-                showNotification(appState.userName === 'Михаил' ? 'Режим Михаила' : 'Режим администратора', 'info');
+                if (appState.role === 'viewer') showWelcomeModal();
+                showNotification(appState.role === 'admin' ? 'Режим администратора' : 'Режим просмотра', 'info');
             }
 
             // Change Account Modal
@@ -2358,218 +2260,5 @@
                 ctx.fillRect(0, size - gridSize * 3, gridSize * 3, gridSize * 3);
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(gridSize, size - gridSize * 2, gridSize, gridSize);
-            }
-
-            // PIN Code Management Functions
-            let currentPin = '';
-            let setupPin = '';
-            let setupPinStep = 1; // 1 = first entry, 2 = confirmation
-
-
-
-            // Show verification modal
-            function showVerificationModal() {
-                const userInfo = document.getElementById('verificationUserInfo');
-                const setupSection = document.getElementById('setupPinSection');
-                
-                if (userInfo) userInfo.textContent = appState.userName;
-                
-                // Check if user has PIN code
-                const hasPin = appState.pinCodes[appState.userName];
-                if (hasPin) {
-                    setupSection.style.display = 'none';
-                } else {
-                    setupSection.style.display = 'block';
-                }
-                
-                resetPinInput();
-                document.getElementById('verificationModal').classList.add('show');
-            }
-
-            // Hide verification modal
-            function hideVerificationModal() {
-                document.getElementById('verificationModal').classList.remove('show');
-                resetPinInput();
-            }
-
-            // Show setup PIN modal
-            function showSetupPinModal() {
-                const userInfo = document.getElementById('setupPinUserInfo');
-                if (userInfo) userInfo.textContent = appState.userName;
-                
-                resetSetupPinInput();
-                document.getElementById('setupPinModal').classList.add('show');
-            }
-
-            // Hide setup PIN modal
-            function hideSetupPinModal() {
-                document.getElementById('setupPinModal').classList.remove('show');
-                resetSetupPinInput();
-            }
-
-            // Show change PIN modal
-            function showChangePinModal() {
-                // First verify current PIN
-                showVerificationModal();
-            }
-
-            // Add digit to PIN input
-            function addPinDigit(digit) {
-                if (currentPin.length < 4) {
-                    currentPin += digit;
-                    updatePinDisplay();
-                    updateVerifyButton();
-                }
-            }
-
-            // Delete digit from PIN input
-            function deletePinDigit() {
-                if (currentPin.length > 0) {
-                    currentPin = currentPin.slice(0, -1);
-                    updatePinDisplay();
-                    updateVerifyButton();
-                }
-            }
-
-            // Add digit to setup PIN input
-            function addSetupPinDigit(digit) {
-                if (setupPin.length < 4) {
-                    setupPin += digit;
-                    updateSetupPinDisplay();
-                    updateSetupButton();
-                }
-            }
-
-            // Delete digit from setup PIN input
-            function deleteSetupPinDigit() {
-                if (setupPin.length > 0) {
-                    setupPin = setupPin.slice(0, -1);
-                    updateSetupPinDisplay();
-                    updateSetupButton();
-                }
-            }
-
-            // Update PIN display dots
-            function updatePinDisplay() {
-                for (let i = 1; i <= 4; i++) {
-                    const dot = document.getElementById(`pinDot${i}`);
-                    if (dot) {
-                        if (i <= currentPin.length) {
-                            dot.classList.add('filled');
-                        } else {
-                            dot.classList.remove('filled');
-                        }
-                    }
-                }
-            }
-
-            // Update setup PIN display dots
-            function updateSetupPinDisplay() {
-                for (let i = 1; i <= 4; i++) {
-                    const dot = document.getElementById(`setupPinDot${i}`);
-                    if (dot) {
-                        if (i <= setupPin.length) {
-                            dot.classList.add('filled');
-                        } else {
-                            dot.classList.remove('filled');
-                        }
-                    }
-                }
-            }
-
-            // Reset PIN input
-            function resetPinInput() {
-                currentPin = '';
-                updatePinDisplay();
-                updateVerifyButton();
-            }
-
-            // Reset setup PIN input
-            function resetSetupPinInput() {
-                setupPin = '';
-                setupPinStep = 1;
-                updateSetupPinDisplay();
-                updateSetupButton();
-            }
-
-            // Update verify button state
-            function updateVerifyButton() {
-                const btn = document.getElementById('verifyBtn');
-                if (btn) {
-                    btn.disabled = currentPin.length !== 4;
-                }
-            }
-
-            // Update setup button state
-            function updateSetupButton() {
-                const btn = document.getElementById('confirmSetupBtn');
-                if (btn) {
-                    btn.disabled = setupPin.length !== 4;
-                }
-            }
-
-            // Verify PIN code
-            function verifyPin() {
-                const storedPin = appState.pinCodes[appState.userName];
-                
-                if (!storedPin) {
-                    showNotification('PIN-код не установлен', 'error');
-                    return;
-                }
-                
-                if (currentPin === storedPin) {
-                    appState.isVerified = true;
-                    hideVerificationModal();
-                    showNotification('Вход выполнен успешно!', 'success');
-                    
-                    // Show welcome modal for Mikhail
-                    if (appState.userName === 'Михаил') {
-                        showWelcomeModal();
-                    }
-                } else {
-                    showNotification('Неверный PIN-код', 'error');
-                    resetPinInput();
-                }
-            }
-
-            // Setup new PIN code
-            function setupNewPin() {
-                hideVerificationModal();
-                showSetupPinModal();
-            }
-
-            // Confirm setup PIN code
-            function confirmSetupPin() {
-                if (setupPin.length !== 4) {
-                    showNotification('PIN-код должен содержать 4 цифры', 'error');
-                    return;
-                }
-                
-                // Save PIN code
-                appState.pinCodes[appState.userName] = setupPin;
-                saveState();
-                
-                hideSetupPinModal();
-                showNotification('PIN-код установлен успешно!', 'success');
-                
-                // Auto-verify user
-                appState.isVerified = true;
-                
-                // Show welcome modal for Mikhail
-                if (appState.userName === 'Михаил') {
-                    showWelcomeModal();
-                }
-            }
-
-            // Check if user needs verification
-            function needsVerification() {
-                return !appState.isVerified;
-            }
-
-            // Logout user
-            function logoutUser() {
-                appState.isVerified = false;
-                saveState();
-                showNotification('Выход выполнен', 'info');
             }
         

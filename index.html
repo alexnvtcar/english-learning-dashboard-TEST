@@ -11,43 +11,35 @@
         <!-- Settings Panel -->
         <div class="settings-panel">
             <button class="settings-btn" onclick="toggleSettingsMenu()" aria-label="Открыть настройки" aria-haspopup="true" aria-expanded="false">
-                ⚙️
+                <i class="fas fa-cog"></i>
             </button>
             <button class="analytics-btn" onclick="showAnalyticsModal()" aria-label="Открыть аналитику" title="Аналитика и статистика">
-                📊
+                <i class="fas fa-chart-line"></i>
             </button>
             <div class="settings-menu" id="settingsMenu">
                 <div class="settings-item" onclick="showChangeAccountModal()">
-                    👤
+                    <i class="fas fa-user-shield"></i>
                     Сменить учетную запись
                 </div>
-                <div class="settings-item" onclick="showChangePinModal()">
-                    🔐
-                    Сменить PIN-код
-                </div>
-                <div class="settings-item" onclick="logoutUser()">
-                    🚪
-                    Выйти из профиля
-                </div>
                                  <div class="settings-item" onclick="exportData()">
-                     💾
+                     <i class="fas fa-download"></i>
                      Экспорт данных
                  </div>
                  <div class="settings-item" onclick="document.getElementById('importFile').click()">
-                     📤
+                     <i class="fas fa-upload"></i>
                      Импорт данных
                  </div>
                  
                  <div class="settings-item danger" onclick="clearTasks()">
-                     🗑️
+                     <i class="fas fa-trash"></i>
                      Очистить задания
                  </div>
                  <div class="settings-item danger" onclick="clearRewards()">
-                     🎁
+                     <i class="fas fa-gift"></i>
                      Очистить награды
                  </div>
                  <div class="settings-item danger" onclick="resetProgress()">
-                     🔄
+                     <i class="fas fa-arrows-rotate"></i>
                      Сбросить прогресс
                  </div>
             </div>
@@ -68,9 +60,9 @@
             <!-- Stats Overview -->
             <div class="grid grid-cols-3">
                 <div class="card stat-card">
-                                    <div class="stat-icon">
-                    🏆
-                </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
                     <div class="stat-label">Текущий уровень</div>
                     <div class="stat-value" id="currentLevel">15</div>
                     <div style="font-size: 0.875rem; color: #64748b">
@@ -79,18 +71,18 @@
                 </div>
 
                 <div class="card stat-card">
-                                    <div class="stat-icon">
-                    ⭐
-                </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
                     <div class="stat-label">Общий опыт</div>
                     <div class="stat-value" id="totalXP">4250</div>
                     <div style="font-size: 0.875rem; color: #64748b">XP</div>
                 </div>
 
                 <div class="card stat-card">
-                                    <div class="stat-icon">
-                    🔥
-                </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-fire"></i>
+                    </div>
                     <div class="stat-label">Серия</div>
                     <div class="stat-value" id="currentStreak">0 / 0</div>
                     <div id="streakSubtitle" style="font-size: 0.875rem; color: #64748b">
@@ -104,7 +96,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">
-                            📊
+                            <i class="fas fa-chart-line"></i>
                             Прогресс обучения
                         </h2>
                     </div>
@@ -113,13 +105,13 @@
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px;">
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <button class="calendar-nav" id="weekPrevBtn" onclick="changeWeek(-1)" title="Предыдущая неделя">
-                                    ◀️
+                                    <i class="fas fa-chevron-left"></i>
                                 </button>
                                 <div class="month-title" id="weekRangeLabel" style="text-align:left; min-width: 220px;">
                                     Текущая неделя
                                 </div>
                                 <button class="calendar-nav" id="weekNextBtn" onclick="changeWeek(1)" title="Следующая неделя">
-                                    ▶️
+                                    <i class="fas fa-chevron-right"></i>
                                 </button>
                             </div>
                         </div>
@@ -223,14 +215,14 @@
                         "
                     >
                         <h2 class="card-title">
-                            📋
+                            <i class="fas fa-tasks"></i>
                             Задания
                         </h2>
                         <button
                             class="btn btn-primary"
                             onclick="showTaskModal()"
                         >
-                            ➕
+                            <i class="fas fa-plus"></i>
                             Добавить
                         </button>
                     </div>
@@ -246,7 +238,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">
-                            🏅
+                            <i class="fas fa-medal"></i>
                             Достижения и награды
                         </h2>
                     </div>
@@ -266,11 +258,11 @@
                         </h3>
                         <div class="achievements">
                             <div class="achievement-badge">
-                                🔥
+                                <i class="fas fa-fire"></i>
                                 Огненная серия
                             </div>
                             <div class="achievement-badge">
-                                ⭐
+                                <i class="fas fa-star"></i>
                                 Первые шаги
                             </div>
                         </div>
@@ -283,17 +275,17 @@
                             </h3>
                             <div style="display:flex; gap: 8px; flex-wrap: wrap;">
                                 <div class="redeem-stars-container" aria-label="Банк звезд" title="Ваши накопленные звезды для награды">
-                                    <span class="redeem-star" id="bankStar1">⭐</span>
-                                    <span class="redeem-star" id="bankStar2">⭐</span>
-                                    <span class="redeem-star" id="bankStar3">⭐</span>
+                                    <i class="fas fa-star redeem-star" id="bankStar1"></i>
+                                    <i class="fas fa-star redeem-star" id="bankStar2"></i>
+                                    <i class="fas fa-star redeem-star" id="bankStar3"></i>
                                 </div>
                                 <div style="min-width: 70px; text-align: right; font-weight:600; color:#1e40af;" id="bankStarsText">0 ⭐</div>
                                 <button class="btn btn-secondary" id="ideaBtn" onclick="showIdeaModal()" title="Придумать и сохранить награду">
-                                    💡
+                                    <i class="fas fa-lightbulb"></i>
                                     Придумать награду
                                 </button>
                                 <button class="btn btn-primary" onclick="showRewardModal()" id="redeemBtn">
-                                    🎁
+                                    <i class="fas fa-gift"></i>
                                     Получить
                                 </button>
                             </div>
@@ -301,7 +293,7 @@
                         <div id="plannedRewardCard" style="display:none; background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:12px; border-radius:10px; margin-bottom:12px;">
                             <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
                                 <div style="display:flex; align-items:center; gap:8px; font-weight:600;">
-                                    ✏️
+                                    <i class="fas fa-pen-to-square"></i>
                                     Запланированная награда:
                                 </div>
                                 <div style="font-size:0.9rem; color:#78350f;" id="plannedRewardText">—</div>
@@ -326,20 +318,20 @@
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">
-                            📅
+                            <i class="fas fa-calendar-alt"></i>
                             Календарь активности
                         </h2>
                     </div>
 
                     <div class="calendar-header">
                         <button class="calendar-nav" onclick="changeMonth(-1)">
-                            ◀️
+                            <i class="fas fa-chevron-left"></i>
                         </button>
                         <div class="month-title" id="monthTitle">
                             Январь 2025
                         </div>
                         <button class="calendar-nav" onclick="changeMonth(1)">
-                            ▶️
+                            <i class="fas fa-chevron-right"></i>
                         </button>
                     </div>
 
@@ -502,7 +494,7 @@
                             Отмена
                         </button>
                         <button type="submit" class="btn btn-primary">
-                            ➕
+                            <i class="fas fa-plus"></i>
                             Добавить задание
                         </button>
                     </div>
@@ -523,7 +515,7 @@
                 <form id="rewardForm" onsubmit="addReward(event)">
                     <div class="form-group">
                         <label class="form-label">Запланированная награда</label>
-                 <div id="plannedRewardDisplay" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; color: #1e293b;">
+                        <div id="plannedRewardDisplay" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; color: #1e293b;">
                             —
                         </div>
                     </div>
@@ -540,9 +532,9 @@
                     </div>
 
                     <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
-                        <button type="button" class="btn btn-secondary" onclick="hideRewardModal()">❌ Отмена</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideRewardModal()"><i class="fas fa-times"></i> Отмена</button>
                         <button type="submit" class="btn btn-primary" id="confirmRedeemBtn">
-                            🎁
+                            <i class="fas fa-gift"></i>
                             Получить награду
                         </button>
                     </div>
@@ -566,11 +558,11 @@
                         </div>
                     </div>
                     <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
-                        <button type="button" class="btn btn-secondary" onclick="hideIdeaModal()">❌ Отмена</button>
-                                                    <button type="submit" class="btn btn-primary">
-                                ✅
-                                Сохранить
-                            </button>
+                        <button type="button" class="btn btn-secondary" onclick="hideIdeaModal()"><i class="fas fa-times"></i> Отмена</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check"></i>
+                            Сохранить
+                        </button>
                     </div>
                 </form>
             </div>
@@ -578,7 +570,7 @@
 
         <!-- Notification -->
         <div class="notification" id="notification" role="status" aria-live="polite" aria-atomic="true">
-            ✅
+            <i class="fas fa-check-circle"></i>
             <span id="notificationMessage"></span>
         </div>
 
@@ -590,112 +582,11 @@
                 </div>
                 <div style="display:flex; gap:12px; flex-direction:column;">
                     <button class="btn btn-primary" onclick="selectAccount('viewer')" style="justify-content:center;">
-                        👤 Михаил (только просмотр)
+                        <i class="fas fa-user"></i> Михаил (только просмотр)
                     </button>
                                          <button class="btn btn-secondary" onclick="selectAccount('admin')" style="justify-content:center; background: #fbbf24; color: #92400e; border-color: #f59e0b;">
-                         👑 Admin (полные права)
+                         <i class="fas fa-crown"></i> Admin (полные права)
                      </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Verification Modal -->
-        <div class="modal" id="verificationModal">
-            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="verificationModalTitle" style="max-width:400px; position:relative;">
-                <div class="modal-header">
-                    <h3 class="modal-title" id="verificationModalTitle">🔐 Верификация</h3>
-                </div>
-                <div style="text-align: center; padding: 20px 0;">
-                    <div style="margin-bottom: 20px;">
-                        <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">Введите PIN-код для входа в профиль</div>
-                        <div style="font-size: 16px; font-weight: 600; color: #1f2937;" id="verificationUserInfo">Михаил</div>
-                    </div>
-                    
-                    <!-- PIN Input Display -->
-                    <div style="margin-bottom: 24px;">
-                        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
-                            <div class="pin-dot" id="pinDot1"></div>
-                            <div class="pin-dot" id="pinDot2"></div>
-                            <div class="pin-dot" id="pinDot3"></div>
-                            <div class="pin-dot" id="pinDot4"></div>
-                        </div>
-                        <div style="font-size: 12px; color: #6b7280;" id="pinStatus">Введите 4-значный код</div>
-                    </div>
-                    
-                    <!-- Numeric Keypad -->
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 240px; margin: 0 auto;">
-                        <button class="pin-btn" onclick="addPinDigit('1')">1</button>
-                        <button class="pin-btn" onclick="addPinDigit('2')">2</button>
-                        <button class="pin-btn" onclick="addPinDigit('3')">3</button>
-                        <button class="pin-btn" onclick="addPinDigit('4')">4</button>
-                        <button class="pin-btn" onclick="addPinDigit('5')">5</button>
-                        <button class="pin-btn" onclick="addPinDigit('6')">6</button>
-                        <button class="pin-btn" onclick="addPinDigit('7')">7</button>
-                        <button class="pin-btn" onclick="addPinDigit('8')">8</button>
-                        <button class="pin-btn" onclick="addPinDigit('9')">9</button>
-                        <button class="pin-btn" onclick="addPinDigit('0')" style="grid-column: 2;">0</button>
-                        <button class="pin-btn pin-btn-delete" onclick="deletePinDigit()">⌫</button>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
-                        <button class="btn btn-secondary" onclick="hideVerificationModal()">❌ Отмена</button>
-                        <button class="btn btn-primary" onclick="verifyPin()" id="verifyBtn" disabled>✅ Войти</button>
-                    </div>
-                    
-                    <!-- Setup PIN Button (shown only for new users) -->
-                    <div style="margin-top: 16px; display: none;" id="setupPinSection">
-                        <button class="btn btn-secondary" onclick="setupNewPin()" style="font-size: 14px;">
-                            🔑 Установить PIN-код
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Setup PIN Modal -->
-        <div class="modal" id="setupPinModal">
-            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="setupPinModalTitle" style="max-width:400px; position:relative;">
-                <div class="modal-header">
-                    <h3 class="modal-title" id="setupPinModalTitle">🔑 Установка PIN-кода</h3>
-                </div>
-                <div style="text-align: center; padding: 20px 0;">
-                    <div style="margin-bottom: 20px;">
-                        <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">Придумайте 4-значный PIN-код для профиля</div>
-                        <div style="font-size: 16px; font-weight: 600; color: #1f2937;" id="setupPinUserInfo">Михаил</div>
-                    </div>
-                    
-                    <!-- PIN Input Display -->
-                    <div style="margin-bottom: 24px;">
-                        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
-                            <div class="pin-dot" id="setupPinDot1"></div>
-                            <div class="pin-dot" id="setupPinDot2"></div>
-                            <div class="pin-dot" id="setupPinDot3"></div>
-                            <div class="pin-dot" id="setupPinDot4"></div>
-                        </div>
-                        <div style="font-size: 12px; color: #6b7280;" id="setupPinStatus">Введите новый PIN-код</div>
-                    </div>
-                    
-                    <!-- Numeric Keypad -->
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 240px; margin: 0 auto;">
-                        <button class="pin-btn" onclick="addSetupPinDigit('1')">1</button>
-                        <button class="pin-btn" onclick="addSetupPinDigit('2')">2</button>
-                        <button class="pin-btn" onclick="addSetupPinDigit('3')">3</button>
-                        <button class="pin-btn" onclick="addSetupPinDigit('4')">4</button>
-                        <button class="pin-btn" onclick="addSetupPinDigit('5')">5</button>
-                        <button class="pin-btn" onclick="addSetupPinDigit('6')">6</button>
-                        <button class="pin-btn" onclick="addSetupPinDigit('7')">7</button>
-                        <button class="pin-btn" onclick="addSetupPinDigit('8')">8</button>
-                        <button class="pin-btn" onclick="addSetupPinDigit('9')">9</button>
-                        <button class="pin-btn" onclick="addSetupPinDigit('0')" style="grid-column: 2;">0</button>
-                        <button class="pin-btn pin-btn-delete" onclick="deleteSetupPinDigit()">⌫</button>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
-                        <button class="btn btn-secondary" onclick="hideSetupPinModal()">❌ Отмена</button>
-                        <button class="btn btn-primary" onclick="confirmSetupPin()" id="confirmSetupBtn" disabled>✅ Сохранить</button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -707,7 +598,7 @@
                 
                 <div class="analytics-header">
                     <div class="analytics-title" id="analyticsModalTitle">
-                        📊
+                        <i class="fas fa-chart-line"></i>
                         Аналитика обучения
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -731,7 +622,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #1e40af, #3b82f6);">
-                                        🏆
+                                        <i class="fas fa-trophy"></i>
                                     </div>
                                     Общая статистика
                                 </div>
@@ -761,7 +652,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
-                                        📈
+                                        <i class="fas fa-level-up-alt"></i>
                                     </div>
                                     Прогресс уровня
                                 </div>
@@ -781,7 +672,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
-                                        📊
+                                        <i class="fas fa-chart-area"></i>
                                     </div>
                                     Тренд XP по неделям
                                 </div>
@@ -794,7 +685,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #dc2626, #ef4444);">
-                                        🔥
+                                        <i class="fas fa-fire"></i>
                                     </div>
                                     Статистика серий
                                 </div>
@@ -820,7 +711,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
-                                        ⭐
+                                        <i class="fas fa-star"></i>
                                     </div>
                                     Звезды и награды
                                 </div>
@@ -851,7 +742,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
-                                        📅
+                                        <i class="fas fa-calendar-check"></i>
                                     </div>
                                     Карта активности (последний год)
                                 </div>
@@ -876,7 +767,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);">
-                                        📊
+                                        <i class="fas fa-chart-bar"></i>
                                     </div>
                                     XP по месяцам
                                 </div>
@@ -889,7 +780,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #ec4899, #f472b6);">
-                                        🥧
+                                        <i class="fas fa-chart-pie"></i>
                                     </div>
                                     Типы заданий
                                 </div>
@@ -902,7 +793,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #1e40af, #3b82f6);">
-                                        📈
+                                        <i class="fas fa-chart-line"></i>
                                     </div>
                                     Хронология уровней
                                 </div>
@@ -920,7 +811,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8);">
-                                        ⏰
+                                        <i class="fas fa-clock"></i>
                                     </div>
                                     Дни недели
                                 </div>
@@ -933,7 +824,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
-                                        📈
+                                        <i class="fas fa-trending-up"></i>
                                     </div>
                                     Эффективность
                                 </div>
@@ -959,7 +850,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
-                                        📚
+                                        <i class="fas fa-history"></i>
                                     </div>
                                     История сессий обучения
                                 </div>
@@ -972,7 +863,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
-                                        🔮
+                                        <i class="fas fa-crystal-ball"></i>
                                     </div>
                                     Прогнозы
                                 </div>
@@ -1003,7 +894,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
-                                        🏅
+                                        <i class="fas fa-medal"></i>
                                     </div>
                                     Ключевые достижения
                                 </div>
@@ -1016,7 +907,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #dc2626, #ef4444);">
-                                        👑
+                                        <i class="fas fa-crown"></i>
                                     </div>
                                     Рекорды
                                 </div>
@@ -1042,7 +933,7 @@
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
                                     <div class="analytics-card-icon" style="background: linear-gradient(135deg, #1e40af, #3b82f6);">
-                                        📊
+                                        <i class="fas fa-chart-area"></i>
                                     </div>
                                     Сравнение периодов
                                 </div>
@@ -1059,15 +950,15 @@
             <div class="modal-content" style="position: relative; max-width: 640px;" role="dialog" aria-modal="true" aria-labelledby="welcomeModalTitle">
                 <button class="close-btn" onclick="hideWelcomeModal()">&times;</button>
                 <div class="welcome-hero">
-                    ✨
-                    <div class="welcome-title" id="welcomeModalTitle">Welcome!</div>
+                    <i class="fas fa-sparkles"></i>
+                    <div class="welcome-title" id="welcomeModalTitle">Welcome, Mikhail!</div>
                 </div>
                 <div class="welcome-text" id="welcomeMessage">
                     Great to see you! You're on a powerful journey to master English—let's make today count.
                 </div>
                 <div class="welcome-actions">
                     <button class="btn btn-secondary" onclick="hideWelcomeModal()">Close</button>
-                    <button class="btn btn-primary" onclick="hideWelcomeModal()">⚡ Let's go!</button>
+                    <button class="btn btn-primary" onclick="hideWelcomeModal()"><i class="fas fa-bolt"></i> Let's go!</button>
                 </div>
             </div>
         </div>
