@@ -164,6 +164,7 @@
 
                 return {
                     user: appState.user,
+                    userName: appState.userName || 'Михаил',
                     progress: {
                         level,
                         totalXP,
@@ -230,6 +231,10 @@
                         if (saved.currentMonth) appState.currentMonth = new Date(saved.currentMonth);
                         if (saved.selectedDate) appState.selectedDate = new Date(saved.selectedDate);
                     }
+                    // Устанавливаем userName по умолчанию, если он не задан
+                    if (!appState.userName) {
+                        appState.userName = 'Михаил';
+                    }
                 } catch (e) {
                     // ignore parse errors
                 }
@@ -288,21 +293,36 @@
 
             // Welcome modal texts (random unique praise each time)
             const welcomePhrases = [
-                "Fantastic start, Mikhail! Every click is a step toward fluency—keep shining!",
-                "Mikhail, your consistency is impressive—today's effort will compound into greatness!",
-                "Brilliant move, Mikhail! Your dedication to English is what champions are made of.",
-                "Mikhail, you're unstoppable! Each lesson sharpens your mind and your voice.",
-                "Outstanding, Mikhail! You're building a skill that will open doors everywhere.",
-                "Great energy, Mikhail! Turning intention into action—this is how mastery begins.",
-                "Mikhail, amazing focus! Your future self will thank you for this exact moment.",
-                "Superb, Mikhail! Small wins daily create extraordinary results—let's go!",
-                "You rock, Mikhail! Today's practice brings you closer to confident English.",
-                "Impressive, Mikhail! Momentum is yours—one task at a time to the top!"
+                "Fantastic start, {name}! Every click is a step toward fluency—keep shining!",
+                "{name}, your consistency is impressive—today's effort will compound into greatness!",
+                "Brilliant move, {name}! Your dedication to English is what champions are made of.",
+                "{name}, you're unstoppable! Each lesson sharpens your mind and your voice.",
+                "Outstanding, {name}! You're building a skill that will open doors everywhere.",
+                "Great energy, {name}! Turning intention into action—this is how mastery begins.",
+                "{name}, amazing focus! Your future self will thank you for this exact moment.",
+                "Superb, {name}! Small wins daily create extraordinary results—let's go!",
+                "You rock, {name}! Today's practice brings you closer to confident English.",
+                "Impressive, {name}! Momentum is yours—one task at a time to the top!"
             ];
 
             function showWelcomeModal() {
+                // Получаем текущее состояние (включая демо-режим)
+                const currentState = getEffectiveState();
+                
+                // Показываем приветствие только для Михаила
+                if (currentState.userName !== 'Михаил') {
+                    return;
+                }
+                
                 const idx = Math.floor(Math.random() * welcomePhrases.length);
-                const msg = welcomePhrases[idx];
+                const msg = welcomePhrases[idx].replace('{name}', currentState.userName || 'Михаил');
+                
+                // Обновляем заголовок модального окна
+                const welcomeTitle = document.getElementById('welcomeModalTitle');
+                if (welcomeTitle) {
+                    welcomeTitle.textContent = `Welcome, ${currentState.userName}!`;
+                }
+                
                 const welcomeEl = document.getElementById('welcomeMessage');
                 if (welcomeEl) welcomeEl.textContent = msg;
                 document.getElementById('welcomeModal').classList.add('show');
@@ -1172,6 +1192,10 @@
 
                 // Force account selection (always show on load, default viewer)
                 if (!appState.role) appState.role = 'viewer';
+                // Устанавливаем userName по умолчанию, если он не задан
+                if (!appState.userName) {
+                    appState.userName = 'Михаил';
+                }
                 document.getElementById('accountModal').classList.add('show');
 
                 updateProgressDisplay();
@@ -1182,7 +1206,7 @@
                 renderWeeklyChart();
                 updateRedeemControls();
                 populateIconSelector(); // Initialize icon selector
-                if (appState.role === 'viewer') showWelcomeModal();
+                // Приветствие показывается только при выборе роли, не автоматически
                 applyRolePermissions();
             }
 
@@ -1321,6 +1345,12 @@
                     appState.activityData = incoming.activityData || {};
                     appState.rewardPlan = incoming.rewardPlan || { description: '' };
                     appState.resetDate = incoming.resetDate ? new Date(incoming.resetDate) : (appState.resetDate || new Date());
+                    
+                    // Сохраняем имя пользователя, если оно есть в импортируемых данных
+                    if (incoming.userName) {
+                        appState.userName = incoming.userName;
+                    }
+                    
                     updateProgressDisplay(); renderTasks(); renderRewards(); generateCalendar(); updateDayActivity(); renderWeeklyChart(); updateRedeemControls(); saveState();
                     showNotification('Состояние синхронизировано', 'success');
                 } catch (e) {
@@ -1346,6 +1376,7 @@
                     activityData: appState.activityData,
                     rewardPlan: appState.rewardPlan,
                     resetDate: appState.resetDate,
+                    userName: appState.userName,
                     exportDate: new Date().toISOString(),
                     version: '1.0'
                 };
@@ -1403,6 +1434,7 @@
                         activityData: appState.activityData,
                         rewardPlan: appState.rewardPlan,
                         resetDate: appState.resetDate,
+                        userName: appState.userName,
                         version: '1.0'
                     }
                 };
@@ -1449,6 +1481,9 @@
                 appState.activityData = importedData.activityData || {};
                 appState.rewardPlan = importedData.rewardPlan || { description: '' };
                 appState.resetDate = importedData.resetDate ? new Date(importedData.resetDate) : (appState.resetDate || new Date());
+                if (importedData.userName) {
+                    appState.userName = importedData.userName;
+                }
                 updateProgressDisplay(); renderTasks(); renderRewards(); generateCalendar(); updateDayActivity(); renderWeeklyChart(); updateRedeemControls(); saveState();
                 showNotification('Слепок применен', 'success');
             }
@@ -1511,6 +1546,11 @@
                         appState.activityData = importedData.activityData || {};
                         appState.rewardPlan = importedData.rewardPlan || { description: "" };
                         appState.resetDate = importedData.resetDate ? new Date(importedData.resetDate) : (appState.resetDate || new Date());
+                        
+                        // Сохраняем имя пользователя, если оно есть в импортируемых данных
+                        if (importedData.userName) {
+                            appState.userName = importedData.userName;
+                        }
 
                         // Update UI
                         updateProgressDisplay();
@@ -1578,6 +1618,9 @@
                     appState.rewards = [];
                     appState.activityData = {};
                     appState.resetDate = new Date();
+                    
+                    // Сбрасываем имя пользователя к значению по умолчанию
+                    appState.userName = 'Михаил';
 
                     // Update UI
                     updateProgressDisplay();
@@ -2196,10 +2239,23 @@
             // Account selection & role handling
             function selectAccount(role) {
                 appState.role = role === 'admin' ? 'admin' : 'viewer';
+                
+                // Устанавливаем имя пользователя в зависимости от роли
+                if (role === 'viewer') {
+                    appState.userName = 'Михаил';
+                } else {
+                    appState.userName = 'Admin';
+                }
+                
                 saveState();
                 document.getElementById('accountModal').classList.remove('show');
                 applyRolePermissions();
-                if (appState.role === 'viewer') showWelcomeModal();
+                
+                // Показываем приветствие только для Михаила
+                if (appState.role === 'viewer' && appState.userName === 'Михаил') {
+                    showWelcomeModal();
+                }
+                
                 showNotification(appState.role === 'admin' ? 'Режим администратора' : 'Режим просмотра', 'info');
             }
 
