@@ -1,26 +1,25 @@
-﻿
-            // Available icons for tasks
+﻿            // Available icons for tasks (replaced Font Awesome with emojis)
             const availableIcons = [
-                { class: "fas fa-book", name: "Книга" },
-                { class: "fas fa-pencil-alt", name: "Карандаш" },
-                { class: "fas fa-headphones", name: "Наушники" },
-                { class: "fas fa-microphone", name: "Микрофон" },
-                { class: "fas fa-eye", name: "Глаз" },
-                { class: "fas fa-brain", name: "Мозг" },
-                { class: "fas fa-lightbulb", name: "Лампочка" },
-                { class: "fas fa-star", name: "Звезда" },
-                { class: "fas fa-trophy", name: "Трофей" },
-                { class: "fas fa-medal", name: "Медаль" },
-                { class: "fas fa-fire", name: "Огонь" },
-                { class: "fas fa-rocket", name: "Ракета" },
-                { class: "fas fa-graduation-cap", name: "Диплом" },
-                { class: "fas fa-chalkboard-teacher", name: "Учитель" },
-                { class: "fas fa-language", name: "Язык" },
-                { class: "fas fa-spell-check", name: "Проверка" },
-                { class: "fas fa-clock", name: "Часы" },
-                { class: "fas fa-target", name: "Цель" },
-                { class: "fas fa-chart-line", name: "График" },
-                { class: "fas fa-gamepad", name: "Игра" }
+                { class: "📚", name: "Книга" },
+                { class: "✏️", name: "Карандаш" },
+                { class: "🎧", name: "Наушники" },
+                { class: "🎤", name: "Микрофон" },
+                { class: "👁️", name: "Глаз" },
+                { class: "🧠", name: "Мозг" },
+                { class: "💡", name: "Лампочка" },
+                { class: "⭐", name: "Звезда" },
+                { class: "🏆", name: "Трофей" },
+                { class: "🏅", name: "Медаль" },
+                { class: "🔥", name: "Огонь" },
+                { class: "🚀", name: "Ракета" },
+                { class: "🎓", name: "Диплом" },
+                { class: "👨‍🏫", name: "Учитель" },
+                { class: "🗣️", name: "Язык" },
+                { class: "✅", name: "Проверка" },
+                { class: "⏰", name: "Часы" },
+                { class: "🎯", name: "Цель" },
+                { class: "📈", name: "График" },
+                { class: "🎮", name: "Игра" }
             ];
 
             // Application State
@@ -48,7 +47,7 @@
                         description: "Выучить 10 новых английских слов",
                         xpReward: 50,
                         duration: 15,
-                        icon: "fas fa-book",
+                        icon: "📚",
                         category: "vocabulary",
                     },
                     {
@@ -57,7 +56,7 @@
                         description: "Выполнить упражнения на Present Simple",
                         xpReward: 75,
                         duration: 20,
-                        icon: "fas fa-pencil-alt",
+                        icon: "✏️",
                         category: "grammar",
                     },
                     {
@@ -66,7 +65,7 @@
                         description: "Прослушать диалог и ответить на вопросы",
                         xpReward: 60,
                         duration: 25,
-                        icon: "fas fa-headphones",
+                        icon: "🎧",
                         category: "listening",
                     },
                 ],
@@ -346,7 +345,7 @@
                     <div class="autocomplete-item" data-value="${escapeHTML(i)}">
                         <div class="autocomplete-text">${escapeHTML(i)}</div>
                         <button class="autocomplete-remove" aria-label="Удалить сохраненный вариант" data-remove="${escapeHTML(i)}">
-                            <i class="fas fa-times"></i>
+                            ❌
                         </button>
                     </div>
                 `).join('');
@@ -676,7 +675,7 @@
                 <div class="task-item">
                     <div class="task-info" onclick="completeTask(event, ${task.id})" onkeydown="if(event.key==='Enter'||event.key===' '){completeTask(event, ${task.id})}" role="button" tabindex="0" style="flex: 1; cursor: pointer;">
                         <div class="task-icon">
-                            <i class="${task.icon}"></i>
+                            ${task.icon}
                         </div>
                         <div class="task-details">
                             <h4>${escapeHTML(task.name)}</h4>
@@ -685,11 +684,11 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <div class="task-reward">
-                            <i class="fas fa-star" style="color: #fbbf24;"></i>
+                            ⭐
                             +${task.xpReward} XP
                         </div>
                         <button class="btn-icon-delete" onclick="deleteTask(${task.id})" title="Удалить задание" aria-label="Удалить задание">
-                            <i class="fas fa-trash"></i>
+                            🗑️
                         </button>
                     </div>
                 </div>
@@ -713,8 +712,8 @@
                 const cards = appState.rewards.slice(-9).reverse().map(reward => `
                     <div class="reward-card" title="${new Date(reward.redeemedAt).toLocaleDateString('ru-RU')}">
                         <div class="rc-top">
-                            <span class="reward-chip"><i class="fas fa-star"></i> -${reward.starsUsed} ⭐</span>
-                            <i class="fas fa-gift" style="color:#1e40af;"></i>
+                            <span class="reward-chip">⭐ -${reward.starsUsed} ⭐</span>
+                            🎁
                         </div>
                         <div class="reward-title">${escapeHTML(reward.description)}</div>
                         <div class="reward-date-2">${new Date(reward.redeemedAt).toLocaleDateString('ru-RU')}</div>
@@ -824,7 +823,7 @@
                             <div class="activity-item" data-date="${selectedDateStr}" data-index="${index}">
                                 ${escapeHTML(log.taskName)} (+${log.xpEarned} XP)
                                 <button class="activity-delete" onclick="deleteActivity('${selectedDateStr}', ${index})" title="Удалить запись активности" aria-label="Удалить запись активности">
-                                    <i class="fas fa-times"></i>
+                                    ❌
                                 </button>
                             </div>
                         `,
@@ -1024,7 +1023,7 @@
                          onclick="selectIcon(${index})" 
                          title="${icon.name}"
                          data-icon="${icon.class}">
-                        <i class="${icon.class}"></i>
+                        ${icon.class}
                     </div>
                 `).join('');
             }
@@ -1044,7 +1043,7 @@
 
             function getSelectedIcon() {
                 const selectedOption = document.querySelector('.icon-option.selected');
-                return selectedOption ? selectedOption.getAttribute('data-icon') : 'fas fa-book';
+                return selectedOption ? selectedOption.getAttribute('data-icon') : '📚';
             }
 
             // Modal Functions
@@ -1424,8 +1423,8 @@
                     <div class=\"reward-card\" style=\"margin-bottom:8px;\">
                         <div class=\"rc-top\"><div class=\"reward-title\">${escapeHTML(s.title || ('Слепок #' + s.id))}</div><div class=\"reward-date-2\">${new Date(s.createdAt).toLocaleString('ru-RU')}</div></div>
                         <div style=\"display:flex; gap:8px; justify-content:flex-end; margin-top:6px;\">
-                            <button class=\"btn btn-secondary\" data-id=\"${s.id}\"><i class=\"fas fa-eye\"></i> Просмотр</button>
-                            <button class=\"btn btn-primary\" data-apply=\"${s.id}\"><i class=\"fas fa-check\"></i> Применить</button>
+                            <button class=\"btn btn-secondary\" data-id=\"${s.id}\">👁️ Просмотр</button>
+                            <button class=\"btn btn-primary\" data-apply=\"${s.id}\">✅ Применить</button>
                         </div>
                     </div>
                 `).join('');
@@ -1553,7 +1552,7 @@
                             description: "Выучить 10 новых английских слов",
                             xpReward: 50,
                             duration: 15,
-                            icon: "fas fa-book",
+                            icon: "📚",
                             category: "vocabulary",
                         },
                         {
@@ -1562,7 +1561,7 @@
                             description: "Выполнить упражнения на Present Simple",
                             xpReward: 75,
                             duration: 20,
-                            icon: "fas fa-pencil-alt",
+                            icon: "✏️",
                             category: "grammar",
                         },
                         {
@@ -1571,7 +1570,7 @@
                             description: "Прослушать диалог и ответить на вопросы",
                             xpReward: 60,
                             duration: 25,
-                            icon: "fas fa-headphones",
+                            icon: "🎧",
                             category: "listening",
                         }
                     ];
