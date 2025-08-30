@@ -235,6 +235,7 @@
             function saveState() {
                 try {
                     console.log('💾 Сохраняем состояние локально...');
+                    console.log('🔐 Сохраняемые PIN-коды:', appState.pinCodes);
                     
                     // Сохраняем локально
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
@@ -265,16 +266,19 @@
                         // НЕ загружаем isVerified из localStorage - он всегда false при запуске
                         const { isVerified, ...restoredData } = restoredSaved;
                         
-                        appState = { 
-                            ...appState, 
-                            ...restoredData,
-                            // Сохраняем текущего пользователя
-                            userName: appState.userName || restoredData.userName || 'Михаил',
-                            // isVerified всегда false при запуске
-                            isVerified: false
-                        };
-                        
-                        console.log('✅ Локальное состояние загружено');
+                                            appState = { 
+                        ...appState, 
+                        ...restoredData,
+                        // Сохраняем текущего пользователя
+                        userName: appState.userName || restoredData.userName || 'Михаил',
+                        // isVerified всегда false при запуске
+                        isVerified: false,
+                                                // Объединяем PIN-коды (сохраняем существующие и добавляем новые)
+                        pinCodes: { ...appState.pinCodes, ...restoredData.pinCodes }
+                    };
+                    
+                    console.log('✅ Локальное состояние загружено');
+                    console.log('🔐 Загруженные PIN-коды:', appState.pinCodes);
                     } else {
                         console.log('📭 Локальное состояние не найдено, используем значения по умолчанию');
                     }
@@ -1438,6 +1442,17 @@
 
                 // Устанавливаем роль по умолчанию
                 if (!appState.role) appState.role = 'viewer';
+                
+                // Проверяем и инициализируем PIN-коды, если их нет
+                if (!appState.pinCodes) {
+                    appState.pinCodes = {
+                        'Михаил': null,
+                        'Admin': null
+                    };
+                    console.log('🔑 PIN-коды инициализированы');
+                }
+                
+                console.log('🔐 Состояние PIN-кодов при инициализации:', appState.pinCodes);
                 
                 // ВСЕГДА показываем верификацию при запуске
                 // Проверяем, есть ли у пользователя PIN-код
@@ -2877,12 +2892,18 @@
 
             // Verify PIN code
             function verifyPin() {
+                console.log(`🔐 Проверяем PIN-код для пользователя: ${appState.userName}`);
+                console.log('🔑 Состояние PIN-кодов:', appState.pinCodes);
+                
                 const storedPin = appState.pinCodes[appState.userName];
                 
                 if (!storedPin) {
+                    console.log('❌ PIN-код не установлен для пользователя:', appState.userName);
                     showNotification('PIN-код не установлен', 'error');
                     return;
                 }
+                
+                console.log(`🔐 Введенный PIN: ${currentPin}, Сохраненный PIN: ${storedPin}`);
                 
                 if (currentPin === storedPin) {
                     if (isChangingPin) {
@@ -2925,8 +2946,13 @@
                     return;
                 }
                 
+                console.log(`🔐 Сохраняем PIN-код для пользователя: ${appState.userName}`);
+                console.log(`🔑 PIN-код: ${setupPin}`);
+                
                 // Save PIN code
                 appState.pinCodes[appState.userName] = setupPin;
+                
+                console.log('💾 Текущие PIN-коды:', appState.pinCodes);
                 
                 // Сохраняем локально
                 saveState();
@@ -3357,6 +3383,18 @@
                 restored.rewards = restored.rewards || [];
                 restored.activityData = restored.activityData || {};
                 restored.rewardPlan = restored.rewardPlan || { description: '' };
+                
+                // Восстанавливаем PIN-коды, если они есть
+                if (restored.pinCodes && typeof restored.pinCodes === 'object') {
+                    console.log('🔐 PIN-коды найдены и восстановлены');
+                } else {
+                    // Если PIN-кодов нет, создаем пустую структуру
+                    restored.pinCodes = {
+                        'Михаил': null,
+                        'Admin': null
+                    };
+                    console.log('🔑 PIN-коды инициализированы по умолчанию');
+                }
                 
                 console.log('✅ Все типы данных восстановлены');
                 return restored;
