@@ -29,6 +29,10 @@
                     🚪
                     Выйти из профиля
                 </div>
+                <div class="settings-item" onclick="syncWithFirestore()">
+                    🔄
+                    Синхронизировать
+                </div>
                                  <div class="settings-item" onclick="exportData()">
                      💾
                      Экспорт данных
@@ -1076,6 +1080,37 @@
 
         
 
+        <!-- Firebase SDK (v9 with compat mode) -->
+        <script type="module">
+            // Import the functions you need from the SDKs you need
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+            import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+            
+            // Your web app's Firebase configuration
+            const firebaseConfig = {
+                apiKey: "AIzaSyBDVhjiXaw26HhD8TBULTc4dHRDTSb-fI4",
+                authDomain: "alexnvtcar-c443c.firebaseapp.com",
+                projectId: "alexnvtcar-c443c",
+                storageBucket: "alexnvtcar-c443c.firebasestorage.app",
+                messagingSenderId: "972197392704",
+                appId: "1:972197392704:web:85c308f2c4482890fb8aa5"
+            };
+            
+            // Initialize Firebase
+            const app = initializeApp(firebaseConfig);
+            
+            // Initialize Firestore
+            const db = getFirestore(app);
+            
+            // Make available globally
+            window.db = db;
+            window.doc = doc;
+            window.setDoc = setDoc;
+            window.getDoc = getDoc;
+            window.collection = collection;
+        </script>
+        
+        <!-- App Script -->
         <script src="app.js"></script>
     </body>
 </html>

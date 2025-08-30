@@ -222,7 +222,15 @@
             const IDEAS_KEY = 'english-learning-reward-ideas-v1';
             function saveState() {
                 try {
+                    // Сохраняем локально
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                    
+                    // Сохраняем в Firebase (если доступен и есть интернет)
+                    if (navigator.onLine && appState.isVerified) {
+                        saveStateToFirestore().catch(error => {
+                            console.log('Ошибка сохранения в Firebase:', error);
+                        });
+                    }
                 } catch (e) {
                     // ignore storage errors
                 }
@@ -230,6 +238,7 @@
 
             function loadState() {
                 try {
+                    // Загружаем из localStorage
                     const raw = localStorage.getItem(STORAGE_KEY);
                     if (raw) {
                         const saved = JSON.parse(raw);
@@ -237,9 +246,17 @@
                         if (saved.currentMonth) appState.currentMonth = new Date(saved.currentMonth);
                         if (saved.selectedDate) appState.selectedDate = new Date(saved.selectedDate);
                     }
+                    
                     // Устанавливаем userName по умолчанию, если он не задан
                     if (!appState.userName) {
                         appState.userName = 'Михаил';
+                    }
+                    
+                    // Загружаем из Firebase (если доступен и есть интернет)
+                    if (navigator.onLine) {
+                        loadStateFromFirestore().catch(error => {
+                            console.log('Ошибка загрузки из Firebase:', error);
+                        });
                     }
                 } catch (e) {
                     // ignore parse errors
@@ -2263,6 +2280,24 @@
             // Initialize app when page loads
             document.addEventListener("DOMContentLoaded", initApp);
 
+            // Network status handlers
+            window.addEventListener('online', () => {
+                console.log('Интернет-соединение восстановлено');
+                showNotification('Интернет-соединение восстановлено', 'success');
+                
+                // Синхронизируем данные при восстановлении соединения
+                if (appState.isVerified) {
+                    syncWithFirestore().catch(error => {
+                        console.log('Ошибка синхронизации при восстановлении соединения:', error);
+                    });
+                }
+            });
+
+            window.addEventListener('offline', () => {
+                console.log('Интернет-соединение потеряно');
+                showNotification('Интернет-соединение потеряно', 'warning');
+            });
+
             // Autocomplete interactions for reward ideas
             document.addEventListener('input', function(e) {
                 if (e.target && e.target.id === 'ideaDescription') {
@@ -2620,6 +2655,9 @@
                         // Применяем роли только после успешной верификации
                         applyRolePermissions();
                         
+                        // Запускаем автосинхронизацию после входа
+                        startAutoSync();
+                        
                         showNotification('Вход выполнен успешно!', 'success');
                         
                         // Show welcome modal for Mikhail
@@ -2678,7 +2716,132 @@
             // Logout user
             function logoutUser() {
                 appState.isVerified = false;
+                
+                // Останавливаем автосинхронизацию
+                stopAutoSync();
+                
                 saveState();
                 showNotification('Выход выполнен', 'info');
+            }
+
+            // ========================================
+            // FIREBASE FIRESTORE INTEGRATION
+            // ========================================
+
+            // Check if Firebase is available
+            function isFirebaseAvailable() {
+                return window.db && window.doc && window.setDoc && window.getDoc;
+            }
+
+            // Save state to Firestore
+            async function saveStateToFirestore() {
+                if (!isFirebaseAvailable()) {
+                    console.log('Firebase недоступен, сохраняем только локально');
+                    return false;
+                }
+
+                try {
+                    const userRef = doc(db, 'users', appState.userName);
+                    await setDoc(userRef, {
+                        ...appState,
+                        lastUpdated: new Date().toISOString(),
+                        deviceInfo: {
+                            userAgent: navigator.userAgent,
+                            timestamp: new Date().toISOString()
+                        }
+                    });
+                    
+                    console.log('Данные сохранены в Firestore');
+                    return true;
+                } catch (error) {
+                    console.error('Ошибка сохранения в Firestore:', error);
+                    return false;
+                }
+            }
+
+            // Load state from Firestore
+            async function loadStateFromFirestore() {
+                if (!isFirebaseAvailable()) {
+                    console.log('Firebase недоступен, загружаем только локально');
+                    return false;
+                }
+
+                try {
+                    const userRef = doc(db, 'users', appState.userName);
+                    const docSnap = await getDoc(userRef);
+                    
+                    if (docSnap.exists()) {
+                        const firestoreData = docSnap.data();
+                        
+                        // Обновляем локальное состояние
+                        appState = { ...appState, ...firestoreData };
+                        
+                        // Обновляем UI
+                        updateProgressDisplay();
+                        renderTasks();
+                        renderRewards();
+                        generateCalendar();
+                        updateDayActivity();
+                        renderWeeklyChart();
+                        
+                        console.log('Данные загружены из Firestore');
+                        return true;
+                    } else {
+                        console.log('Данные пользователя не найдены в Firestore');
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки из Firestore:', error);
+                    return false;
+                }
+            }
+
+            // Sync state with Firestore
+            async function syncWithFirestore() {
+                if (!navigator.onLine) {
+                    console.log('Нет интернет-соединения, синхронизация отменена');
+                    return false;
+                }
+
+                try {
+                    // Сначала загружаем данные из Firestore
+                    await loadStateFromFirestore();
+                    
+                    // Затем сохраняем текущее состояние
+                    await saveStateToFirestore();
+                    
+                    showNotification('Синхронизация завершена', 'success');
+                    return true;
+                } catch (error) {
+                    console.error('Ошибка синхронизации:', error);
+                    showNotification('Ошибка синхронизации', 'error');
+                    return false;
+                }
+            }
+
+            // Auto-sync manager
+            let autoSyncInterval = null;
+
+            function startAutoSync() {
+                if (autoSyncInterval) {
+                    clearInterval(autoSyncInterval);
+                }
+                
+                // Синхронизируем каждые 2 минуты
+                autoSyncInterval = setInterval(async () => {
+                    if (appState.isVerified && navigator.onLine) {
+                        await syncWithFirestore();
+                    }
+                }, 120000); // 2 минуты
+                
+                console.log('Автосинхронизация запущена');
+            }
+
+            function stopAutoSync() {
+                if (autoSyncInterval) {
+                    clearInterval(autoSyncInterval);
+                    autoSyncInterval = null;
+                    console.log('Автосинхронизация остановлена');
+                }
             }
         
