@@ -300,14 +300,39 @@
                 try {
                     console.log('📥 Начинаем загрузку из Firebase...');
                     
-                    // Загружаем общие данные из коллекции 'shared-data'
-                    const sharedRef = doc(db, 'shared-data', 'main');
-                    const docSnap = await getDoc(sharedRef);
+                    // Сначала пробуем загрузить общие данные
+                    let firestoreData = null;
+                    let dataSource = 'shared-data';
                     
-                    if (docSnap.exists()) {
-                        const firestoreData = docSnap.data();
+                    try {
+                        const sharedRef = doc(db, 'shared-data', 'main');
+                        const sharedSnap = await getDoc(sharedRef);
                         
-                        console.log('📊 Общие данные найдены в Firebase:', {
+                        if (sharedSnap.exists()) {
+                            firestoreData = sharedSnap.data();
+                            console.log('📊 Общие данные найдены в Firebase');
+                        } else {
+                            // Если общих данных нет, пробуем загрузить данные пользователя
+                            const userRef = doc(db, 'users', appState.userName);
+                            const userSnap = await getDoc(userRef);
+                            
+                            if (userSnap.exists()) {
+                                firestoreData = userSnap.data();
+                                dataSource = 'user-data';
+                                console.log('📊 Данные пользователя найдены в Firebase');
+                            } else {
+                                console.log('📭 Данные не найдены в Firebase');
+                                return false;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('❌ Ошибка при загрузке данных:', error);
+                        return false;
+                    }
+                    
+                    if (firestoreData) {
+                        console.log('📊 Данные загружены из Firebase:', {
+                            source: dataSource,
                             lastUpdated: firestoreData.lastUpdated,
                             lastSavedBy: firestoreData.lastSavedBy,
                             version: firestoreData.version,
@@ -336,18 +361,16 @@
                         updateDayActivity();
                         renderWeeklyChart();
                         
-                        console.log('✅ Общие данные успешно загружены из Firebase');
+                        console.log('✅ Данные успешно загружены из Firebase');
                         // Уведомление о загрузке показывается только при синхронизации
                         
                         // Показываем детальную информацию о загрузке
                         showLoadDetails(firestoreData);
                         
                         return true;
-                    } else {
-                        console.log('📭 Общие данные не найдены в Firebase');
-                        // Уведомление показывается только при синхронизации
-                        return false;
                     }
+                    
+                    return false;
                 } catch (error) {
                     console.error('❌ Ошибка загрузки из Firebase:', error);
                     
@@ -3070,50 +3093,44 @@
                 try {
                     console.log('💾 Начинаем сохранение в Firebase...');
                     
-                    // Очищаем данные для Firebase
-                    const cleanedData = cleanDataForFirestore(appState);
-                    
-                    // Подготавливаем данные для сохранения
+                    // Упрощенная структура данных для сохранения
                     const dataToSave = {
-                        // Основное состояние приложения
-                        ...cleanedData,
+                        // Основные данные (с проверкой на существование)
+                        progress: appState.progress || {},
+                        tasks: appState.tasks || [],
+                        rewards: appState.rewards || [],
+                        activityData: appState.activityData || {},
+                        rewardPlan: appState.rewardPlan || { description: '' },
+                        resetDate: appState.resetDate ? appState.resetDate.toISOString() : null,
+                        currentMonth: appState.currentMonth ? appState.currentMonth.toISOString() : null,
+                        selectedDate: appState.selectedDate ? appState.selectedDate.toISOString() : null,
                         
                         // Метаданные
                         lastUpdated: new Date().toISOString(),
-                        lastSavedBy: appState.userName,
-                        version: '1.0.0',
+                        lastSavedBy: appState.userName || 'Unknown',
+                        version: '1.0',
                         
-                        // Информация об устройстве
-                        deviceInfo: {
-                            userAgent: navigator.userAgent,
-                            timestamp: new Date().toISOString(),
-                            platform: navigator.platform,
-                            language: navigator.language,
-                            online: navigator.onLine
-                        },
-                        
-                        // Статистика сохранения
+                        // Простая статистика
                         saveStats: {
                             totalSaves: (appState.saveStats?.totalSaves || 0) + 1,
-                            firstSave: appState.saveStats?.firstSave || new Date().toISOString(),
                             lastSave: new Date().toISOString()
                         }
                     };
                     
-                                    // Сохраняем в Firestore в общую коллекцию
-                const sharedRef = doc(db, 'shared-data', 'main');
-                await setDoc(sharedRef, dataToSave, { merge: true });
-                
-                // Обновляем локальное состояние
-                appState.saveStats = dataToSave.saveStats;
-                
-                console.log('✅ Общие данные успешно сохранены в Firebase');
-                showNotification('Данные сохранены в Firebase', 'success');
-                
-                // Показываем детальную информацию о сохранении
-                showSaveDetails(dataToSave);
-                
-                return true;
+                    // Сохраняем в общую коллекцию
+                    const sharedRef = doc(db, 'shared-data', 'main');
+                    await setDoc(sharedRef, dataToSave, { merge: true });
+                    
+                    // Обновляем локальное состояние
+                    appState.saveStats = dataToSave.saveStats;
+                    
+                    console.log('✅ Данные успешно сохранены в Firebase');
+                    showNotification('Данные сохранены в Firebase', 'success');
+                    
+                    // Показываем детальную информацию о сохранении
+                    showSaveDetails(dataToSave);
+                    
+                    return true;
                 } catch (error) {
                     console.error('❌ Ошибка сохранения в Firebase:', error);
                     
@@ -3140,6 +3157,11 @@
 
             // Restore data types after loading from Firestore
             function restoreDataTypes(data) {
+                if (!data) {
+                    console.warn('⚠️ Нет данных для восстановления');
+                    return {};
+                }
+                
                 const restored = { ...data };
                 
                 console.log('🔧 Восстанавливаем типы данных...');
@@ -3305,6 +3327,13 @@
                     }
                 }
                 
+                // Убеждаемся, что основные поля существуют
+                restored.progress = restored.progress || {};
+                restored.tasks = restored.tasks || [];
+                restored.rewards = restored.rewards || [];
+                restored.activityData = restored.activityData || {};
+                restored.rewardPlan = restored.rewardPlan || { description: '' };
+                
                 console.log('✅ Все типы данных восстановлены');
                 return restored;
             }
@@ -3319,14 +3348,39 @@
                 try {
                     console.log('📥 Начинаем загрузку из Firebase...');
                     
-                    // Загружаем общие данные из коллекции 'shared-data'
-                    const sharedRef = doc(db, 'shared-data', 'main');
-                    const docSnap = await getDoc(sharedRef);
+                    // Сначала пробуем загрузить общие данные
+                    let firestoreData = null;
+                    let dataSource = 'shared-data';
                     
-                    if (docSnap.exists()) {
-                        const firestoreData = docSnap.data();
+                    try {
+                        const sharedRef = doc(db, 'shared-data', 'main');
+                        const sharedSnap = await getDoc(sharedRef);
                         
-                        console.log('📊 Общие данные найдены в Firebase:', {
+                        if (sharedSnap.exists()) {
+                            firestoreData = sharedSnap.data();
+                            console.log('📊 Общие данные найдены в Firebase');
+                        } else {
+                            // Если общих данных нет, пробуем загрузить данные пользователя
+                            const userRef = doc(db, 'users', appState.userName);
+                            const userSnap = await getDoc(userRef);
+                            
+                            if (userSnap.exists()) {
+                                firestoreData = userSnap.data();
+                                dataSource = 'user-data';
+                                console.log('📊 Данные пользователя найдены в Firebase');
+                            } else {
+                                console.log('📭 Данные не найдены в Firebase');
+                                return false;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('❌ Ошибка при загрузке данных:', error);
+                        return false;
+                    }
+                    
+                    if (firestoreData) {
+                        console.log('📊 Данные загружены из Firebase:', {
+                            source: dataSource,
                             lastUpdated: firestoreData.lastUpdated,
                             lastSavedBy: firestoreData.lastSavedBy,
                             version: firestoreData.version,
@@ -3355,18 +3409,16 @@
                         updateDayActivity();
                         renderWeeklyChart();
                         
-                        console.log('✅ Общие данные успешно загружены из Firebase');
+                        console.log('✅ Данные успешно загружены из Firebase');
                         // Уведомление о загрузке показывается только при синхронизации
                         
                         // Показываем детальную информацию о загрузке
                         showLoadDetails(firestoreData);
                         
                         return true;
-                    } else {
-                        console.log('📭 Общие данные не найдены в Firebase');
-                        // Уведомление показывается только при синхронизации
-                        return false;
                     }
+                    
+                    return false;
                 } catch (error) {
                     console.error('❌ Ошибка загрузки из Firebase:', error);
                     
@@ -3457,28 +3509,28 @@
                         <div class="modal-body">
                             <div class="save-details">
                                 <div class="detail-item">
-                                    <strong>Сохранено пользователем:</strong> ${data.userName}
+                                    <strong>Сохранено пользователем:</strong> ${data.userName || 'Не указан'}
                                 </div>
                                 <div class="detail-item">
-                                    <strong>Время сохранения:</strong> ${new Date(data.lastUpdated).toLocaleString('ru-RU')}
+                                    <strong>Время сохранения:</strong> ${data.lastUpdated ? new Date(data.lastUpdated).toLocaleString('ru-RU') : 'Не указано'}
                                 </div>
                                 <div class="detail-item">
-                                    <strong>Всего сохранений:</strong> ${data.saveStats.totalSaves}
+                                    <strong>Всего сохранений:</strong> ${data.saveStats?.totalSaves || 0}
                                 </div>
                                 <div class="detail-item">
-                                    <strong>Первое сохранение:</strong> ${new Date(data.saveStats.firstSave).toLocaleString('ru-RU')}
-                                </div>
-                                <div class="detail-item">
-                                    <strong>Версия:</strong> ${data.version}
-                                </div>
-                                <div class="detail-item">
-                                    <strong>Устройство:</strong> ${data.deviceInfo.platform}
-                                </div>
-                                <div class="detail-item">
-                                    <strong>Язык:</strong> ${data.deviceInfo.language}
+                                    <strong>Версия:</strong> ${data.version || 'Не указана'}
                                 </div>
                                 <div class="detail-item">
                                     <strong>Тип данных:</strong> Общие данные для всех пользователей
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Заданий:</strong> ${data.tasks?.length || 0}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Наград:</strong> ${data.rewards?.length || 0}
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Активность:</strong> ${Object.keys(data.activityData || {}).length} дней
                                 </div>
                             </div>
                         </div>
@@ -3674,6 +3726,10 @@
                                     <span class="summary-icon">👥</span>
                                     <span class="summary-text">Данные синхронизированы для всех пользователей</span>
                                 </div>
+                                <div class="summary-item info">
+                                    <span class="summary-icon">🔄</span>
+                                    <span class="summary-text">Прогресс обновлен для всех учетных записей</span>
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -3691,6 +3747,12 @@
                 
                 if (!hasSyncedBefore && navigator.onLine && isFirebaseAvailable()) {
                     console.log('🔄 Первичная синхронизация...');
+                    
+                    // Сначала пробуем мигрировать старые данные
+                    const migrationResult = await migrateUserDataToShared();
+                    if (migrationResult) {
+                        console.log('✅ Миграция данных завершена успешно');
+                    }
                     
                     // Показываем модальное окно первичной синхронизации
                     showFirstTimeSyncModal();
@@ -3827,6 +3889,85 @@
                 const container = document.querySelector('.container');
                 if (overlay) overlay.classList.remove('show');
                 if (container) container.classList.remove('hidden');
+            }
+            
+            // Migrate old user data to shared collection
+            async function migrateUserDataToShared() {
+                if (!isFirebaseAvailable() || !navigator.onLine) {
+                    return false;
+                }
+                
+                try {
+                    console.log('🔄 Начинаем миграцию данных...');
+                    
+                    // Пробуем загрузить данные Admin
+                    const adminRef = doc(db, 'users', 'Admin');
+                    const adminSnap = await getDoc(adminRef);
+                    
+                    // Пробуем загрузить данные Михаила
+                    const mikhailRef = doc(db, 'users', 'Михаил');
+                    const mikhailSnap = await getDoc(mikhailRef);
+                    
+                    let bestData = null;
+                    let source = 'none';
+                    
+                    if (adminSnap.exists() && mikhailSnap.exists()) {
+                        // Если есть данные обоих пользователей, выбираем более свежие
+                        const adminData = adminSnap.data();
+                        const mikhailData = mikhailSnap.data();
+                        
+                        const adminTime = adminData.lastUpdated ? new Date(adminData.lastUpdated) : new Date(0);
+                        const mikhailTime = mikhailData.lastUpdated ? new Date(mikhailData.lastUpdated) : new Date(0);
+                        
+                        if (adminTime > mikhailTime) {
+                            bestData = adminData;
+                            source = 'Admin';
+                        } else {
+                            bestData = mikhailData;
+                            source = 'Михаил';
+                        }
+                        
+                        console.log(`📊 Выбраны данные от ${source} (более свежие)`);
+                    } else if (adminSnap.exists()) {
+                        bestData = adminSnap.data();
+                        source = 'Admin';
+                        console.log('📊 Найдены данные Admin');
+                    } else if (mikhailSnap.exists()) {
+                        bestData = mikhailSnap.data();
+                        source = 'Михаил';
+                        console.log('📊 Найдены данные Михаила');
+                    }
+                    
+                    if (bestData) {
+                        // Сохраняем в общую коллекцию
+                        const sharedRef = doc(db, 'shared-data', 'main');
+                        const dataToSave = {
+                            ...bestData,
+                            lastUpdated: new Date().toISOString(),
+                            lastSavedBy: 'Migration',
+                            migratedFrom: source,
+                            version: '1.0'
+                        };
+                        
+                        await setDoc(sharedRef, dataToSave, { merge: true });
+                        console.log(`✅ Данные успешно мигрированы от ${source} в общую коллекцию`);
+                        
+                        // Удаляем старые данные пользователей
+                        if (adminSnap.exists()) {
+                            await setDoc(adminRef, { deleted: true, migratedAt: new Date().toISOString() });
+                        }
+                        if (mikhailSnap.exists()) {
+                            await setDoc(mikhailRef, { deleted: true, migratedAt: new Date().toISOString() });
+                        }
+                        
+                        return true;
+                    }
+                    
+                    return false;
+                } catch (error) {
+                    console.error('❌ Ошибка миграции данных:', error);
+                    return false;
+                }
             }
             
             // Test Firebase connection
