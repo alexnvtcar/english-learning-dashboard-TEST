@@ -1556,4 +1556,48 @@
                 margin: 10px 0;
                 color: #666;
             }
+            
+            /* Sync Prompt Modal Styles */
+            #syncPromptModal .modal-content {
+                max-width: 500px;
+            }
+            
+            #syncPromptModal .modal-body {
+                text-align: center;
+                padding: 20px;
+            }
+            
+            #syncPromptModal .modal-footer {
+                display: flex;
+                justify-content: center;
+                gap: 15px;
+                padding: 20px;
+            }
+            
+            #syncPromptModal .btn {
+                padding: 10px 20px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: background-color 0.3s;
+            }
+            
+            #syncPromptModal .btn-primary {
+                background-color: #4CAF50;
+                color: white;
+            }
+            
+            #syncPromptModal .btn-primary:hover {
+                background-color: #45a049;
+            }
+            
+            #syncPromptModal .btn-secondary {
+                background-color: #f0f0f0;
+                color: #333;
+            }
+            
+            #syncPromptModal .btn-secondary:hover {
+                background-color: #e0e0e0;
+            }
         

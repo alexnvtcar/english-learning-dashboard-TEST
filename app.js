@@ -262,11 +262,16 @@
                         const restoredSaved = restoreDataTypes(saved);
                         
                         // Обновляем appState, сохраняя важные поля
+                        // НЕ загружаем isVerified из localStorage - он всегда false при запуске
+                        const { isVerified, ...restoredData } = restoredSaved;
+                        
                         appState = { 
                             ...appState, 
-                            ...restoredSaved,
+                            ...restoredData,
                             // Сохраняем текущего пользователя
-                            userName: appState.userName || restoredSaved.userName || 'Михаил'
+                            userName: appState.userName || restoredData.userName || 'Михаил',
+                            // isVerified всегда false при запуске
+                            isVerified: false
                         };
                         
                         console.log('✅ Локальное состояние загружено');
@@ -440,6 +445,18 @@
                         }
                     }
                 }));
+                
+                // Дополнительно отключаем кнопки удаления заданий для Михаила
+                const taskDeleteButtons = document.querySelectorAll('.btn-icon-delete');
+                taskDeleteButtons.forEach(btn => {
+                    if (btn && btn.closest('.task-item')) {
+                        if (isViewer) {
+                            btn.style.display = 'none'; // Скрываем кнопку удаления для Михаила
+                        } else {
+                            btn.style.display = ''; // Показываем для Админа
+                        }
+                    }
+                });
                 
                 // Special case: allow progress navigation for viewer
                 const progressNav = document.querySelectorAll('#weekPrevBtn, #weekNextBtn');
@@ -1137,6 +1154,12 @@
             function addTask(event) {
                 event.preventDefault();
 
+                // Проверяем роль пользователя
+                if (appState.role === 'viewer') {
+                    showNotification('Режим просмотра: добавление заданий недоступно', 'warning');
+                    return;
+                }
+
                 const name = document.getElementById("taskName").value;
                 const description =
                     document.getElementById("taskDescription").value;
@@ -1367,6 +1390,10 @@
                 // Сначала загружаем базовое состояние из localStorage
                 loadLocalState();
                 
+                // ПРИНУДИТЕЛЬНО сбрасываем верификацию при каждом запуске
+                appState.isVerified = false;
+                console.log('🔒 Сброс верификации при запуске приложения');
+                
                 // Проверяем, есть ли сохраненный пользователь
                 const savedUserName = localStorage.getItem('current-user');
                 if (savedUserName && (savedUserName === 'Михаил' || savedUserName === 'Admin')) {
@@ -1412,27 +1439,17 @@
                 // Устанавливаем роль по умолчанию
                 if (!appState.role) appState.role = 'viewer';
                 
-                // Проверяем, нужна ли верификация
-                if (!appState.isVerified) {
-                    // Проверяем, есть ли у пользователя PIN-код
-                    const hasPin = appState.pinCodes[appState.userName];
-                    if (hasPin) {
-                        // Если PIN-код есть, сразу показываем верификацию
-                        console.log('🔐 PIN-код найден, показываем верификацию');
-                        showVerificationModal();
-                    } else {
-                        // Если PIN-кода нет, показываем выбор учетной записи
-                        console.log('👤 PIN-код не найден, показываем выбор учетной записи');
-                        document.getElementById('accountModal').classList.add('show');
-                        const overlay = document.getElementById('modalOverlay');
-                        const container = document.querySelector('.container');
-                        if (overlay) overlay.classList.add('show');
-                        if (container) container.classList.add('hidden');
-                    }
+                // ВСЕГДА показываем верификацию при запуске
+                // Проверяем, есть ли у пользователя PIN-код
+                const hasPin = appState.pinCodes[appState.userName];
+                if (hasPin) {
+                    // Если PIN-код есть, показываем верификацию
+                    console.log('🔐 PIN-код найден, показываем верификацию');
+                    showVerificationModal();
                 } else {
-                    // Если пользователь уже верифицирован, применяем роли
-                    console.log('✅ Пользователь верифицирован, применяем роли');
-                    applyRolePermissions();
+                    // Если PIN-кода нет, показываем выбор учетной записи
+                    console.log('👤 PIN-код не найден, показываем выбор учетной записи');
+                    showAccountSelection();
                 }
 
                 // Обновляем UI
@@ -1459,6 +1476,12 @@
 
             // Delete Task Function
             function deleteTask(taskId) {
+                // Проверяем роль пользователя
+                if (appState.role === 'viewer') {
+                    showNotification('Режим просмотра: удаление заданий недоступно', 'warning');
+                    return;
+                }
+                
                 if (confirm('Вы уверены, что хотите удалить это задание?')) {
                     appState.tasks = appState.tasks.filter(task => task.id !== taskId);
                     renderTasks();
@@ -1469,7 +1492,10 @@
 
             // Delete Activity Function with full state recalculation
             function deleteActivity(dateStr, index) {
-                if (appState.role === 'viewer') { showNotification('Режим просмотра: действие недоступно', 'info'); return; }
+                if (appState.role === 'viewer') { 
+                    showNotification('Режим просмотра: удаление активности недоступно', 'warning'); 
+                    return; 
+                }
                 if (!confirm('Удалить эту запись активности? Это повлияет на ваш прогресс.')) {
                     return;
                 }
@@ -1563,6 +1589,12 @@
             }
 
             function clearTasks() {
+                // Проверяем роль пользователя
+                if (appState.role === 'viewer') {
+                    showNotification('Режим просмотра: очистка заданий недоступна', 'warning');
+                    return;
+                }
+                
                 if (confirm('Удалить ВСЕ сохраненные задания?')) {
                     appState.tasks = [];
                     renderTasks();
@@ -1616,6 +1648,12 @@
 
 
             function exportData() {
+                // Проверяем роль пользователя
+                if (appState.role === 'viewer') {
+                    showNotification('Режим просмотра: экспорт данных недоступен', 'warning');
+                    return;
+                }
+                
                 const dataToExport = {
                     progress: appState.progress,
                     tasks: appState.tasks,
@@ -1778,6 +1816,12 @@
             }
 
             function importData(event) {
+                // Проверяем роль пользователя
+                if (appState.role === 'viewer') {
+                    showNotification('Режим просмотра: импорт данных недоступен', 'warning');
+                    return;
+                }
+                
                 const file = event.target.files[0];
                 if (!file) return;
 
@@ -1831,6 +1875,12 @@
             }
 
             function resetProgress() {
+                // Проверяем роль пользователя
+                if (appState.role === 'viewer') {
+                    showNotification('Режим просмотра: сброс прогресса недоступен', 'warning');
+                    return;
+                }
+                
                 if (confirm('Вы уверены, что хотите сбросить весь прогресс? Это действие нельзя отменить!')) {
                     // Reset to initial state
                     appState.progress = {
@@ -2536,20 +2586,7 @@
                 
                 console.log(`✅ Учетная запись изменена: ${previousUserName} (${previousRole}) → ${appState.userName} (${appState.role})`);
                 
-                // При выборе учетной записи загружаем последние данные из Firebase
-                if (navigator.onLine && isFirebaseAvailable()) {
-                    console.log('🔄 Загружаем последние данные при выборе учетной записи...');
-                    loadStateFromFirestore().then(success => {
-                        if (success) {
-                            console.log('✅ Данные загружены при выборе учетной записи');
-                        } else {
-                            console.log('⚠️ Не удалось загрузить данные при выборе учетной записи');
-                        }
-                    }).catch(error => {
-                        console.log('❌ Ошибка загрузки данных при выборе учетной записи:', error);
-                    });
-                }
-                
+                // Закрываем модальное окно выбора учетной записи
                 document.getElementById('accountModal').classList.remove('show');
                 
                 // Убираем затемнение и показываем основной контент
@@ -2642,6 +2679,8 @@
 
             // Show verification modal
             function showVerificationModal() {
+                console.log('🔐 Показываем модальное окно верификации для:', appState.userName);
+                
                 const userInfo = document.getElementById('verificationUserInfo');
                 const setupSection = document.getElementById('setupPinSection');
                 const overlay = document.getElementById('modalOverlay');
@@ -2653,8 +2692,10 @@
                 const hasPin = appState.pinCodes[appState.userName];
                 if (hasPin) {
                     setupSection.style.display = 'none';
+                    console.log('🔐 PIN-код найден, показываем форму ввода');
                 } else {
                     setupSection.style.display = 'block';
+                    console.log('🔑 PIN-код не найден, показываем форму установки');
                 }
                 
                 resetPinInput();
@@ -2672,18 +2713,16 @@
                 if (container) container.classList.remove('hidden');
                 resetPinInput();
                 
-                // Возвращаем пользователя к выбору учетной записи
-                // если он не прошел верификацию
-                if (!appState.isVerified) {
-                    document.getElementById('accountModal').classList.add('show');
-                    // Скрываем основной контент и показываем затемнение
-                    if (overlay) overlay.classList.add('show');
-                    if (container) container.classList.add('hidden');
-                }
-                
                 // Сбрасываем флаг смены PIN-кода при отмене
                 if (isChangingPin) {
                     isChangingPin = false;
+                }
+                
+                // Если пользователь не прошел верификацию, показываем выбор учетной записи
+                // но только если это не была смена PIN-кода
+                if (!appState.isVerified && !isChangingPin) {
+                    console.log('🔄 Верификация отменена, возвращаемся к выбору учетной записи');
+                    showAccountSelection();
                 }
             }
 
@@ -2859,21 +2898,6 @@
                         
                         // Применяем роли только после успешной верификации
                         applyRolePermissions();
-                        
-                        // При входе загружаем последние данные из Firebase
-                        if (navigator.onLine && isFirebaseAvailable()) {
-                            console.log('🔄 Загружаем последние данные при входе...');
-                            loadStateFromFirestore().then(success => {
-                                if (success) {
-                                    console.log('✅ Данные загружены при входе');
-                                    showNotification('Данные синхронизированы', 'success');
-                                } else {
-                                    console.log('⚠️ Не удалось загрузить данные при входе');
-                                }
-                            }).catch(error => {
-                                console.log('❌ Ошибка загрузки данных при входе:', error);
-                            });
-                        }
                         
                         showNotification('Вход выполнен успешно!', 'success');
                         
@@ -3745,17 +3769,28 @@
                 // Проверяем, была ли уже первичная синхронизация
                 const hasSyncedBefore = localStorage.getItem('has-synced-before');
                 
-                if (!hasSyncedBefore && navigator.onLine && isFirebaseAvailable()) {
-                    console.log('🔄 Первичная синхронизация...');
+                // ПЕРВИЧНАЯ СИНХРОНИЗАЦИЯ ВСЕГДА выполняется при запуске
+                // если пользователь еще не верифицирован
+                if (!appState.isVerified && navigator.onLine && isFirebaseAvailable()) {
+                    console.log('🔄 Проверяем необходимость первичной синхронизации...');
                     
-                    // Сначала пробуем мигрировать старые данные
-                    const migrationResult = await migrateUserDataToShared();
-                    if (migrationResult) {
-                        console.log('✅ Миграция данных завершена успешно');
+                    if (!hasSyncedBefore) {
+                        console.log('🔄 Первичная синхронизация...');
+                        
+                        // Сначала пробуем мигрировать старые данные
+                        const migrationResult = await migrateUserDataToShared();
+                        if (migrationResult) {
+                            console.log('✅ Миграция данных завершена успешно');
+                        }
+                        
+                        // Показываем модальное окно первичной синхронизации
+                        showFirstTimeSyncModal();
+                    } else {
+                        // Если синхронизация уже была, но пользователь не верифицирован,
+                        // предлагаем синхронизировать данные
+                        console.log('🔄 Пользователь не верифицирован, предлагаем синхронизацию');
+                        showSyncPrompt();
                     }
-                    
-                    // Показываем модальное окно первичной синхронизации
-                    showFirstTimeSyncModal();
                 }
             }
             
@@ -3829,6 +3864,59 @@
                 }
             }
             
+            // Show sync prompt for non-verified users
+            function showSyncPrompt() {
+                const modal = document.createElement('div');
+                modal.className = 'modal show';
+                modal.id = 'syncPromptModal';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>🔄 Синхронизация данных</h3>
+                        </div>
+                        <div class="modal-body">
+                            <p>Для входа в систему необходимо синхронизировать данные с Firebase.</p>
+                            <p>Это обеспечит актуальность вашего прогресса и настроек.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="startManualSync()">
+                                🔄 Синхронизировать
+                            </button>
+                            <button class="btn btn-secondary" onclick="closeSyncPrompt()">
+                                Позже
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // Скрываем фон
+                const overlay = document.getElementById('modalOverlay');
+                const container = document.querySelector('.container');
+                if (overlay) overlay.classList.add('show');
+                if (container) container.classList.add('hidden');
+            }
+            
+            // Start manual sync
+            async function startManualSync() {
+                closeSyncPrompt();
+                showFirstTimeSyncModal();
+            }
+            
+            // Close sync prompt
+            function closeSyncPrompt() {
+                const modal = document.getElementById('syncPromptModal');
+                if (modal) {
+                    modal.remove();
+                }
+                
+                // Показываем фон
+                const overlay = document.getElementById('modalOverlay');
+                const container = document.querySelector('.container');
+                if (overlay) overlay.classList.remove('show');
+                if (container) container.classList.remove('hidden');
+            }
+            
             // Show first time sync success
             function showFirstTimeSyncSuccess() {
                 const modal = document.getElementById('firstTimeSyncModal');
@@ -3889,6 +3977,16 @@
                 const container = document.querySelector('.container');
                 if (overlay) overlay.classList.remove('show');
                 if (container) container.classList.remove('hidden');
+            }
+            
+            // Show account selection modal
+            function showAccountSelection() {
+                console.log('👤 Показываем выбор учетной записи');
+                document.getElementById('accountModal').classList.add('show');
+                const overlay = document.getElementById('modalOverlay');
+                const container = document.querySelector('.container');
+                if (overlay) overlay.classList.add('show');
+                if (container) container.classList.add('hidden');
             }
             
             // Migrate old user data to shared collection
