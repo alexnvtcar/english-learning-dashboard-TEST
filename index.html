@@ -21,6 +21,14 @@
                     👤
                     Сменить учетную запись
                 </div>
+                <div class="settings-item" onclick="showChangePinModal()">
+                    🔐
+                    Сменить PIN-код
+                </div>
+                <div class="settings-item" onclick="logoutUser()">
+                    🚪
+                    Выйти из профиля
+                </div>
                                  <div class="settings-item" onclick="exportData()">
                      💾
                      Экспорт данных
@@ -515,7 +523,7 @@
                 <form id="rewardForm" onsubmit="addReward(event)">
                     <div class="form-group">
                         <label class="form-label">Запланированная награда</label>
-                        <div id="plannedRewardDisplay" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; color: #1e293b;">
+                 <div id="plannedRewardDisplay" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; color: #1e293b;">
                             —
                         </div>
                     </div>
@@ -587,6 +595,107 @@
                                          <button class="btn btn-secondary" onclick="selectAccount('admin')" style="justify-content:center; background: #fbbf24; color: #92400e; border-color: #f59e0b;">
                          👑 Admin (полные права)
                      </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verification Modal -->
+        <div class="modal" id="verificationModal">
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="verificationModalTitle" style="max-width:400px; position:relative;">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="verificationModalTitle">🔐 Верификация</h3>
+                </div>
+                <div style="text-align: center; padding: 20px 0;">
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">Введите PIN-код для входа в профиль</div>
+                        <div style="font-size: 16px; font-weight: 600; color: #1f2937;" id="verificationUserInfo">Михаил</div>
+                    </div>
+                    
+                    <!-- PIN Input Display -->
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
+                            <div class="pin-dot" id="pinDot1"></div>
+                            <div class="pin-dot" id="pinDot2"></div>
+                            <div class="pin-dot" id="pinDot3"></div>
+                            <div class="pin-dot" id="pinDot4"></div>
+                        </div>
+                        <div style="font-size: 12px; color: #6b7280;" id="pinStatus">Введите 4-значный код</div>
+                    </div>
+                    
+                    <!-- Numeric Keypad -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 240px; margin: 0 auto;">
+                        <button class="pin-btn" onclick="addPinDigit('1')">1</button>
+                        <button class="pin-btn" onclick="addPinDigit('2')">2</button>
+                        <button class="pin-btn" onclick="addPinDigit('3')">3</button>
+                        <button class="pin-btn" onclick="addPinDigit('4')">4</button>
+                        <button class="pin-btn" onclick="addPinDigit('5')">5</button>
+                        <button class="pin-btn" onclick="addPinDigit('6')">6</button>
+                        <button class="pin-btn" onclick="addPinDigit('7')">7</button>
+                        <button class="pin-btn" onclick="addPinDigit('8')">8</button>
+                        <button class="pin-btn" onclick="addPinDigit('9')">9</button>
+                        <button class="pin-btn" onclick="addPinDigit('0')" style="grid-column: 2;">0</button>
+                        <button class="pin-btn pin-btn-delete" onclick="deletePinDigit()">⌫</button>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
+                        <button class="btn btn-secondary" onclick="hideVerificationModal()">❌ Отмена</button>
+                        <button class="btn btn-primary" onclick="verifyPin()" id="verifyBtn" disabled>✅ Войти</button>
+                    </div>
+                    
+                    <!-- Setup PIN Button (shown only for new users) -->
+                    <div style="margin-top: 16px; display: none;" id="setupPinSection">
+                        <button class="btn btn-secondary" onclick="setupNewPin()" style="font-size: 14px;">
+                            🔑 Установить PIN-код
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setup PIN Modal -->
+        <div class="modal" id="setupPinModal">
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="setupPinModalTitle" style="max-width:400px; position:relative;">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="setupPinModalTitle">🔑 Установка PIN-кода</h3>
+                </div>
+                <div style="text-align: center; padding: 20px 0;">
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">Придумайте 4-значный PIN-код для профиля</div>
+                        <div style="font-size: 16px; font-weight: 600; color: #1f2937;" id="setupPinUserInfo">Михаил</div>
+                    </div>
+                    
+                    <!-- PIN Input Display -->
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
+                            <div class="pin-dot" id="setupPinDot1"></div>
+                            <div class="pin-dot" id="setupPinDot2"></div>
+                            <div class="pin-dot" id="setupPinDot3"></div>
+                            <div class="pin-dot" id="setupPinDot4"></div>
+                        </div>
+                        <div style="font-size: 12px; color: #6b7280;" id="setupPinStatus">Введите новый PIN-код</div>
+                    </div>
+                    
+                    <!-- Numeric Keypad -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 240px; margin: 0 auto;">
+                        <button class="pin-btn" onclick="addSetupPinDigit('1')">1</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('2')">2</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('3')">3</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('4')">4</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('5')">5</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('6')">6</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('7')">7</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('8')">8</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('9')">9</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('0')" style="grid-column: 2;">0</button>
+                        <button class="pin-btn pin-btn-delete" onclick="deleteSetupPinDigit()">⌫</button>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
+                        <button class="btn btn-secondary" onclick="hideSetupPinModal()">❌ Отмена</button>
+                        <button class="btn btn-primary" onclick="confirmSetupPin()" id="confirmSetupBtn" disabled>✅ Сохранить</button>
+                    </div>
                 </div>
             </div>
         </div>
