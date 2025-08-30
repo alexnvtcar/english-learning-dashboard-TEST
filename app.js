@@ -231,24 +231,36 @@
 
             const STORAGE_KEY = 'english-learning-app-state-v1';
             const IDEAS_KEY = 'english-learning-reward-ideas-v1';
-            function saveState() {
+            // Save state locally and optionally to Firebase
+            function saveState(saveToFirebase = false) {
                 try {
+                    console.log('💾 Сохраняем состояние...');
+                    
                     // Сохраняем локально
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
                     
-                    // Сохраняем в Firebase (если доступен и есть интернет)
-                    if (navigator.onLine && appState.isVerified) {
+                    // Сохраняем текущего пользователя отдельно
+                    localStorage.setItem('current-user', appState.userName);
+                    
+                    console.log('✅ Состояние сохранено локально');
+                    
+                    // Сохраняем в Firebase если запрошено и доступно
+                    if (saveToFirebase && navigator.onLine && appState.isVerified && isFirebaseAvailable()) {
+                        console.log('🔄 Запрашиваем сохранение в Firebase...');
                         saveStateToFirestore().catch(error => {
                             console.log('Ошибка сохранения в Firebase:', error);
                         });
                     }
                 } catch (e) {
-                    // ignore storage errors
+                    console.error('❌ Ошибка сохранения состояния:', e);
                 }
             }
 
-            function loadState() {
+            // Load local state only (without Firebase)
+            function loadLocalState() {
                 try {
+                    console.log('📂 Загружаем локальное состояние...');
+                    
                     // Загружаем из localStorage
                     const raw = localStorage.getItem(STORAGE_KEY);
                     if (raw) {
@@ -257,33 +269,112 @@
                         // Восстанавливаем типы данных из localStorage
                         const restoredSaved = restoreDataTypes(saved);
                         
-                        appState = { ...appState, ...restoredSaved };
+                        // Обновляем appState, сохраняя важные поля
+                        appState = { 
+                            ...appState, 
+                            ...restoredSaved,
+                            // Сохраняем текущего пользователя
+                            userName: appState.userName || restoredSaved.userName || 'Михаил'
+                        };
                         
-                        // Дополнительная проверка для критических полей
-                        if (!appState.currentMonth || typeof appState.currentMonth.getFullYear !== 'function') {
-                            appState.currentMonth = new Date();
-                        }
-                        if (!appState.selectedDate || typeof appState.selectedDate.toLocaleDateString !== 'function') {
-                            appState.selectedDate = new Date();
-                        }
+                        console.log('✅ Локальное состояние загружено');
+                    } else {
+                        console.log('📭 Локальное состояние не найдено, используем значения по умолчанию');
                     }
                     
-                    // Устанавливаем userName по умолчанию, если он не задан
-                    if (!appState.userName) {
-                        appState.userName = 'Михаил';
+                    // Дополнительная проверка для критических полей
+                    if (!appState.currentMonth || typeof appState.currentMonth.getFullYear !== 'function') {
+                        appState.currentMonth = new Date();
+                    }
+                    if (!appState.selectedDate || typeof appState.selectedDate.toLocaleDateString !== 'function') {
+                        appState.selectedDate = new Date();
                     }
                     
-                    // Загружаем из Firebase (если доступен и есть интернет)
-                    if (navigator.onLine) {
-                        loadStateFromFirestore().catch(error => {
-                            console.log('Ошибка загрузки из Firebase:', error);
-                        });
-                    }
                 } catch (e) {
-                    console.error('Ошибка загрузки состояния:', e);
+                    console.error('❌ Ошибка загрузки локального состояния:', e);
                     // Устанавливаем значения по умолчанию при ошибке
                     appState.currentMonth = new Date();
                     appState.selectedDate = new Date();
+                }
+            }
+
+            // Load state from Firebase (for sync)
+            async function loadStateFromFirestore() {
+                if (!isFirebaseAvailable()) {
+                    console.log('Firebase недоступен, загружаем только локально');
+                    return false;
+                }
+
+                try {
+                    console.log('📥 Начинаем загрузку из Firebase...');
+                    
+                    const userRef = doc(db, 'users', appState.userName);
+                    const docSnap = await getDoc(userRef);
+                    
+                    if (docSnap.exists()) {
+                        const firestoreData = docSnap.data();
+                        
+                        console.log('📊 Данные найдены в Firebase:', {
+                            lastUpdated: firestoreData.lastUpdated,
+                            lastSavedBy: firestoreData.lastSavedBy,
+                            version: firestoreData.version,
+                            totalSaves: firestoreData.saveStats?.totalSaves || 0
+                        });
+                        
+                        // Восстанавливаем типы данных
+                        const restoredData = restoreDataTypes(firestoreData);
+                        
+                        // Сохраняем важные локальные настройки
+                        const localSettings = {
+                            userName: appState.userName,
+                            role: appState.role,
+                            isVerified: appState.isVerified
+                        };
+                        
+                        // Обновляем локальное состояние
+                        appState = { ...appState, ...restoredData, ...localSettings };
+                        
+                        // Обновляем UI
+                        updateProgressDisplay();
+                        renderTasks();
+                        renderRewards();
+                        generateCalendar();
+                        updateDayActivity();
+                        renderWeeklyChart();
+                        
+                        console.log('✅ Данные успешно загружены из Firebase');
+                        showNotification('Данные загружены из Firebase', 'success');
+                        
+                        // Показываем детальную информацию о загрузке
+                        showLoadDetails(firestoreData);
+                        
+                        return true;
+                    } else {
+                        console.log('📭 Данные пользователя не найдены в Firebase');
+                        showNotification('Данные пользователя не найдены в Firebase', 'info');
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка загрузки из Firebase:', error);
+                    
+                    // Проверяем тип ошибки
+                    if (error.message && error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+                        console.warn('⚠️ Запрос заблокирован клиентом (возможно, блокировщик рекламы)');
+                        showNotification('Firebase заблокирован блокировщиком рекламы', 'warning');
+                    } else if (error.code === 'permission-denied') {
+                        console.warn('⚠️ Отказано в доступе к Firestore');
+                        showNotification('Отказано в доступе к Firestore', 'error');
+                    } else if (error.code === 'unavailable') {
+                        console.warn('⚠️ Firestore недоступен');
+                        showNotification('Firestore недоступен', 'error');
+                    } else if (error.code === 'not-found') {
+                        console.warn('⚠️ Документ не найден в Firestore');
+                        showNotification('Данные не найдены в Firebase', 'info');
+                    } else {
+                        showNotification('Ошибка загрузки из Firebase', 'error');
+                    }
+                    
+                    return false;
                 }
             }
 
@@ -1254,10 +1345,22 @@
 
             // Initialize Application
             function initApp() {
-                loadState();
+                console.log('🚀 Инициализация приложения...');
+                
+                // Сначала загружаем базовое состояние из localStorage
+                loadLocalState();
+                
+                // Проверяем, есть ли сохраненный пользователь
+                const savedUserName = localStorage.getItem('current-user');
+                if (savedUserName && (savedUserName === 'Михаил' || savedUserName === 'Admin')) {
+                    appState.userName = savedUserName;
+                    console.log(`👤 Восстановлен пользователь: ${savedUserName}`);
+                }
+                
+                // Устанавливаем базовые значения по умолчанию
                 ensureWeeklyReset();
-
-                // Add some demo activity only if none exists
+                
+                // Добавляем демо-активность только если её нет
                 const hasAnyActivity = Object.keys(appState.activityData || {}).length > 0;
                 if (!hasAnyActivity) {
                     if (!appState.resetDate) appState.resetDate = new Date();
@@ -1289,12 +1392,8 @@
                     ];
                 }
 
-                // Force account selection (always show on load, default viewer)
+                // Устанавливаем роль по умолчанию
                 if (!appState.role) appState.role = 'viewer';
-                // Устанавливаем userName по умолчанию, если он не задан
-                if (!appState.userName) {
-                    appState.userName = 'Михаил';
-                }
                 
                 // Проверяем, нужна ли верификация
                 if (!appState.isVerified) {
@@ -1302,9 +1401,11 @@
                     const hasPin = appState.pinCodes[appState.userName];
                     if (hasPin) {
                         // Если PIN-код есть, сразу показываем верификацию
+                        console.log('🔐 PIN-код найден, показываем верификацию');
                         showVerificationModal();
                     } else {
                         // Если PIN-кода нет, показываем выбор учетной записи
+                        console.log('👤 PIN-код не найден, показываем выбор учетной записи');
                         document.getElementById('accountModal').classList.add('show');
                         const overlay = document.getElementById('modalOverlay');
                         const container = document.querySelector('.container');
@@ -1313,9 +1414,11 @@
                     }
                 } else {
                     // Если пользователь уже верифицирован, применяем роли
+                    console.log('✅ Пользователь верифицирован, применяем роли');
                     applyRolePermissions();
                 }
 
+                // Обновляем UI
                 updateProgressDisplay();
                 renderTasks();
                 renderRewards();
@@ -1323,15 +1426,15 @@
                 updateDayActivity();
                 renderWeeklyChart();
                 updateRedeemControls();
-                populateIconSelector(); // Initialize icon selector
+                populateIconSelector();
                 
-                // Добавляем обработчик для кнопки тестирования Firebase
+                // Добавляем обработчики для кнопок Firebase
                 const testFirebaseBtn = document.getElementById('testFirebaseBtn');
                 if (testFirebaseBtn) {
                     testFirebaseBtn.addEventListener('click', testFirebaseConnection);
                 }
                 
-                // Приветствие показывается только при выборе роли, не автоматически
+                console.log('✅ Приложение инициализировано');
             }
 
             // Delete Task Function
@@ -2405,7 +2508,14 @@
                     appState.userName = 'Admin';
                 }
                 
-                saveState();
+                // Сохраняем состояние локально и в Firebase
+                saveState(true);
+                
+                // Сохраняем текущего пользователя отдельно
+                localStorage.setItem('current-user', appState.userName);
+                
+                console.log(`✅ Учетная запись установлена: ${appState.userName} (${appState.role})`);
+                
                 document.getElementById('accountModal').classList.remove('show');
                 
                 // Убираем затемнение и показываем основной контент
@@ -2716,6 +2826,21 @@
                         // Применяем роли только после успешной верификации
                         applyRolePermissions();
                         
+                        // Автоматически загружаем данные из Firebase при входе
+                        if (navigator.onLine && isFirebaseAvailable()) {
+                            console.log('🔄 Автоматическая загрузка данных при входе...');
+                            loadStateFromFirestore().then(success => {
+                                if (success) {
+                                    console.log('✅ Данные загружены при входе');
+                                    showNotification('Данные загружены из Firebase', 'success');
+                                } else {
+                                    console.log('⚠️ Не удалось загрузить данные при входе');
+                                }
+                            }).catch(error => {
+                                console.log('❌ Ошибка загрузки данных при входе:', error);
+                            });
+                        }
+                        
                         // Запускаем автосинхронизацию после входа
                         startAutoSync();
                         
@@ -2747,7 +2872,7 @@
                 
                 // Save PIN code
                 appState.pinCodes[appState.userName] = setupPin;
-                saveState();
+                saveState(true); // Сохраняем в Firebase
                 
                 hideSetupPinModal();
                 
@@ -2760,8 +2885,23 @@
                     showNotification('PIN-код установлен успешно!', 'success');
                     // Auto-verify user
                     appState.isVerified = true;
+                    
+                    // Автоматически загружаем данные из Firebase при первой установке PIN
+                    if (navigator.onLine && isFirebaseAvailable()) {
+                        console.log('🔄 Загрузка данных при первой установке PIN...');
+                        loadStateFromFirestore().then(success => {
+                            if (success) {
+                                console.log('✅ Данные загружены при установке PIN');
+                                showNotification('Данные загружены из Firebase', 'success');
+                            }
+                        }).catch(error => {
+                            console.log('❌ Ошибка загрузки данных при установке PIN:', error);
+                        });
+                    }
+                    
                     // Применяем роли после успешной установки PIN-кода
                     applyRolePermissions();
+                    
                     // Show welcome modal for Mikhail
                     if (appState.userName === 'Михаил') {
                         showWelcomeModal();
@@ -2965,7 +3105,24 @@
                     return true;
                 } catch (error) {
                     console.error('❌ Ошибка сохранения в Firebase:', error);
-                    showNotification('Ошибка сохранения в Firebase', 'error');
+                    
+                    // Проверяем тип ошибки
+                    if (error.message && error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+                        console.warn('⚠️ Запрос заблокирован клиентом (возможно, блокировщик рекламы)');
+                        showNotification('Firebase заблокирован блокировщик рекламы', 'warning');
+                    } else if (error.code === 'permission-denied') {
+                        console.warn('⚠️ Отказано в доступе к Firestore');
+                        showNotification('Отказано в доступе к Firestore', 'error');
+                    } else if (error.code === 'unavailable') {
+                        console.warn('⚠️ Firestore недоступен');
+                        showNotification('Firestore недоступен', 'error');
+                    } else if (error.code === 'resource-exhausted') {
+                        console.warn('⚠️ Превышены лимиты Firestore');
+                        showNotification('Превышены лимиты Firestore', 'warning');
+                    } else {
+                        showNotification('Ошибка сохранения в Firebase', 'error');
+                    }
+                    
                     return false;
                 }
             }
@@ -3199,7 +3356,24 @@
                     }
                 } catch (error) {
                     console.error('❌ Ошибка загрузки из Firebase:', error);
-                    showNotification('Ошибка загрузки из Firebase', 'error');
+                    
+                    // Проверяем тип ошибки
+                    if (error.message && error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+                        console.warn('⚠️ Запрос заблокирован клиентом (возможно, блокировщик рекламы)');
+                        showNotification('Firebase заблокирован блокировщиком рекламы', 'warning');
+                    } else if (error.code === 'permission-denied') {
+                        console.warn('⚠️ Отказано в доступе к Firestore');
+                        showNotification('Отказано в доступе к Firestore', 'error');
+                    } else if (error.code === 'unavailable') {
+                        console.warn('⚠️ Firestore недоступен');
+                        showNotification('Firestore недоступен', 'error');
+                    } else if (error.code === 'not-found') {
+                        console.warn('⚠️ Документ не найден в Firestore');
+                        showNotification('Данные не найдены в Firebase', 'info');
+                    } else {
+                        showNotification('Ошибка загрузки из Firebase', 'error');
+                    }
+                    
                     return false;
                 }
             }
@@ -3224,21 +3398,28 @@
                     // Показываем прогресс синхронизации
                     showNotification('Синхронизация...', 'info');
                     
-                    // Сначала загружаем данные из Firestore
+                    // Сначала загружаем данные из Firestore (последняя сохраненная версия)
                     const loadResult = await loadStateFromFirestore();
                     
-                    // Затем сохраняем текущее состояние
-                    const saveResult = await saveStateToFirestore();
-                    
-                    if (loadResult && saveResult) {
-                        console.log('✅ Синхронизация завершена успешно');
-                        showNotification('Синхронизация завершена успешно', 'success');
+                    if (loadResult) {
+                        console.log('✅ Данные загружены из Firebase');
                         
-                        // Показываем сводку синхронизации
-                        showSyncSummary();
+                        // Затем сохраняем текущее состояние (обновляем Firebase)
+                        const saveResult = await saveStateToFirestore();
+                        
+                        if (saveResult) {
+                            console.log('✅ Синхронизация завершена успешно');
+                            showNotification('Синхронизация завершена успешно', 'success');
+                            
+                            // Показываем сводку синхронизации
+                            showSyncSummary();
+                        } else {
+                            console.log('⚠️ Синхронизация завершена с предупреждениями');
+                            showNotification('Синхронизация завершена с предупреждениями', 'warning');
+                        }
                     } else {
-                        console.log('⚠️ Синхронизация завершена с предупреждениями');
-                        showNotification('Синхронизация завершена с предупреждениями', 'warning');
+                        console.log('⚠️ Не удалось загрузить данные из Firebase');
+                        showNotification('Не удалось загрузить данные из Firebase', 'warning');
                     }
                     
                     return true;
@@ -3338,6 +3519,112 @@
                 document.body.appendChild(modal);
             }
 
+            // Firebase diagnostics
+            function diagnoseFirebaseIssues() {
+                const issues = [];
+                
+                // Проверяем доступность Firebase
+                if (!isFirebaseAvailable()) {
+                    issues.push('❌ Firebase SDK недоступен');
+                }
+                
+                // Проверяем интернет-соединение
+                if (!navigator.onLine) {
+                    issues.push('❌ Нет интернет-соединения');
+                }
+                
+                // Проверяем блокировщики
+                const adBlockers = [
+                    'AdBlock',
+                    'uBlock',
+                    'AdBlock Plus',
+                    'Ghostery',
+                    'Privacy Badger'
+                ];
+                
+                const hasAdBlocker = adBlockers.some(name => 
+                    window[name] || 
+                    document.querySelector(`[class*="${name.toLowerCase()}"]`) ||
+                    document.querySelector(`[id*="${name.toLowerCase()}"]`)
+                );
+                
+                if (hasAdBlocker) {
+                    issues.push('⚠️ Обнаружен блокировщик рекламы');
+                }
+                
+                // Проверяем расширения браузера
+                if (navigator.userAgent.includes('Chrome')) {
+                    issues.push('ℹ️ Используется Chrome (проверьте расширения)');
+                } else if (navigator.userAgent.includes('Firefox')) {
+                    issues.push('ℹ️ Используется Firefox (проверьте дополнения)');
+                }
+                
+                return issues;
+            }
+
+            // Show Firebase diagnostics modal
+            function showFirebaseDiagnostics() {
+                const issues = diagnoseFirebaseIssues();
+                
+                const modal = document.createElement('div');
+                modal.className = 'modal show';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>🔍 Диагностика Firebase</h3>
+                            <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="diagnostics-info">
+                                <div class="diagnostic-item">
+                                    <strong>Статус Firebase:</strong> 
+                                    ${isFirebaseAvailable() ? '✅ Доступен' : '❌ Недоступен'}
+                                </div>
+                                <div class="diagnostic-item">
+                                    <strong>Интернет:</strong> 
+                                    ${navigator.onLine ? '✅ Подключен' : '❌ Отключен'}
+                                </div>
+                                <div class="diagnostic-item">
+                                    <strong>Пользователь:</strong> 
+                                    ${appState.userName || 'Не указан'}
+                                </div>
+                                <div class="diagnostic-item">
+                                    <strong>Верификация:</strong> 
+                                    ${appState.isVerified ? '✅ Верифицирован' : '❌ Не верифицирован'}
+                                </div>
+                            </div>
+                            
+                            ${issues.length > 0 ? `
+                                <div class="diagnostics-issues">
+                                    <h4>⚠️ Обнаруженные проблемы:</h4>
+                                    <ul>
+                                        ${issues.map(issue => `<li>${issue}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            ` : `
+                                <div class="diagnostics-success">
+                                    <h4>✅ Проблем не обнаружено</h4>
+                                </div>
+                            `}
+                            
+                            <div class="diagnostics-solutions">
+                                <h4>🔧 Возможные решения:</h4>
+                                <ul>
+                                    <li>Отключите блокировщик рекламы для этого сайта</li>
+                                    <li>Проверьте расширения браузера</li>
+                                    <li>Убедитесь, что интернет-соединение стабильно</li>
+                                    <li>Попробуйте другой браузер</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" onclick="this.closest('.modal').remove()">OK</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
             // Show sync summary modal
             function showSyncSummary() {
                 const modal = document.createElement('div');
@@ -3404,6 +3691,19 @@
                     return true;
                 } catch (error) {
                     console.error('❌ Ошибка подключения к Firebase:', error);
+                    
+                    // Проверяем тип ошибки
+                    if (error.message && error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
+                        console.warn('⚠️ Запрос заблокирован клиентом (возможно, блокировщик рекламы)');
+                        showNotification('Firebase заблокирован блокировщиком рекламы', 'warning');
+                    } else if (error.code === 'permission-denied') {
+                        console.warn('⚠️ Отказано в доступе к Firestore');
+                        showNotification('Отказано в доступе к Firestore', 'error');
+                    } else if (error.code === 'unavailable') {
+                        console.warn('⚠️ Firestore недоступен');
+                        showNotification('Firestore недоступен', 'error');
+                    }
+                    
                     return false;
                 }
             }

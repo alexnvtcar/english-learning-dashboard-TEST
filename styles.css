@@ -1435,4 +1435,74 @@
             .summary-item.info {
                 color: #3b82f6;
             }
+            
+            /* Firebase Diagnostics Styles */
+            .diagnostics-info {
+                padding: 16px 0;
+                border-bottom: 1px solid #e5e7eb;
+                margin-bottom: 16px;
+            }
+            
+            .diagnostic-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                border-bottom: 1px solid #f3f4f6;
+            }
+            
+            .diagnostic-item:last-child {
+                border-bottom: none;
+            }
+            
+            .diagnostics-issues {
+                background: #fef3c7;
+                border: 1px solid #f59e0b;
+                border-radius: 8px;
+                padding: 16px;
+                margin: 16px 0;
+            }
+            
+            .diagnostics-issues h4 {
+                color: #92400e;
+                margin: 0 0 12px 0;
+            }
+            
+            .diagnostics-issues ul {
+                margin: 0;
+                padding-left: 20px;
+                color: #92400e;
+            }
+            
+            .diagnostics-success {
+                background: #d1fae5;
+                border: 1px solid #10b981;
+                border-radius: 8px;
+                padding: 16px;
+                margin: 16px 0;
+            }
+            
+            .diagnostics-success h4 {
+                color: #065f46;
+                margin: 0;
+            }
+            
+            .diagnostics-solutions {
+                background: #eff6ff;
+                border: 1px solid #3b82f6;
+                border-radius: 8px;
+                padding: 16px;
+                margin: 16px 0;
+            }
+            
+            .diagnostics-solutions h4 {
+                color: #1e40af;
+                margin: 0 0 12px 0;
+            }
+            
+            .diagnostics-solutions ul {
+                margin: 0;
+                padding-left: 20px;
+                color: #1e40af;
+            }
         
