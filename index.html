@@ -46,37 +46,42 @@
                     </div>
                 </div>
                 
-                <hr class="settings-divider">
+                <hr class="settings-divider" id="dividerBeforeTech">
                 <!-- Блок технической диагностики -->
-                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Техническая диагностика</div>
-                <div class="settings-block-content">
-                    <div class="settings-item" onclick="forceShowVerification(); showNotification('Верификация принудительно показана', 'info');">
-                        🔐
-                        Показать верификацию
-                    </div>
-                    <div class="settings-item" onclick="testFirebaseConnection()">
-                        🧪
-                        Тест Firebase
-                    </div>
-                    <div class="settings-item" onclick="showFirebaseDiagnostics()">
-                        🔍
-                        Диагностика Firebase
-                    </div>
-                    <div class="settings-item" onclick="checkDeviceCapabilities()">
-                        📱
-                        Диагностика устройства
+                <div class="settings-block" id="techDiagnosticsBlock">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Техническая диагностика</div>
+                    <div class="settings-block-content">
+                        <div class="settings-item" onclick="forceShowVerification(); showNotification('Верификация принудительно показана', 'info');">
+                            🔐
+                            Показать верификацию
+                        </div>
+                        <div class="settings-item" onclick="testFirebaseConnection()">
+                            🧪
+                            Тест Firebase
+                        </div>
+                        <div class="settings-item" onclick="showFirebaseDiagnostics()">
+                            🔍
+                            Диагностика Firebase
+                        </div>
+                        <div class="settings-item" onclick="checkDeviceCapabilities()">
+                            📱
+                            Диагностика устройства
+                        </div>
                     </div>
                 </div>
+                                <hr class="settings-divider" id="dividerBeforeFirebase">
                 <!-- Блок Firebase операций -->
-                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Firebase операции</div>
-                <div class="settings-block-content">
-                    <div class="settings-item" onclick="saveDataToFirebase()">
-                        💾
-                        Сохранить в Firebase
-                    </div>
-                    <div class="settings-item" onclick="syncWithFirestore()">
-                        🔄
-                        Синхронизировать
+                <div class="settings-block" id="firebaseOperationsBlock">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Firebase операции</div>
+                    <div class="settings-block-content">
+                        <div class="settings-item" onclick="saveDataToFirebase()">
+                            💾
+                            Сохранить в Firebase
+                        </div>
+                        <div class="settings-item" onclick="syncWithFirestore()">
+                            🔄
+                            Синхронизировать
+                        </div>
                     </div>
                 </div>
                 
@@ -95,22 +100,24 @@
                     </div>
                 </div>
                  
-                 <hr class="settings-divider">
+                 <hr class="settings-divider" id="dividerBeforeDanger">
                  
                                  <!-- Блок опасных операций -->
-                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Опасные операции</div>
-                <div class="settings-block-content">
-                    <div class="settings-item danger" onclick="clearTasks()">
-                        🗑️
-                        Очистить задания
-                    </div>
-                    <div class="settings-item danger" onclick="clearRewards()">
-                        🎁
-                        Очистить награды
-                    </div>
-                    <div class="settings-item danger" onclick="resetProgress()">
-                        🔄
-                        Сбросить прогресс
+                <div class="settings-block" id="dangerousOperationsBlock">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Опасные операции</div>
+                    <div class="settings-block-content">
+                        <div class="settings-item danger" onclick="clearTasks()">
+                            🗑️
+                            Очистить задания
+                        </div>
+                        <div class="settings-item danger" onclick="clearRewards()">
+                            🎁
+                            Очистить награды
+                        </div>
+                        <div class="settings-item danger" onclick="resetProgress()">
+                            🔄
+                            Сбросить прогресс
+                        </div>
                     </div>
                 </div>
             </div>
