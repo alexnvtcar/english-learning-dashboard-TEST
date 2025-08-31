@@ -236,16 +236,64 @@
                 try {
                     console.log('💾 Сохраняем состояние локально...');
                     console.log('🔐 Сохраняемые PIN-коды:', appState.pinCodes);
+                    console.log('🔧 Проверяем доступность localStorage...');
+                    
+                    // Проверяем доступность localStorage
+                    if (typeof localStorage === 'undefined') {
+                        console.error('❌ localStorage недоступен');
+                        return false;
+                    }
+                    
+                    // Тестируем запись в localStorage
+                    try {
+                        localStorage.setItem('test-save', 'test-save-value');
+                        const testValue = localStorage.getItem('test-save');
+                        if (testValue !== 'test-save-value') {
+                            console.error('❌ localStorage работает некорректно при записи');
+                            return false;
+                        }
+                        localStorage.removeItem('test-save');
+                        console.log('✅ localStorage работает корректно при записи');
+                    } catch (testError) {
+                        console.error('❌ Ошибка тестирования записи в localStorage:', testError);
+                        return false;
+                    }
+                    
+                    // Подготавливаем данные для сохранения
+                    const dataToSave = {
+                        ...appState,
+                        // Убеждаемся, что PIN-коды присутствуют
+                        pinCodes: appState.pinCodes || {
+                            'Михаил': null,
+                            'Admin': null
+                        }
+                    };
+                    
+                    console.log('📦 Данные для сохранения:', Object.keys(dataToSave));
                     
                     // Сохраняем локально
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                    const jsonData = JSON.stringify(dataToSave);
+                    console.log('📝 Размер JSON данных:', jsonData.length, 'символов');
+                    
+                    localStorage.setItem(STORAGE_KEY, jsonData);
+                    
+                    // Проверяем, что данные действительно сохранились
+                    const savedData = localStorage.getItem(STORAGE_KEY);
+                    if (!savedData) {
+                        console.error('❌ Данные не сохранились в localStorage');
+                        return false;
+                    }
                     
                     // Сохраняем текущего пользователя отдельно
                     localStorage.setItem('current-user', appState.userName);
                     
                     console.log('✅ Состояние сохранено локально');
+                    console.log('🔍 Проверка сохранения: данные найдены, размер:', savedData.length);
+                    
+                    return true;
                 } catch (e) {
                     console.error('❌ Ошибка сохранения состояния:', e);
+                    return false;
                 }
             }
 
@@ -253,11 +301,36 @@
             function loadLocalState() {
                 try {
                     console.log('📂 Загружаем локальное состояние...');
+                    console.log('🔧 Проверяем доступность localStorage...');
+                    
+                    // Проверяем доступность localStorage
+                    if (typeof localStorage === 'undefined') {
+                        console.error('❌ localStorage недоступен');
+                        return;
+                    }
+                    
+                    // Тестируем запись и чтение в localStorage
+                    try {
+                        localStorage.setItem('test-storage', 'test-value');
+                        const testValue = localStorage.getItem('test-storage');
+                        if (testValue !== 'test-value') {
+                            console.error('❌ localStorage работает некорректно');
+                            return;
+                        }
+                        localStorage.removeItem('test-storage');
+                        console.log('✅ localStorage работает корректно');
+                    } catch (testError) {
+                        console.error('❌ Ошибка тестирования localStorage:', testError);
+                        return;
+                    }
                     
                     // Загружаем из localStorage
                     const raw = localStorage.getItem(STORAGE_KEY);
+                    console.log('📦 Сырые данные из localStorage:', raw ? 'найдены' : 'не найдены');
+                    
                     if (raw) {
                         const saved = JSON.parse(raw);
+                        console.log('🔍 Распарсенные данные:', Object.keys(saved));
                         
                         // Восстанавливаем типы данных из localStorage
                         const restoredSaved = restoreDataTypes(saved);
@@ -266,19 +339,20 @@
                         // НЕ загружаем isVerified из localStorage - он всегда false при запуске
                         const { isVerified, ...restoredData } = restoredSaved;
                         
-                                            appState = { 
-                        ...appState, 
-                        ...restoredData,
-                        // Сохраняем текущего пользователя
-                        userName: appState.userName || restoredData.userName || 'Михаил',
-                        // isVerified всегда false при запуске
-                        isVerified: false,
-                                                // Валидируем и объединяем PIN-коды
-                        pinCodes: validatePinCodes({ ...appState.pinCodes, ...restoredData.pinCodes })
-                    };
-                    
-                    console.log('✅ Локальное состояние загружено');
-                    console.log('🔐 Загруженные PIN-коды:', appState.pinCodes);
+                        appState = { 
+                            ...appState, 
+                            ...restoredData,
+                            // Сохраняем текущего пользователя
+                            userName: appState.userName || restoredData.userName || 'Михаил',
+                            // isVerified всегда false при запуске
+                            isVerified: false,
+                            // Валидируем и объединяем PIN-коды
+                            pinCodes: validatePinCodes({ ...appState.pinCodes, ...restoredData.pinCodes })
+                        };
+                        
+                        console.log('✅ Локальное состояние загружено');
+                        console.log('🔐 Загруженные PIN-коды:', appState.pinCodes);
+                        console.log('👤 Текущий пользователь:', appState.userName);
                     } else {
                         console.log('📭 Локальное состояние не найдено, используем значения по умолчанию');
                     }
@@ -1391,9 +1465,47 @@
                 document.getElementById("rewardModal").classList.remove("show");
             }
 
+            // Check device type and capabilities
+            function checkDeviceCapabilities() {
+                const userAgent = navigator.userAgent;
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+                const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+                const isAndroid = /Android/.test(userAgent);
+                
+                console.log('📱 Информация об устройстве:');
+                console.log('   - User Agent:', userAgent);
+                console.log('   - Мобильное устройство:', isMobile);
+                console.log('   - iOS:', isIOS);
+                console.log('   - Android:', isAndroid);
+                console.log('   - Онлайн:', navigator.onLine);
+                console.log('   - Cookie enabled:', navigator.cookieEnabled);
+                
+                // Проверяем localStorage
+                try {
+                    const testKey = 'device-test';
+                    const testValue = 'test-value-' + Date.now();
+                    localStorage.setItem(testKey, testValue);
+                    const retrievedValue = localStorage.getItem(testKey);
+                    localStorage.removeItem(testKey);
+                    
+                    if (retrievedValue === testValue) {
+                        console.log('✅ localStorage работает корректно');
+                    } else {
+                        console.error('❌ localStorage работает некорректно');
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка тестирования localStorage:', error);
+                }
+                
+                return { isMobile, isIOS, isAndroid };
+            }
+
             // Initialize Application
             function initApp() {
                 console.log('🚀 Инициализация приложения...');
+                
+                // Проверяем возможности устройства
+                const deviceInfo = checkDeviceCapabilities();
                 
                 // Сначала загружаем базовое состояние из localStorage
                 loadLocalState();
@@ -1456,11 +1568,88 @@
                     console.log('🔑 PIN-коды инициализированы');
                 }
                 
+                // Пытаемся восстановить PIN-коды из backup localStorage
+                try {
+                    const backupPinCodes = localStorage.getItem('pin-codes-backup');
+                    if (backupPinCodes) {
+                        const parsedBackupPins = JSON.parse(backupPinCodes);
+                        console.log('🔐 Найден backup PIN-кодов:', parsedBackupPins);
+                        
+                        // Объединяем backup PIN-коды с текущими
+                        appState.pinCodes = { ...appState.pinCodes, ...parsedBackupPins };
+                        console.log('✅ PIN-коды восстановлены из backup');
+                    }
+                } catch (backupError) {
+                    console.error('❌ Ошибка восстановления backup PIN-кодов:', backupError);
+                }
+                
+                // Специальная обработка для мобильных устройств
+                if (deviceInfo.isMobile) {
+                    console.log('📱 Применяем специальную обработку для мобильного устройства');
+                    
+                    // Дополнительная проверка localStorage для мобильных устройств
+                    try {
+                        const mobileTestKey = 'mobile-pin-test';
+                        const mobileTestValue = JSON.stringify({ test: true, timestamp: Date.now() });
+                        localStorage.setItem(mobileTestKey, mobileTestValue);
+                        const mobileTestResult = localStorage.getItem(mobileTestKey);
+                        localStorage.removeItem(mobileTestKey);
+                        
+                        if (mobileTestResult === mobileTestValue) {
+                            console.log('✅ Мобильный localStorage работает корректно');
+                        } else {
+                            console.error('❌ Мобильный localStorage работает некорректно');
+                        }
+                    } catch (mobileError) {
+                        console.error('❌ Ошибка тестирования мобильного localStorage:', mobileError);
+                    }
+                    
+                    // Пытаемся восстановить PIN-коды из мобильного backup
+                    try {
+                        const mobileBackupPins = localStorage.getItem('mobile-pin-backup');
+                        if (mobileBackupPins) {
+                            const parsedMobilePins = JSON.parse(mobileBackupPins);
+                            console.log('🔐 Найден мобильный backup PIN-кодов:', parsedMobilePins);
+                            
+                            // Объединяем мобильный backup с текущими PIN-кодами
+                            appState.pinCodes = { ...appState.pinCodes, ...parsedMobilePins };
+                            console.log('✅ PIN-коды восстановлены из мобильного backup');
+                        }
+                    } catch (mobileBackupError) {
+                        console.error('❌ Ошибка восстановления мобильного backup:', mobileBackupError);
+                    }
+                    
+                    // Принудительно сохраняем текущие PIN-коды в backup для мобильных устройств
+                    if (appState.pinCodes && Object.values(appState.pinCodes).some(pin => pin !== null)) {
+                        try {
+                            localStorage.setItem('mobile-pin-backup', JSON.stringify(appState.pinCodes));
+                            console.log('🔐 Мобильный backup PIN-кодов создан');
+                        } catch (mobileBackupSaveError) {
+                            console.error('❌ Ошибка создания мобильного backup:', mobileBackupSaveError);
+                        }
+                    }
+                }
+                
                 console.log('🔐 Состояние PIN-кодов при инициализации:', appState.pinCodes);
+                console.log('👤 Текущий пользователь:', appState.userName);
+                console.log('🔍 Проверяем PIN-код для пользователя:', appState.pinCodes[appState.userName]);
+                
+                // Дополнительная проверка localStorage для PIN-кодов
+                try {
+                    const rawPinCheck = localStorage.getItem(STORAGE_KEY);
+                    if (rawPinCheck) {
+                        const savedPinCheck = JSON.parse(rawPinCheck);
+                        console.log('🔍 Дополнительная проверка PIN-кодов из localStorage:', savedPinCheck.pinCodes);
+                    }
+                } catch (pinCheckError) {
+                    console.error('❌ Ошибка дополнительной проверки PIN-кодов:', pinCheckError);
+                }
                 
                 // ВСЕГДА показываем верификацию при запуске
                 // Проверяем, есть ли у пользователя PIN-код
                 const hasPin = appState.pinCodes[appState.userName];
+                console.log(`🔐 Результат проверки PIN-кода для ${appState.userName}:`, hasPin ? 'найден' : 'не найден');
+                
                 if (hasPin) {
                     // Если PIN-код есть, показываем верификацию
                     console.log('🔐 PIN-код найден, показываем верификацию');
@@ -1506,6 +1695,14 @@
                     }).catch(error => {
                         console.log('❌ Ошибка загрузки backup PIN-кодов при запуске:', error);
                     });
+                }
+                
+                // Принудительно восстанавливаем PIN-коды из всех доступных источников
+                const restoreResult = forceRestorePinCodes();
+                if (restoreResult) {
+                    console.log('✅ PIN-коды восстановлены при запуске');
+                } else {
+                    console.log('🔑 PIN-коды не найдены при запуске');
                 }
             }
 
@@ -2986,8 +3183,21 @@
                 
                 console.log('💾 Текущие PIN-коды:', appState.pinCodes);
                 
+                // Принудительно сохраняем PIN-коды в localStorage
+                try {
+                    localStorage.setItem('pin-codes-backup', JSON.stringify(appState.pinCodes));
+                    console.log('🔐 PIN-коды сохранены в backup localStorage');
+                } catch (backupError) {
+                    console.error('❌ Ошибка сохранения backup PIN-кодов:', backupError);
+                }
+                
                 // Сохраняем локально
-                saveState();
+                const saveResult = saveState();
+                if (saveResult) {
+                    console.log('✅ Состояние успешно сохранено');
+                } else {
+                    console.error('❌ Ошибка сохранения состояния');
+                }
                 
                 // При смене PIN-кода обязательно сохраняем в Firebase
                 if (isChangingPin && navigator.onLine && isFirebaseAvailable()) {
@@ -3228,6 +3438,14 @@
                             // Объединяем с локальными PIN-кодами (локальные имеют приоритет)
                             appState.pinCodes = { ...validatedBackupPins, ...appState.pinCodes };
                             
+                            // Обновляем backup в localStorage
+                            try {
+                                localStorage.setItem('pin-codes-backup', JSON.stringify(appState.pinCodes));
+                                console.log('🔐 Backup PIN-кодов обновлен в localStorage');
+                            } catch (localError) {
+                                console.error('❌ Ошибка обновления backup в localStorage:', localError);
+                            }
+                            
                             console.log('✅ Backup PIN-кодов загружен и применен');
                             return true;
                         }
@@ -3237,6 +3455,108 @@
                     return false;
                 } catch (error) {
                     console.error('❌ Ошибка загрузки backup PIN-кодов:', error);
+                    return false;
+                }
+            }
+
+            // Force sync PIN codes with Firebase
+            async function forceSyncPinCodes() {
+                if (!navigator.onLine || !isFirebaseAvailable()) {
+                    console.log('🔐 Принудительная синхронизация PIN-кодов отменена: нет интернета или Firebase');
+                    return false;
+                }
+
+                try {
+                    console.log('🔐 Принудительная синхронизация PIN-кодов...');
+                    
+                    // Сначала загружаем из Firebase
+                    const loadResult = await loadPinCodesFromFirebase();
+                    
+                    if (loadResult) {
+                        // Затем сохраняем текущие PIN-коды обратно в Firebase
+                        const saveResult = await savePinCodesToFirebase();
+                        
+                        if (saveResult) {
+                            console.log('✅ PIN-коды успешно синхронизированы с Firebase');
+                            return true;
+                        } else {
+                            console.log('⚠️ PIN-коды загружены, но не сохранены в Firebase');
+                            return false;
+                        }
+                    } else {
+                        // Если загрузка не удалась, просто сохраняем текущие
+                        const saveResult = await savePinCodesToFirebase();
+                        return saveResult;
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка принудительной синхронизации PIN-кодов:', error);
+                    return false;
+                }
+            }
+
+            // Force restore PIN codes from all available sources
+            function forceRestorePinCodes() {
+                console.log('🔐 Принудительное восстановление PIN-кодов из всех источников...');
+                
+                let restored = false;
+                
+                // 1. Пытаемся восстановить из основного backup
+                try {
+                    const backupPinCodes = localStorage.getItem('pin-codes-backup');
+                    if (backupPinCodes) {
+                        const parsedBackupPins = JSON.parse(backupPinCodes);
+                        console.log('🔐 Найден основной backup PIN-кодов:', parsedBackupPins);
+                        appState.pinCodes = { ...appState.pinCodes, ...parsedBackupPins };
+                        restored = true;
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка восстановления основного backup:', error);
+                }
+                
+                // 2. Пытаемся восстановить из мобильного backup
+                try {
+                    const mobileBackupPins = localStorage.getItem('mobile-pin-backup');
+                    if (mobileBackupPins) {
+                        const parsedMobilePins = JSON.parse(mobileBackupPins);
+                        console.log('🔐 Найден мобильный backup PIN-кодов:', parsedMobilePins);
+                        appState.pinCodes = { ...appState.pinCodes, ...parsedMobilePins };
+                        restored = true;
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка восстановления мобильного backup:', error);
+                }
+                
+                // 3. Пытаемся восстановить из основного localStorage
+                try {
+                    const mainStorage = localStorage.getItem(STORAGE_KEY);
+                    if (mainStorage) {
+                        const parsedMain = JSON.parse(mainStorage);
+                        if (parsedMain.pinCodes) {
+                            console.log('🔐 Найден основной localStorage PIN-кодов:', parsedMain.pinCodes);
+                            appState.pinCodes = { ...appState.pinCodes, ...parsedMain.pinCodes };
+                            restored = true;
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка восстановления основного localStorage:', error);
+                }
+                
+                if (restored) {
+                    console.log('✅ PIN-коды восстановлены из доступных источников');
+                    console.log('🔐 Текущие PIN-коды:', appState.pinCodes);
+                    
+                    // Сохраняем восстановленные PIN-коды во все backup
+                    try {
+                        localStorage.setItem('pin-codes-backup', JSON.stringify(appState.pinCodes));
+                        localStorage.setItem('mobile-pin-backup', JSON.stringify(appState.pinCodes));
+                        console.log('🔐 Backup обновлены');
+                    } catch (saveError) {
+                        console.error('❌ Ошибка обновления backup:', saveError);
+                    }
+                    
+                    return true;
+                } else {
+                    console.log('❌ PIN-коды не найдены ни в одном источнике');
                     return false;
                 }
             }
@@ -4450,4 +4770,7 @@
         window.showSyncStatus = showSyncStatus;
         window.updateSyncStatus = updateSyncStatus;
         window.retryOperation = retryOperation;
+        window.forceSyncPinCodes = forceSyncPinCodes;
+        window.checkDeviceCapabilities = checkDeviceCapabilities;
+        window.forceRestorePinCodes = forceRestorePinCodes;
         

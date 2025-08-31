@@ -25,6 +25,14 @@
                     🔐
                     Сменить PIN-код
                 </div>
+                <div class="settings-item" onclick="forceSyncPinCodes().then(success => { if(success) showNotification('PIN-коды синхронизированы', 'success'); else showNotification('Ошибка синхронизации PIN-кодов', 'error'); }).catch(error => { showNotification('Ошибка синхронизации', 'error'); })">
+                    🔄
+                    Синхронизировать PIN-коды
+                </div>
+                <div class="settings-item" onclick="forceRestorePinCodes(); showNotification('Восстановление PIN-кодов завершено', 'info');">
+                    🔐
+                    Восстановить PIN-коды
+                </div>
                 <div class="settings-item" onclick="logoutUser()">
                     🚪
                     Выйти из профиля
@@ -44,6 +52,10 @@
                 <div class="settings-item" onclick="showFirebaseDiagnostics()">
                     🔍
                     Диагностика Firebase
+                </div>
+                <div class="settings-item" onclick="checkDeviceCapabilities()">
+                    📱
+                    Диагностика устройства
                 </div>
                                  <div class="settings-item" onclick="exportData()">
                      💾
