@@ -775,6 +775,9 @@
                 
                 // Пересчитываем и обновляем отображение лучшей недели
                 recalculateBestWeek();
+                
+                // Обновляем отображение времени обучения
+                updateLearningTimeDisplay();
             }
 
             function isWeekday(date) {
@@ -845,6 +848,198 @@
                     if (idx < newEarned) el.classList.add('filled'); else el.classList.remove('filled');
                     if (newEarned >= 2 && idx === 2) el.classList.add('ready'); else el.classList.remove('ready');
                 });
+            }
+
+            // Learning Time Functions
+            function updateLearningTimeDisplay() {
+                const timeData = calculateLearningTimeData();
+                
+                // Отладочная информация
+                console.log('📊 Расчет времени обучения:');
+                console.log('   - Общее время за ВСЕ время:', timeData.totalTime, 'минут =', formatTime(timeData.totalTime));
+                console.log('   - Среднее в неделю (сумма средних по дням):', timeData.weeklyAverage, 'минут =', formatTime(timeData.weeklyAverage));
+                console.log('   - Среднее в день:', timeData.dailyAverage, 'минут =', formatTime(timeData.dailyAverage));
+                console.log('   - Среднее время по дням недели:', timeData.weeklyTime.map(t => formatTime(t)));
+                
+                // Обновляем основные статистики
+                document.getElementById('totalLearningTime').textContent = formatTime(timeData.totalTime);
+                document.getElementById('weeklyAvgTime').textContent = formatTime(timeData.weeklyAverage);
+                document.getElementById('dailyAvgTime').textContent = formatTime(timeData.dailyAverage);
+                
+                // Обновляем круговую диаграмму
+                updateWeeklyTimeChart(timeData.weeklyTime);
+                
+
+                
+                // Обновляем легенду
+                updateTimeLegend(timeData.weeklyTime);
+            }
+
+            function calculateLearningTimeData() {
+                const state = getEffectiveState();
+                const activity = state.activityData || {};
+                const dates = Object.keys(activity).sort();
+                
+                let totalTime = 0;
+                let dailyTime = {};
+                let weeklyTimeTotal = [0, 0, 0, 0, 0, 0, 0]; // Общее время по дням недели (Пн-Вс)
+                let weeklyTimeCounts = [0, 0, 0, 0, 0, 0, 0]; // Количество дней по дням недели для подсчета среднего
+                
+                // Вычисляем время для каждого дня на основе существующих данных
+                dates.forEach(date => {
+                    const logs = activity[date] || [];
+                    let dayTime = 0;
+                    
+                    // Если у нас есть timeSpent, используем его, иначе ищем задание по ID для получения реальной длительности
+                    logs.forEach(log => {
+                        if (log.timeSpent) {
+                            dayTime += log.timeSpent;
+                        } else {
+                            // Находим задание по ID для получения реальной длительности
+                            const task = appState.tasks.find(t => t.id === log.taskId);
+                            let estimatedTime = 0;
+                            
+                            if (task && task.duration) {
+                                // Используем реальную длительность из задания
+                                estimatedTime = task.duration;
+                            } else {
+                                // Если задание не найдено, используем базовые значения
+                                if (log.taskName && log.taskName.includes('Грамматические')) {
+                                    estimatedTime = 20; // Базовое значение для грамматики
+                                } else if (log.taskName && log.taskName.includes('Аудирование')) {
+                                    estimatedTime = 25; // Базовое значение для аудирования
+                                } else {
+                                    estimatedTime = 15; // Базовое значение для изучения слов
+                                }
+                            }
+                            
+                            dayTime += estimatedTime;
+                            
+                            // Сохраняем вычисленное время для будущего использования
+                            log.timeSpent = estimatedTime;
+                        }
+                    });
+                    
+                    if (dayTime > 0) {
+                        dailyTime[date] = dayTime;
+                        totalTime += dayTime;
+                        
+                        // Добавляем в статистику по дням недели для расчета среднего
+                        const d = new Date(date);
+                        const dayOfWeek = d.getDay();
+                        const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Пн = 0, Вс = 6
+                        weeklyTimeTotal[adjustedDay] += dayTime;
+                        weeklyTimeCounts[adjustedDay]++;
+                    }
+                });
+                
+                // Вычисляем СРЕДНЕЕ время по дням недели (не суммарное!)
+                const weeklyTimeAverage = weeklyTimeTotal.map((total, index) => {
+                    return weeklyTimeCounts[index] > 0 ? total / weeklyTimeCounts[index] : 0;
+                });
+                
+                // Вычисляем среднее время в день
+                const activeDays = dates.filter(date => dailyTime[date] > 0).length;
+                const dailyAverage = activeDays > 0 ? totalTime / activeDays : 0;
+                
+                // Вычисляем среднее время в неделю (сумма среднего времени по всем дням недели)
+                const weeklyAverage = weeklyTimeAverage.reduce((sum, time) => sum + time, 0);
+                
+                return {
+                    totalTime,
+                    dailyAverage,
+                    weeklyAverage,
+                    dailyTime,
+                    weeklyTime: weeklyTimeAverage // Используем среднее время по дням недели
+                };
+            }
+
+
+
+            function formatTime(minutes) {
+                if (!minutes || minutes === 0) return '00:00';
+                
+                const hours = Math.floor(minutes / 60);
+                const mins = Math.round(minutes % 60);
+                
+                return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+            }
+
+            function updateWeeklyTimeChart(weeklyTime) {
+                // weeklyTime теперь содержит среднее время по дням недели
+                const totalAverageWeeklyTime = weeklyTime.reduce((sum, time) => sum + time, 0);
+                
+                // Форматируем время в формате HH:MM
+                const timeDisplay = formatTime(totalAverageWeeklyTime);
+                
+                document.getElementById('weeklyTimeChart').innerHTML = `
+                    <div class="time-chart-center">
+                        <div class="time-chart-total">${timeDisplay}</div>
+                        <div class="time-chart-label">среднее в неделю</div>
+                    </div>
+                `;
+                
+                // Обновляем conic-gradient для диаграммы
+                const chart = document.getElementById('weeklyTimeChart');
+                
+                if (totalAverageWeeklyTime > 0) {
+                    let currentAngle = 0;
+                    const gradients = [];
+                    const colors = ['#1e40af', '#3b82f6', '#059669', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                    
+                    weeklyTime.forEach((time, index) => {
+                        if (time > 0) {
+                            const angle = (time / totalAverageWeeklyTime) * 360;
+                            gradients.push(`${colors[index]} ${currentAngle}deg ${currentAngle + angle}deg`);
+                            currentAngle += angle;
+                        }
+                    });
+                    
+                    if (gradients.length > 0) {
+                        chart.style.background = `conic-gradient(from 0deg, ${gradients.join(', ')})`;
+                    } else {
+                        // Если нет данных, показываем базовый градиент
+                        chart.style.background = 'conic-gradient(from 0deg, #e2e8f0 0deg 360deg)';
+                    }
+                } else {
+                    // Если нет данных, показываем базовый градиент
+                    chart.style.background = 'conic-gradient(from 0deg, #e2e8f0 0deg 360deg)';
+                }
+            }
+
+
+
+            function updateTimeLegend(weeklyTime) {
+                const legend = document.getElementById('weeklyTimeLegend');
+                const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+                const colors = ['#1e40af', '#3b82f6', '#059669', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                
+                let legendHTML = '';
+                let totalAverageWeeklyTime = weeklyTime.reduce((sum, time) => sum + time, 0);
+                
+                weeklyTime.forEach((time, index) => {
+                    if (time > 0) {
+                        const percentage = totalAverageWeeklyTime > 0 ? ((time / totalAverageWeeklyTime) * 100).toFixed(1) : 0;
+                        legendHTML += `
+                            <div class="time-legend-item">
+                                <div class="time-legend-color" style="background-color: ${colors[index]};"></div>
+                                <span>${days[index]}: ${formatTime(time)} среднее</span>
+                                <span style="color: #94a3b8; font-size: 0.75rem;">(${percentage}%)</span>
+                            </div>
+                        `;
+                    } else {
+                        legendHTML += `
+                            <div class="time-legend-item" style="opacity: 0.5;">
+                                <div class="time-legend-color" style="background-color: #e2e8f0;"></div>
+                                <span>${days[index]}: нет данных</span>
+                            </div>
+                        `;
+                    }
+                });
+                
+
+                
+                legend.innerHTML = legendHTML;
             }
 
             function getWeekStartKey(date) {
@@ -1242,11 +1437,31 @@
                     let classes = "calendar-day";
                     if (isToday) classes += " today";
                     if (isSelected) classes += " selected";
-                    if (hasActivity) classes += " active";
                     if (!isCurrentMonth) classes += " other-month";
 
+                    // Определяем уровень активности по времени обучения
+                    if (hasActivity && hasActivity.length > 0) {
+                        const totalTimeSpent = hasActivity.reduce((sum, log) => {
+                            return sum + (log.timeSpent || 0);
+                        }, 0);
+
+                        if (totalTimeSpent > 0) {
+                            if (totalTimeSpent < 30) {
+                                classes += " activity-low";
+                            } else if (totalTimeSpent < 60) {
+                                classes += " activity-medium";
+                            } else if (totalTimeSpent < 120) {
+                                classes += " activity-high";
+                            } else {
+                                classes += " activity-very-high";
+                            }
+                        } else {
+                            classes += " active"; // Старый стиль для совместимости
+                        }
+                    }
+
                     days += `
-                    <div class="${classes}" onclick="selectDate('${dayStr}')">
+                    <div class="${classes}" onclick="selectDate('${dayStr}')" title="${dayStr}: ${hasActivity && hasActivity.length > 0 ? formatTime(hasActivity.reduce((sum, log) => sum + (log.timeSpent || 0), 0)) : 'Нет активности'}">
                         ${currentDay.getDate()}
                     </div>
                 `;
@@ -1280,16 +1495,23 @@
                         (sum, log) => sum + log.xpEarned,
                         0,
                     );
+                    const totalTime = activity.reduce(
+                        (sum, log) => sum + (log.timeSpent || 0),
+                        0,
+                    );
                     dayActivity.innerHTML = `
                     <div style="color: #059669; font-weight: 600;">
                         Выполнено заданий: ${activity.length} • Получено XP: +${totalXP}
+                    </div>
+                    <div style="color: #1e40af; font-weight: 600; margin-top: 4px;">
+                        Время обучения: ${formatTime(totalTime)}
                     </div>
                     <div style="margin-top: 8px;">
                         ${activity
                             .map(
                                 (log, index) => `
                             <div class="activity-item" data-date="${selectedDateStr}" data-index="${index}">
-                                ${escapeHTML(log.taskName)} (+${log.xpEarned} XP)
+                                ${escapeHTML(log.taskName)} (+${log.xpEarned} XP • ${formatTime(log.timeSpent || 0)})
                                 <button class="activity-delete" onclick="deleteActivity('${selectedDateStr}', ${index})" title="Удалить запись активности" aria-label="Удалить запись активности">
                                     ❌
                                 </button>
@@ -1360,10 +1582,15 @@
                     if (!appState.activityData[today]) {
                         appState.activityData[today] = [];
                     }
+                    
+                    // Используем реальную длительность задания
+                    const timeSpent = task.duration || 15;
+                    
                     appState.activityData[today].push({
                         taskId: task.id,
                         taskName: task.name,
                         xpEarned: task.xpReward,
+                        timeSpent: timeSpent,
                         completedAt: new Date(),
                     });
 
@@ -1392,6 +1619,9 @@
                     console.log('   - Новый уровень:', appState.progress.level);
                     console.log('   - XP за неделю:', appState.progress.weeklyXP);
                     console.log('   - Лучшая неделя:', appState.progress.bestWeekXP);
+                    
+                    // Обновляем отображение времени обучения
+                    updateLearningTimeDisplay();
                     
                     // Автоматически сохраняем в Firebase после выполнения задания
                     setTimeout(() => {
@@ -1895,6 +2125,7 @@
                             taskId: 1,
                             taskName: "Изучение новых слов",
                             xpEarned: 50,
+                            timeSpent: 15,
                             completedAt: new Date(),
                         },
                     ];
@@ -1904,12 +2135,14 @@
                             taskId: 2,
                             taskName: "Грамматические упражнения",
                             xpEarned: 75,
+                            timeSpent: 20,
                             completedAt: new Date(Date.now() - 86400000),
                         },
                         {
                             taskId: 3,
                             taskName: "Аудирование",
                             xpEarned: 60,
+                            timeSpent: 25,
                             completedAt: new Date(Date.now() - 86400000),
                         },
                     ];
@@ -1919,6 +2152,9 @@
                 
                 // 3. Проверяем, что все показатели обновлены
                 console.log('✅ Инициализация завершена, все показатели пересчитаны');
+                
+                // Обновляем отображение времени обучения
+                updateLearningTimeDisplay();
                 
                 // Автоматическое сохранение отключено при инициализации
                 // saveDataToFirebase();
@@ -1991,6 +2227,9 @@
                         // 3. Проверяем, что все показатели обновлены
                         console.log('✅ Верификация показана, все показатели пересчитаны');
                         
+                        // Обновляем отображение времени обучения
+                        updateLearningTimeDisplay();
+                        
                         // Применяем роли для правильного отображения блоков настроек
                         applyRolePermissions();
                         
@@ -2035,6 +2274,9 @@
                 
                 // 3. Проверяем, что все показатели обновлены
                 console.log('✅ UI обновлен, все показатели пересчитаны');
+                
+                // Обновляем отображение времени обучения
+                updateLearningTimeDisplay();
                 
                 // Применяем роли для правильного отображения блоков настроек
                 applyRolePermissions();
@@ -2347,10 +2589,74 @@
             // Settings Functions
             function toggleSettingsMenu() {
                 const menu = document.getElementById('settingsMenu');
-                menu.classList.toggle('show');
-                const btn = document.querySelector('.settings-btn');
-                if (btn) btn.setAttribute('aria-expanded', menu.classList.contains('show') ? 'true' : 'false');
+                const closeBtn = menu.querySelector('.settings-close-btn');
+                
+                if (menu.classList.contains('show')) {
+                    // Закрываем меню
+                    closeSettingsMenu();
+                } else {
+                    // Открываем меню
+                    menu.classList.add('show');
+                    const btn = document.querySelector('.settings-btn');
+                    if (btn) btn.setAttribute('aria-expanded', 'true');
+                    
+                    // Анимация появления кнопки закрытия
+                    if (closeBtn) {
+                        closeBtn.style.animation = 'closeBtnAppear 0.5s ease-out';
+                    }
+                }
             }
+
+            function closeSettingsMenu() {
+                const menu = document.getElementById('settingsMenu');
+                const closeBtn = menu.querySelector('.settings-close-btn');
+                
+                // Анимация исчезновения кнопки закрытия
+                if (closeBtn) {
+                    closeBtn.style.animation = 'closeBtnDisappear 0.3s ease-in forwards';
+                }
+                
+                // Закрываем меню с небольшой задержкой для анимации
+                setTimeout(() => {
+                    menu.classList.remove('show');
+                    const btn = document.querySelector('.settings-btn');
+                    if (btn) btn.setAttribute('aria-expanded', 'false');
+                    
+                    // Сбрасываем анимацию кнопки
+                    if (closeBtn) {
+                        closeBtn.style.animation = '';
+                    }
+                }, 200);
+            }
+
+            // Закрытие меню при клике вне его области
+            document.addEventListener('click', function(event) {
+                const menu = document.getElementById('settingsMenu');
+                const settingsBtn = document.querySelector('.settings-btn');
+                
+                if (menu && menu.classList.contains('show')) {
+                    // Если клик не по кнопке настроек и не по меню
+                    if (!menu.contains(event.target) && !settingsBtn.contains(event.target)) {
+                        closeSettingsMenu();
+                    }
+                }
+            });
+
+            // Закрытие меню по клавише Escape
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    const menu = document.getElementById('settingsMenu');
+                    if (menu && menu.classList.contains('show')) {
+                        closeSettingsMenu();
+                    }
+                    
+                    // Закрытие модального окна аналитики по Escape
+                    const analyticsModal = document.getElementById('analyticsModal');
+                    if (analyticsModal && analyticsModal.classList.contains('show')) {
+                        hideAnalyticsModal();
+                    }
+                }
+            });
 
             
 
@@ -2395,6 +2701,9 @@
                     
                     // 4. Проверяем, что все показатели обновлены
                     console.log('✅ Импорт данных завершен, все показатели пересчитаны');
+                    
+                    // Обновляем отображение времени обучения
+                    updateLearningTimeDisplay();
                     
                     showNotification('Состояние синхронизировано! Все показатели пересчитаны.', 'success');
                 } catch (e) {
@@ -2669,12 +2978,15 @@
                         // 3. Проверяем, что все показатели обновлены
                         console.log('✅ Импорт данных завершен, все показатели пересчитаны');
                         
+                        // Обновляем отображение времени обучения
+                        updateLearningTimeDisplay();
+                        
                         showNotification('Данные импортированы успешно! Все показатели пересчитаны.', 'success');
                         
-                                            // Автоматически сохраняем в Firebase после импорта данных
-                    setTimeout(() => {
-                        saveDataToFirebaseSilent();
-                    }, 1000);
+                        // Автоматически сохраняем в Firebase после импорта данных
+                        setTimeout(() => {
+                            saveDataToFirebaseSilent();
+                        }, 1000);
                         
                         saveState();
                     } catch (error) {
@@ -2797,7 +3109,10 @@
                     // 8. Сбрасываем неделю
                     ensureWeeklyReset();
                     
-                    // 9. Проверяем, что все показатели действительно сброшены
+                    // 9. Обновляем отображение времени обучения
+                    updateLearningTimeDisplay();
+                    
+                    // 10. Проверяем, что все показатели действительно сброшены
                     console.log('✅ Проверка сброса показателей:');
                     console.log('   - Уровень:', appState.progress.level);
                     console.log('   - Общий XP:', appState.progress.totalXP);
@@ -2866,7 +3181,15 @@
 
             // Analytics Functions
             function showAnalyticsModal() {
-                document.getElementById('analyticsModal').classList.add('show');
+                const modal = document.getElementById('analyticsModal');
+                modal.classList.add('show');
+                
+                // Анимация появления кнопки закрытия
+                const closeBtn = modal.querySelector('.analytics-close-btn');
+                if (closeBtn) {
+                    closeBtn.style.animation = 'analyticsCloseBtnAppear 0.6s ease-out';
+                }
+                
                 // sync demo UI
                 const badge = document.getElementById('demoBadge');
                 const btn = document.getElementById('toggleDemoBtn');
@@ -2901,7 +3224,23 @@
             }
 
             function hideAnalyticsModal() {
-                document.getElementById('analyticsModal').classList.remove('show');
+                const modal = document.getElementById('analyticsModal');
+                const closeBtn = modal.querySelector('.analytics-close-btn');
+                
+                // Анимация исчезновения кнопки закрытия
+                if (closeBtn) {
+                    closeBtn.style.animation = 'analyticsCloseBtnDisappear 0.4s ease-in forwards';
+                }
+                
+                // Закрываем модальное окно с небольшой задержкой для анимации
+                setTimeout(() => {
+                    modal.classList.remove('show');
+                    
+                    // Сбрасываем анимацию кнопки
+                    if (closeBtn) {
+                        closeBtn.style.animation = '';
+                    }
+                }, 300);
             }
 
             function switchAnalyticsTab(tabName) {
@@ -3666,12 +4005,15 @@
                 // 3. Проверяем, что все показатели обновлены
                 console.log('✅ Учетная запись изменена, все показатели пересчитаны');
                 
+                // Обновляем отображение времени обучения
+                updateLearningTimeDisplay();
+                
                 showNotification(appState.userName === 'Михаил' ? 'Режим Михаила' : 'Режим администратора', 'info');
                 
-                                        // Автоматически сохраняем в Firebase после смены учетной записи
-                        setTimeout(() => {
-                            saveDataToFirebaseSilent();
-                        }, 1000);
+                // Автоматически сохраняем в Firebase после смены учетной записи
+                setTimeout(() => {
+                    saveDataToFirebaseSilent();
+                }, 1000);
             }
 
             // Change Account Modal
@@ -3703,6 +4045,9 @@
                 
                 // 3. Проверяем, что все показатели обновлены
                 console.log('✅ Смена учетной записи показана, все показатели пересчитаны');
+                
+                // Обновляем отображение времени обучения
+                updateLearningTimeDisplay();
                 
                 // Восстанавливаем состояние блоков (все свернуты по умолчанию)
                 restoreSettingsBlocksState();
@@ -5188,6 +5533,9 @@
                             
                             // 3. Проверяем, что все показатели обновлены
                             console.log('✅ Синхронизация завершена успешно, все показатели пересчитаны');
+                            
+                            // Обновляем отображение времени обучения
+                            updateLearningTimeDisplay();
                             
                             // Автоматическое сохранение отключено при синхронизации
                             // saveDataToFirebase();

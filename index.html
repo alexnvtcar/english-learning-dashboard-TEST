@@ -21,6 +21,10 @@
                 <span class="save-text">Сохранить</span>
             </button>
             <div class="settings-menu" id="settingsMenu">
+                <!-- Кнопка закрытия -->
+                <div class="settings-close-btn" onclick="closeSettingsMenu()" aria-label="Закрыть настройки">
+                    ✕
+                </div>
                 <!-- Основные настройки -->
                 <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Основные настройки</div>
                 <div class="settings-block-content">
@@ -395,6 +399,68 @@
                     </div>
                 </div>
 
+                <!-- Learning Time -->
+                <div class="card learning-time-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            ⏱️
+                            Время обучения
+                        </h2>
+                    </div>
+
+                    <div class="learning-time-content">
+                        <!-- Основная статистика времени -->
+                        <div class="time-stats-grid">
+                            <div class="time-stat-card total-time">
+                                <div class="time-stat-icon">🕐</div>
+                                <div class="time-stat-content">
+                                    <div class="time-stat-value" id="totalLearningTime">00:00</div>
+                                    <div class="time-stat-label">Всего времени</div>
+                                </div>
+                                <div class="time-stat-sparkle">✨</div>
+                            </div>
+                            
+                            <div class="time-stat-card weekly-avg">
+                                <div class="time-stat-icon">📅</div>
+                                <div class="time-stat-content">
+                                    <div class="time-stat-value" id="weeklyAvgTime">00:00</div>
+                                    <div class="time-stat-label">В среднем в неделю</div>
+                                </div>
+                                <div class="time-stat-pulse"></div>
+                            </div>
+                            
+                            <div class="time-stat-card daily-avg">
+                                <div class="time-stat-icon">📊</div>
+                                <div class="time-stat-content">
+                                    <div class="time-stat-value" id="dailyAvgTime">00:00</div>
+                                    <div class="time-stat-label">В среднем в день</div>
+                                </div>
+                                <div class="time-stat-pulse"></div>
+                            </div>
+                        </div>
+
+                        <!-- Круговая диаграмма времени по дням недели -->
+                        <div class="time-chart-section">
+                            <h3 class="time-section-title">Время по дням недели</h3>
+                            <div class="time-chart-container">
+                                <div class="time-chart" id="weeklyTimeChart">
+                                    <div class="time-chart-center">
+                                        <div class="time-chart-total">0ч</div>
+                                        <div class="time-chart-label">в неделю</div>
+                                    </div>
+                                </div>
+                                <div class="time-chart-legend" id="weeklyTimeLegend">
+                                    <!-- Легенда будет генерироваться динамически -->
+                                </div>
+                            </div>
+                        </div>
+
+
+
+
+                    </div>
+                </div>
+
                 <!-- Calendar -->
                 <div class="card">
                     <div class="card-header">
@@ -414,6 +480,26 @@
                         <button class="calendar-nav" onclick="changeMonth(1)">
                             ▶️
                         </button>
+                    </div>
+
+                    <!-- Легенда календаря -->
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <div class="legend-color activity-low"></div>
+                            <span>Меньше 30 мин</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color activity-medium"></div>
+                            <span>30-59 мин</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color activity-high"></div>
+                            <span>1-2 часа</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color activity-very-high"></div>
+                            <span>Больше 2 часов</span>
+                        </div>
                     </div>
 
                     <div
@@ -775,7 +861,9 @@
         <!-- Analytics Modal -->
         <div class="modal analytics-modal" id="analyticsModal">
             <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="analyticsModalTitle">
-                <button class="close-btn" onclick="hideAnalyticsModal()">&times;</button>
+                <div class="analytics-close-btn" onclick="hideAnalyticsModal()" aria-label="Закрыть аналитику">
+                    ✕
+                </div>
                 
                 <div class="analytics-header">
                     <div class="analytics-title" id="analyticsModalTitle">
