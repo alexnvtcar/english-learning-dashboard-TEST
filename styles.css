@@ -1192,9 +1192,10 @@
                 display: flex;
                 flex-direction: column;
                 gap: 12px;
+                position: relative;
             }
 
-            .settings-btn, .analytics-btn, .save-btn {
+            .settings-btn, .save-btn {
                 width: 50px;
                 height: 50px;
                 border: none;
@@ -1221,16 +1222,7 @@
                 box-shadow: 0 6px 16px rgba(30, 64, 175, 0.4);
             }
 
-            .analytics-btn {
-                background: linear-gradient(135deg, #059669, #10b981);
-                box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-            }
 
-            .analytics-btn:hover {
-                background: linear-gradient(135deg, #047857, #059669);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
-            }
 
             /* Save Button Styles */
             .save-btn {
@@ -1341,32 +1333,33 @@
                 background: white;
                 border-radius: 12px;
                 box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-                padding: 8px;
-                min-width: 200px;
+                padding: 60px 40px 40px 40px;
+                min-width: 350px;
                 max-height: 70vh;
                 overflow-y: auto;
                 display: none;
-                position: relative;
+                z-index: 1000;
+                transform: translateX(-20px);
             }
 
             .settings-close-btn {
                 position: absolute;
-                top: -12px;
-                right: -12px;
-                width: 28px;
-                height: 28px;
+                top: 5px;
+                right: 5px;
+                width: 50px;
+                height: 50px;
                 background: linear-gradient(135deg, #1e40af, #3b82f6);
-                border: 2px solid white;
+                border: 5px solid white;
                 border-radius: 50%;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 16px;
+                font-size: 24px;
                 color: white;
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                z-index: 10;
-                box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+                z-index: 1001;
+                box-shadow: 0 8px 25px rgba(30, 64, 175, 0.5);
                 animation: closeBtnAppear 0.5s ease-out;
             }
 
@@ -1647,14 +1640,8 @@
             }
             .autocomplete-remove:hover { background: #fee2e2; }
 
-            /* Analytics Modal Styles */
-            .analytics-modal .modal-content {
-                max-width: 95vw;
-                width: 1400px;
-                max-height: 95vh;
-                padding: 32px;
-                position: relative;
-            }
+
+
 
             .analytics-close-btn {
                 position: absolute;
@@ -2397,8 +2384,18 @@
                 /* Настройки меню для планшетов */
                 .settings-menu {
                     max-height: 60vh;
-                    min-width: 180px;
+                    min-width: 330px;
                     top: 50px;
+                    padding: 50px 35px 35px 35px;
+                    transform: translateX(-15px);
+                }
+
+                .settings-close-btn {
+                    width: 45px;
+                    height: 45px;
+                    font-size: 22px;
+                    top: 8px;
+                    right: 8px;
                 }
 
                 .time-stat-card {
@@ -2469,19 +2466,21 @@
                 /* Настройки меню для мобильных */
                 .settings-menu {
                     max-height: 50vh;
-                    min-width: 160px;
+                    min-width: 300px;
                     top: 45px;
                     left: 10px;
                     right: 10px;
                     width: auto;
+                    padding: 40px 25px 25px 25px;
+                    transform: translateX(-10px);
                 }
 
                 .settings-close-btn {
-                    width: 24px;
-                    height: 24px;
-                    font-size: 14px;
-                    top: -10px;
-                    right: -10px;
+                    width: 40px;
+                    height: 40px;
+                    font-size: 20px;
+                    top: 5px;
+                    right: 5px;
                 }
 
                 .time-stat-icon {
