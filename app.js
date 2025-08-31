@@ -614,7 +614,8 @@
                 // Восстанавливаем состояние блоков (все свернуты по умолчанию)
                 restoreSettingsBlocksState();
                 
-
+                // Обновляем отображение заданий с учетом роли
+                renderTasks();
             }
 
             function showNotification(message, type = "success") {
@@ -1303,6 +1304,13 @@
 
             function renderTasks() {
                 const taskList = document.getElementById("taskList");
+                
+                // Показываем/скрываем кнопку добавления задания в зависимости от роли
+                const addTaskBtn = document.getElementById('addTaskBtn');
+                if (addTaskBtn) {
+                    addTaskBtn.style.display = appState.role === 'admin' ? 'inline-flex' : 'none';
+                }
+                
                 taskList.innerHTML = appState.tasks
                     .map(
                         (task) => `
@@ -1321,9 +1329,16 @@
                             ⭐
                             +${task.xpReward} XP
                         </div>
+                        ${appState.role === 'admin' ? `
+                        <button class="btn-icon-edit" onclick="editTask(${task.id})" title="Редактировать задание" aria-label="Редактировать задание">
+                            ✏️
+                        </button>
+                        ` : ''}
+                        ${appState.role === 'admin' ? `
                         <button class="btn-icon-delete" onclick="deleteTask(${task.id})" title="Удалить задание" aria-label="Удалить задание">
                             🗑️
                         </button>
+                        ` : ''}
                     </div>
                 </div>
             `,
@@ -1892,6 +1907,141 @@
                         firstIcon.classList.add('selected');
                     }
                 }, 100);
+            }
+
+            // Edit Task Modal Functions
+            function showEditTaskModal(taskId) {
+                const task = appState.tasks.find(t => t.id === taskId);
+                if (!task) {
+                    showNotification('Задание не найдено', 'error');
+                    return;
+                }
+
+                // Проверяем роль пользователя
+                if (appState.role === 'viewer') {
+                    showNotification('Режим просмотра: редактирование заданий недоступно', 'warning');
+                    return;
+                }
+
+                // Заполняем форму данными задания
+                document.getElementById('editTaskId').value = task.id;
+                document.getElementById('editTaskName').value = task.name;
+                document.getElementById('editTaskDescription').value = task.description;
+                document.getElementById('editTaskXP').value = task.xpReward;
+                document.getElementById('editTaskDuration').value = task.duration;
+
+                // Заполняем селектор иконок и выбираем текущую
+                populateEditIconSelector(task.icon);
+
+                // Показываем модальное окно
+                document.getElementById("editTaskModal").classList.add("show");
+            }
+
+            function hideEditTaskModal() {
+                document.getElementById("editTaskModal").classList.remove("show");
+                // Reset icon selection to first icon
+                setTimeout(() => {
+                    const firstIcon = document.querySelector('#editIconSelector .icon-option');
+                    if (firstIcon) {
+                        document.querySelectorAll('#editIconSelector .icon-option').forEach(option => {
+                            option.classList.remove('selected');
+                        });
+                        firstIcon.classList.add('selected');
+                    }
+                }, 100);
+            }
+
+            function populateEditIconSelector(selectedIcon) {
+                const selector = document.getElementById('editIconSelector');
+                if (!selector) return;
+                
+                selector.innerHTML = availableIcons.map((icon, index) => `
+                    <div class="icon-option ${icon.class === selectedIcon ? 'selected' : ''}" 
+                         onclick="selectEditIcon(${index})" 
+                         title="${icon.name}"
+                         data-icon="${icon.class}">
+                        ${icon.class}
+                    </div>
+                `).join('');
+            }
+
+            function selectEditIcon(index) {
+                // Remove selected class from all options
+                document.querySelectorAll('#editIconSelector .icon-option').forEach(option => {
+                    option.classList.remove('selected');
+                });
+                
+                // Add selected class to clicked option
+                const selectedOption = document.querySelectorAll('#editIconSelector .icon-option')[index];
+                if (selectedOption) {
+                    selectedOption.classList.add('selected');
+                }
+            }
+
+            function getSelectedEditIcon() {
+                const selectedOption = document.querySelector('#editIconSelector .icon-option.selected');
+                return selectedOption ? selectedOption.getAttribute('data-icon') : '📚';
+            }
+
+            function editTask(taskId) {
+                showEditTaskModal(taskId);
+            }
+
+            function updateTask(event) {
+                event.preventDefault();
+
+                const taskId = parseInt(document.getElementById('editTaskId').value);
+                const task = appState.tasks.find(t => t.id === taskId);
+                
+                if (!task) {
+                    showNotification('Задание не найдено', 'error');
+                    return;
+                }
+
+                const name = document.getElementById('editTaskName').value;
+                const description = document.getElementById('editTaskDescription').value;
+                let xpReward = parseInt(document.getElementById('editTaskXP').value, 10);
+                let duration = parseInt(document.getElementById('editTaskDuration').value, 10);
+
+                if (Number.isNaN(xpReward)) xpReward = 50;
+                if (Number.isNaN(duration)) duration = 15;
+                xpReward = Math.min(500, Math.max(10, xpReward));
+                duration = Math.min(120, Math.max(5, duration));
+
+                // Обновляем задание
+                task.name = name;
+                task.description = description;
+                task.xpReward = xpReward;
+                task.duration = duration;
+                task.icon = getSelectedEditIcon();
+
+                console.log('🔄 Задание обновлено, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                renderTasks();
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                updateLearningTimeDisplay();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Задание обновлено, показатели пересчитаны');
+                
+                hideEditTaskModal();
+                showNotification("Задание обновлено! Все показатели пересчитаны.", "success");
+                
+                // Автоматически сохраняем в Firebase после обновления задания
+                setTimeout(() => {
+                    saveDataToFirebaseSilent();
+                }, 1000);
             }
 
             function showRewardModal() {
@@ -3148,6 +3298,7 @@
             // Close modals and menus on outside click
             window.onclick = function (event) {
                 const taskModal = document.getElementById("taskModal");
+                const editTaskModal = document.getElementById("editTaskModal");
                 const rewardModal = document.getElementById("rewardModal");
                 const ideaModal = document.getElementById("ideaModal");
                 const analyticsModal = document.getElementById("analyticsModal");
@@ -3155,6 +3306,9 @@
 
                 if (event.target === taskModal) {
                     hideTaskModal();
+                }
+                if (event.target === editTaskModal) {
+                    hideEditTaskModal();
                 }
                 if (event.target === rewardModal) {
                     hideRewardModal();
@@ -3179,6 +3333,7 @@
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     hideTaskModal();
+                    hideEditTaskModal();
                     hideRewardModal();
                     hideIdeaModal();
                     hideAnalyticsModal();

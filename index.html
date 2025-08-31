@@ -2,7 +2,11 @@
 <html lang="ru">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="msapplication-tap-highlight" content="no" />
         <title>Геймификация изучения английского языка</title>
         <!-- Offline mode: removed external icon/font links -->
         <link rel="stylesheet" href="styles.css">
@@ -295,6 +299,8 @@
                         <button
                             class="btn btn-primary"
                             onclick="showTaskModal()"
+                            id="addTaskBtn"
+                            style="display: none;"
                         >
                             ➕
                             Добавить
@@ -652,6 +658,117 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-plus"></i>
                             Добавить задание                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Task Modal -->
+        <div class="modal" id="editTaskModal">
+            <div class="modal-content" style="position: relative" role="dialog" aria-modal="true" aria-labelledby="editTaskModalTitle">
+                <button class="close-btn" onclick="hideEditTaskModal()">
+                    &times;
+                </button>
+                <div class="modal-header">
+                    <h3 class="modal-title" id="editTaskModalTitle">Редактировать задание</h3>
+                </div>
+
+                <form id="editTaskForm" onsubmit="updateTask(event)">
+                    <input type="hidden" id="editTaskId" />
+                    <div class="form-group">
+                        <label class="form-label">Название задания</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="editTaskName"
+                            name="editTaskName"
+                            placeholder="Например: Изучение новых слов"
+                            autocomplete="off"
+                            autocapitalize="off"
+                            autocorrect="off"
+                            spellcheck="false"
+                            inputmode="text"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Описание</label>
+                        <textarea
+                            class="form-input"
+                            id="editTaskDescription"
+                            name="editTaskDescription"
+                            rows="3"
+                            placeholder="Краткое описание задания"
+                            autocomplete="off"
+                            autocapitalize="off"
+                            autocorrect="off"
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Иконка задания</label>
+                        <div class="icon-selector" id="editIconSelector">
+                            <!-- Icons will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 16px;
+                        "
+                    >
+                        <div class="form-group">
+                            <label class="form-label">Награда (XP)</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="editTaskXP"
+                                name="editTaskXP"
+                                value="50"
+                                min="10"
+                                max="500"
+                                autocomplete="off"
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Длительность (мин)</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="editTaskDuration"
+                                name="editTaskDuration"
+                                value="15"
+                                min="5"
+                                max="120"
+                                autocomplete="off"
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            display: flex;
+                            gap: 12px;
+                            justify-content: flex-end;
+                            margin-top: 24px;
+                        "
+                    >
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            onclick="hideEditTaskModal()"
+                        >
+                            Отмена
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            ✏️
+                            Сохранить изменения
+                        </button>
                     </div>
                 </form>
             </div>
