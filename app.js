@@ -30,10 +30,7 @@
                 },
                 role: 'viewer',
                 userName: 'Михаил',
-                pinCodes: {
-                    'Михаил': null,
-                    'Admin': null
-                },
+                pinCodes: {}, // PIN-коды загружаются только из Firebase
                 isVerified: false,
                 progress: {
                     level: 15,
@@ -235,7 +232,7 @@
             function saveState() {
                 try {
                     console.log('💾 Сохраняем состояние локально...');
-                    console.log('🔐 Сохраняемые PIN-коды:', appState.pinCodes);
+                    console.log('🔐 PIN-коды НЕ сохраняются в localStorage (только в Firebase)');
                     console.log('🔧 Проверяем доступность localStorage...');
                     
                     // Проверяем доступность localStorage
@@ -259,17 +256,10 @@
                         return false;
                     }
                     
-                    // Подготавливаем данные для сохранения
-                    const dataToSave = {
-                        ...appState,
-                        // Убеждаемся, что PIN-коды присутствуют
-                        pinCodes: appState.pinCodes || {
-                            'Михаил': null,
-                            'Admin': null
-                        }
-                    };
+                    // Подготавливаем данные для сохранения (БЕЗ PIN-кодов)
+                    const { pinCodes, ...dataToSave } = appState;
                     
-                    console.log('📦 Данные для сохранения:', Object.keys(dataToSave));
+                    console.log('📦 Данные для сохранения (без PIN-кодов):', Object.keys(dataToSave));
                     
                     // Сохраняем локально
                     const jsonData = JSON.stringify(dataToSave);
@@ -287,7 +277,7 @@
                     // Сохраняем текущего пользователя отдельно
                     localStorage.setItem('current-user', appState.userName);
                     
-                    console.log('✅ Состояние сохранено локально');
+                    console.log('✅ Состояние сохранено локально (без PIN-кодов)');
                     console.log('🔍 Проверка сохранения: данные найдены, размер:', savedData.length);
                     
                     return true;
@@ -336,8 +326,8 @@
                         const restoredSaved = restoreDataTypes(saved);
                         
                         // Обновляем appState, сохраняя важные поля
-                        // НЕ загружаем isVerified из localStorage - он всегда false при запуске
-                        const { isVerified, ...restoredData } = restoredSaved;
+                        // НЕ загружаем isVerified и pinCodes из localStorage
+                        const { isVerified, pinCodes, ...restoredData } = restoredSaved;
                         
                         appState = { 
                             ...appState, 
@@ -346,12 +336,12 @@
                             userName: appState.userName || restoredData.userName || 'Михаил',
                             // isVerified всегда false при запуске
                             isVerified: false,
-                            // Валидируем и объединяем PIN-коды
-                            pinCodes: validatePinCodes({ ...appState.pinCodes, ...restoredData.pinCodes })
+                            // PIN-коды НЕ загружаем из localStorage - только из Firebase
+                            pinCodes: {}
                         };
                         
                         console.log('✅ Локальное состояние загружено');
-                        console.log('🔐 Загруженные PIN-коды:', appState.pinCodes);
+                        console.log('🔐 PIN-коды НЕ загружены из localStorage (только из Firebase)');
                         console.log('👤 Текущий пользователь:', appState.userName);
                     } else {
                         console.log('📭 Локальное состояние не найдено, используем значения по умолчанию');
@@ -1559,91 +1549,15 @@
                 // Устанавливаем роль по умолчанию
                 if (!appState.role) appState.role = 'viewer';
                 
-                // Проверяем и инициализируем PIN-коды, если их нет
+                // Инициализируем пустые PIN-коды (они загружаются только из Firebase)
                 if (!appState.pinCodes) {
-                    appState.pinCodes = {
-                        'Михаил': null,
-                        'Admin': null
-                    };
-                    console.log('🔑 PIN-коды инициализированы');
-                }
-                
-                // Пытаемся восстановить PIN-коды из backup localStorage
-                try {
-                    const backupPinCodes = localStorage.getItem('pin-codes-backup');
-                    if (backupPinCodes) {
-                        const parsedBackupPins = JSON.parse(backupPinCodes);
-                        console.log('🔐 Найден backup PIN-кодов:', parsedBackupPins);
-                        
-                        // Объединяем backup PIN-коды с текущими
-                        appState.pinCodes = { ...appState.pinCodes, ...parsedBackupPins };
-                        console.log('✅ PIN-коды восстановлены из backup');
-                    }
-                } catch (backupError) {
-                    console.error('❌ Ошибка восстановления backup PIN-кодов:', backupError);
-                }
-                
-                // Специальная обработка для мобильных устройств
-                if (deviceInfo.isMobile) {
-                    console.log('📱 Применяем специальную обработку для мобильного устройства');
-                    
-                    // Дополнительная проверка localStorage для мобильных устройств
-                    try {
-                        const mobileTestKey = 'mobile-pin-test';
-                        const mobileTestValue = JSON.stringify({ test: true, timestamp: Date.now() });
-                        localStorage.setItem(mobileTestKey, mobileTestValue);
-                        const mobileTestResult = localStorage.getItem(mobileTestKey);
-                        localStorage.removeItem(mobileTestKey);
-                        
-                        if (mobileTestResult === mobileTestValue) {
-                            console.log('✅ Мобильный localStorage работает корректно');
-                        } else {
-                            console.error('❌ Мобильный localStorage работает некорректно');
-                        }
-                    } catch (mobileError) {
-                        console.error('❌ Ошибка тестирования мобильного localStorage:', mobileError);
-                    }
-                    
-                    // Пытаемся восстановить PIN-коды из мобильного backup
-                    try {
-                        const mobileBackupPins = localStorage.getItem('mobile-pin-backup');
-                        if (mobileBackupPins) {
-                            const parsedMobilePins = JSON.parse(mobileBackupPins);
-                            console.log('🔐 Найден мобильный backup PIN-кодов:', parsedMobilePins);
-                            
-                            // Объединяем мобильный backup с текущими PIN-кодами
-                            appState.pinCodes = { ...appState.pinCodes, ...parsedMobilePins };
-                            console.log('✅ PIN-коды восстановлены из мобильного backup');
-                        }
-                    } catch (mobileBackupError) {
-                        console.error('❌ Ошибка восстановления мобильного backup:', mobileBackupError);
-                    }
-                    
-                    // Принудительно сохраняем текущие PIN-коды в backup для мобильных устройств
-                    if (appState.pinCodes && Object.values(appState.pinCodes).some(pin => pin !== null)) {
-                        try {
-                            localStorage.setItem('mobile-pin-backup', JSON.stringify(appState.pinCodes));
-                            console.log('🔐 Мобильный backup PIN-кодов создан');
-                        } catch (mobileBackupSaveError) {
-                            console.error('❌ Ошибка создания мобильного backup:', mobileBackupSaveError);
-                        }
-                    }
+                    appState.pinCodes = {};
+                    console.log('🔑 PIN-коды инициализированы как пустые (загрузка только из Firebase)');
                 }
                 
                 console.log('🔐 Состояние PIN-кодов при инициализации:', appState.pinCodes);
                 console.log('👤 Текущий пользователь:', appState.userName);
-                console.log('🔍 Проверяем PIN-код для пользователя:', appState.pinCodes[appState.userName]);
-                
-                // Дополнительная проверка localStorage для PIN-кодов
-                try {
-                    const rawPinCheck = localStorage.getItem(STORAGE_KEY);
-                    if (rawPinCheck) {
-                        const savedPinCheck = JSON.parse(rawPinCheck);
-                        console.log('🔍 Дополнительная проверка PIN-кодов из localStorage:', savedPinCheck.pinCodes);
-                    }
-                } catch (pinCheckError) {
-                    console.error('❌ Ошибка дополнительной проверки PIN-кодов:', pinCheckError);
-                }
+                console.log('🔍 PIN-коды будут загружены из Firebase');
                 
                 // НЕ показываем верификацию сразу - ждем завершения синхронизации
                 console.log('⏳ Ожидаем завершения синхронизации перед показом верификации...');
@@ -1654,6 +1568,16 @@
                 // Функция для показа верификации после синхронизации
                 const showVerificationAfterSync = () => {
                     console.log('🔐 Проверяем PIN-коды после синхронизации...');
+                    
+                    // Проверяем, загружены ли PIN-коды из Firebase
+                    if (Object.keys(appState.pinCodes).length === 0) {
+                        console.log('❌ PIN-коды не загружены из Firebase');
+                        showNotification('PIN-коды не загружены. Проверьте интернет-соединение.', 'error');
+                        
+                        // Показываем выбор учетной записи, если PIN-коды не загружены
+                        showAccountSelection();
+                        return;
+                    }
                     
                     // Проверяем, есть ли у пользователя PIN-код
                     const hasPin = appState.pinCodes[appState.userName];
@@ -1696,14 +1620,6 @@
                     checkFirstTimeSync();
                 }, 1000);
                 
-                // Принудительно восстанавливаем PIN-коды из всех доступных источников
-                const restoreResult = forceRestorePinCodes();
-                if (restoreResult) {
-                    console.log('✅ PIN-коды восстановлены при запуске');
-                } else {
-                    console.log('🔑 PIN-коды не найдены при запуске');
-                }
-                
                 // Резервный таймаут - если что-то пошло не так, показываем верификацию через 10 секунд
                 const fallbackTimeout = setTimeout(() => {
                     console.log('⏰ Резервный таймаут: показываем верификацию принудительно...');
@@ -1711,25 +1627,15 @@
                     showVerificationAfterSync();
                 }, 10000);
                 
-                // Пытаемся загрузить backup PIN-кодов из Firebase при запуске
+                // Загружаем PIN-коды из Firebase при запуске
                 if (navigator.onLine && isFirebaseAvailable()) {
-                    console.log('🔄 Загружаем backup PIN-кодов из Firebase...');
-                    
-                    // Устанавливаем таймаут для синхронизации
-                    const syncTimeout = setTimeout(() => {
-                        console.log('⏰ Таймаут синхронизации Firebase, показываем верификацию с локальными данными...');
-                        clearTimeout(fallbackTimeout); // Отменяем резервный таймаут
-                        showSyncStatus('error', 'Таймаут синхронизации');
-                        showVerificationAfterSync();
-                    }, 5000); // 5 секунд таймаут
+                    console.log('🔄 Загружаем PIN-коды из Firebase...');
                     
                     loadPinCodesFromFirebase().then(success => {
-                        clearTimeout(syncTimeout); // Отменяем таймаут
-                        
                         if (success) {
-                            console.log('✅ Backup PIN-кодов загружен при запуске');
+                            console.log('✅ PIN-коды загружены из Firebase');
                         } else {
-                            console.log('🔑 Backup PIN-кодов не найден при запуске');
+                            console.log('🔑 PIN-коды не найдены в Firebase');
                         }
                         
                         // ПОСЛЕ загрузки из Firebase показываем верификацию
@@ -1738,19 +1644,17 @@
                         showSyncStatus('success', 'Данные загружены');
                         showVerificationAfterSync();
                     }).catch(error => {
-                        clearTimeout(syncTimeout); // Отменяем таймаут
-                        
-                        console.log('❌ Ошибка загрузки backup PIN-кодов при запуске:', error);
+                        console.log('❌ Ошибка загрузки PIN-кодов из Firebase:', error);
                         
                         // Даже при ошибке показываем верификацию
-                        console.log('🔄 Firebase синхронизация не удалась, показываем верификацию с локальными данными...');
+                        console.log('🔄 Firebase синхронизация не удалась, показываем верификацию...');
                         clearTimeout(fallbackTimeout); // Отменяем резервный таймаут
                         showSyncStatus('error', 'Ошибка синхронизации');
                         showVerificationAfterSync();
                     });
                 } else {
                     // Если Firebase недоступен, показываем верификацию сразу
-                    console.log('🔄 Firebase недоступен, показываем верификацию с локальными данными...');
+                    console.log('🔄 Firebase недоступен, показываем верификацию...');
                     clearTimeout(fallbackTimeout); // Отменяем резервный таймаут
                     showSyncStatus('offline', 'Офлайн режим');
                     showVerificationAfterSync();
@@ -3175,11 +3079,18 @@
                 console.log(`🔐 Проверяем PIN-код для пользователя: ${appState.userName}`);
                 console.log('🔑 Состояние PIN-кодов:', appState.pinCodes);
                 
+                // Проверяем, загружены ли PIN-коды из Firebase
+                if (Object.keys(appState.pinCodes).length === 0) {
+                    console.log('❌ PIN-коды не загружены из Firebase');
+                    showNotification('PIN-коды не загружены. Проверьте интернет-соединение.', 'error');
+                    return;
+                }
+                
                 const storedPin = appState.pinCodes[appState.userName];
                 
                 if (!storedPin) {
                     console.log('❌ PIN-код не установлен для пользователя:', appState.userName);
-                    showNotification('PIN-код не установлен', 'error');
+                    showNotification('PIN-код не установлен для этого пользователя', 'error');
                     return;
                 }
                 
@@ -3220,7 +3131,7 @@
             }
 
             // Confirm setup PIN code
-            function confirmSetupPin() {
+            async function confirmSetupPin() {
                 if (setupPin.length !== 4) {
                     showNotification('PIN-код должен содержать 4 цифры', 'error');
                     return;
@@ -3234,46 +3145,25 @@
                 
                 console.log('💾 Текущие PIN-коды:', appState.pinCodes);
                 
-                // Принудительно сохраняем PIN-коды в localStorage
-                try {
-                    localStorage.setItem('pin-codes-backup', JSON.stringify(appState.pinCodes));
-                    console.log('🔐 PIN-коды сохранены в backup localStorage');
-                } catch (backupError) {
-                    console.error('❌ Ошибка сохранения backup PIN-кодов:', backupError);
-                }
-                
-                // Сохраняем локально
-                const saveResult = saveState();
-                if (saveResult) {
-                    console.log('✅ Состояние успешно сохранено');
-                } else {
-                    console.error('❌ Ошибка сохранения состояния');
-                }
-                
-                // При смене PIN-кода обязательно сохраняем в Firebase
-                if (isChangingPin && navigator.onLine && isFirebaseAvailable()) {
-                    console.log('🔄 Сохраняем новый PIN-код в Firebase...');
-                    saveStateToFirestore().then(success => {
-                        if (success) {
+                // Сохраняем PIN-коды ТОЛЬКО в Firebase
+                if (navigator.onLine && isFirebaseAvailable()) {
+                    console.log('🔄 Сохраняем PIN-код в Firebase...');
+                    try {
+                        const saved = await savePinCodesToFirebase();
+                        if (saved) {
                             console.log('✅ PIN-код успешно сохранен в Firebase');
+                            showNotification('PIN-код установлен и сохранен в облаке!', 'success');
                         } else {
-                            console.log('⚠️ Не удалось сохранить PIN-код в Firebase');
+                            console.log('❌ Не удалось сохранить PIN-код в Firebase');
+                            showNotification('PIN-код установлен локально, но не сохранен в облаке', 'warning');
                         }
-                    }).catch(error => {
+                    } catch (error) {
                         console.error('❌ Ошибка сохранения PIN-кода в Firebase:', error);
-                    });
-                } else if (navigator.onLine && isFirebaseAvailable()) {
-                    // При первой установке PIN-кода также сохраняем backup
-                    console.log('🔐 Сохраняем backup PIN-кода в Firebase...');
-                    savePinCodesToFirebase().then(success => {
-                        if (success) {
-                            console.log('✅ Backup PIN-кода успешно сохранен в Firebase');
-                        } else {
-                            console.log('⚠️ Не удалось сохранить backup PIN-кода в Firebase');
-                        }
-                    }).catch(error => {
-                        console.error('❌ Ошибка сохранения backup PIN-кода в Firebase:', error);
-                    });
+                        showNotification('Ошибка сохранения PIN-кода в облаке', 'error');
+                    }
+                } else {
+                    console.log('⚠️ Firebase недоступен, PIN-код сохранен только локально');
+                    showNotification('PIN-код установлен локально (Firebase недоступен)', 'warning');
                 }
                 
                 hideSetupPinModal();
@@ -3326,7 +3216,7 @@
                 }
                 
                 // Fallback check for older versions
-                return window.db && window.doc && window.setDoc && window.getDoc;
+                return window.db && window.doc && window.setDoc && window.getDoc && window.updateDoc;
             }
 
             // Clean data for Firebase storage
@@ -3431,48 +3321,72 @@
                 return cleaned;
             }
 
-            // Save PIN codes to Firebase backup
+            // Save PIN codes to Firebase (основной источник)
             async function savePinCodesToFirebase() {
                 if (!navigator.onLine || !isFirebaseAvailable()) {
-                    console.log('🔐 Backup PIN-кодов отменен: нет интернета или Firebase');
+                    console.log('🔐 Сохранение PIN-кодов отменено: нет интернета или Firebase');
+                    return false;
+                }
+                
+                // Дополнительная проверка доступности updateDoc
+                if (typeof updateDoc === 'undefined') {
+                    console.error('❌ updateDoc не доступен');
                     return false;
                 }
 
                 try {
-                    console.log('🔐 Сохраняем backup PIN-кодов в Firebase...');
+                    console.log('🔐 Сохраняем PIN-коды в Firebase...');
                     
-                    const pinBackupData = {
+                    // Подготавливаем данные для сохранения
+                    const pinData = {
                         pinCodes: appState.pinCodes,
                         lastUpdated: new Date().toISOString(),
-                        backedUpBy: appState.userName,
+                        savedBy: appState.userName,
                         version: '1.0',
-                        backupType: 'pin-codes'
+                        dataType: 'pin-codes'
                     };
                     
-                    // Сохраняем в отдельную коллекцию для PIN-кодов
+                    // Сохраняем в коллекцию pin-backups
                     const pinBackupRef = doc(db, 'pin-backups', 'main');
                     await retryOperation(async () => {
-                        return await setDoc(pinBackupRef, pinBackupData, { merge: true });
+                        return await setDoc(pinBackupRef, pinData, { merge: true });
                     }, 3, 1000);
                     
-                    console.log('✅ Backup PIN-кодов успешно сохранен в Firebase');
+                    // Также сохраняем в shared-data для совместимости
+                    const sharedRef = doc(db, 'shared-data', 'main');
+                    await retryOperation(async () => {
+                        return await updateDoc(sharedRef, {
+                            pinCodes: appState.pinCodes,
+                            lastPinUpdate: new Date().toISOString()
+                        });
+                    }, 3, 1000);
+                    
+                    console.log('✅ PIN-коды успешно сохранены в Firebase');
+                    console.log('🔐 Сохраненные PIN-коды:', appState.pinCodes);
                     return true;
                 } catch (error) {
-                    console.error('❌ Ошибка сохранения backup PIN-кодов:', error);
+                    console.error('❌ Ошибка сохранения PIN-кодов в Firebase:', error);
                     return false;
                 }
             }
 
-            // Load PIN codes from Firebase backup
+            // Load PIN codes from Firebase (основной источник)
             async function loadPinCodesFromFirebase() {
                 if (!navigator.onLine || !isFirebaseAvailable()) {
-                    console.log('🔐 Загрузка backup PIN-кодов отменена: нет интернета или Firebase');
+                    console.log('🔐 Загрузка PIN-кодов отменена: нет интернета или Firebase');
+                    return false;
+                }
+                
+                // Дополнительная проверка доступности Firebase функций
+                if (typeof doc === 'undefined' || typeof getDoc === 'undefined') {
+                    console.error('❌ Firebase функции не доступны');
                     return false;
                 }
 
                 try {
-                    console.log('🔐 Загружаем backup PIN-кодов из Firebase...');
+                    console.log('🔐 Загружаем PIN-коды из Firebase...');
                     
+                    // Пытаемся загрузить из коллекции pin-backups
                     const pinBackupRef = doc(db, 'pin-backups', 'main');
                     const pinBackupSnap = await retryOperation(async () => {
                         return await getDoc(pinBackupRef);
@@ -3483,38 +3397,41 @@
                         const backupPinCodes = backupData.pinCodes;
                         
                         if (backupPinCodes && typeof backupPinCodes === 'object') {
-                            // Валидируем backup PIN-коды
-                            const validatedBackupPins = validatePinCodes(backupPinCodes);
+                            // Валидируем PIN-коды
+                            const validatedPins = validatePinCodes(backupPinCodes);
                             
-                            // Объединяем с локальными PIN-кодами (локальные имеют приоритет)
-                            appState.pinCodes = { ...validatedBackupPins, ...appState.pinCodes };
+                            // Полностью заменяем PIN-коды (не объединяем с локальными)
+                            appState.pinCodes = validatedPins;
                             
-                            // Обновляем backup в localStorage
-                            try {
-                                localStorage.setItem('pin-codes-backup', JSON.stringify(appState.pinCodes));
-                                console.log('🔐 Backup PIN-кодов обновлен в localStorage');
-                            } catch (localError) {
-                                console.error('❌ Ошибка обновления backup в localStorage:', localError);
-                            }
-                            
-                            // Обновляем мобильный backup
-                            try {
-                                localStorage.setItem('mobile-pin-backup', JSON.stringify(appState.pinCodes));
-                                console.log('🔐 Мобильный backup PIN-кодов обновлен');
-                            } catch (mobileError) {
-                                console.error('❌ Ошибка обновления мобильного backup:', mobileError);
-                            }
-                            
-                            console.log('✅ Backup PIN-кодов загружен и применен');
-                            console.log('🔐 Обновленные PIN-коды:', appState.pinCodes);
+                            console.log('✅ PIN-коды загружены из Firebase');
+                            console.log('🔐 Загруженные PIN-коды:', appState.pinCodes);
                             return true;
                         }
                     }
                     
-                    console.log('🔐 Backup PIN-кодов не найден в Firebase');
+                    // Если в pin-backups нет, пробуем загрузить из shared-data
+                    console.log('🔐 PIN-коды не найдены в pin-backups, пробуем shared-data...');
+                    const sharedRef = doc(db, 'shared-data', 'main');
+                    const sharedSnap = await retryOperation(async () => {
+                        return await getDoc(sharedRef);
+                    }, 3, 1000);
+                    
+                    if (sharedSnap.exists()) {
+                        const sharedData = sharedSnap.data();
+                        if (sharedData.pinCodes && typeof sharedData.pinCodes === 'object') {
+                            const validatedPins = validatePinCodes(sharedData.pinCodes);
+                            appState.pinCodes = validatedPins;
+                            
+                            console.log('✅ PIN-коды загружены из shared-data');
+                            console.log('🔐 Загруженные PIN-коды:', appState.pinCodes);
+                            return true;
+                        }
+                    }
+                    
+                    console.log('🔐 PIN-коды не найдены ни в одном источнике Firebase');
                     return false;
                 } catch (error) {
-                    console.error('❌ Ошибка загрузки backup PIN-кодов:', error);
+                    console.error('❌ Ошибка загрузки PIN-кодов из Firebase:', error);
                     return false;
                 }
             }
@@ -3523,6 +3440,12 @@
             async function forceSyncPinCodes() {
                 if (!navigator.onLine || !isFirebaseAvailable()) {
                     console.log('🔐 Принудительная синхронизация PIN-кодов отменена: нет интернета или Firebase');
+                    return false;
+                }
+                
+                // Дополнительная проверка доступности Firebase функций
+                if (typeof setDoc === 'undefined' || typeof getDoc === 'undefined') {
+                    console.error('❌ Firebase функции не доступны');
                     return false;
                 }
 
@@ -3554,69 +3477,33 @@
                 }
             }
 
-            // Force restore PIN codes from all available sources
-            function forceRestorePinCodes() {
-                console.log('🔐 Принудительное восстановление PIN-кодов из всех источников...');
+            // Force restore PIN codes from Firebase only
+            async function forceRestorePinCodes() {
+                console.log('🔐 Принудительное восстановление PIN-кодов из Firebase...');
                 
-                let restored = false;
-                
-                // 1. Пытаемся восстановить из основного backup
-                try {
-                    const backupPinCodes = localStorage.getItem('pin-codes-backup');
-                    if (backupPinCodes) {
-                        const parsedBackupPins = JSON.parse(backupPinCodes);
-                        console.log('🔐 Найден основной backup PIN-кодов:', parsedBackupPins);
-                        appState.pinCodes = { ...appState.pinCodes, ...parsedBackupPins };
-                        restored = true;
-                    }
-                } catch (error) {
-                    console.error('❌ Ошибка восстановления основного backup:', error);
+                if (!navigator.onLine || !isFirebaseAvailable()) {
+                    console.log('🔐 Firebase недоступен, восстановление невозможно');
+                    return false;
                 }
                 
-                // 2. Пытаемся восстановить из мобильного backup
-                try {
-                    const mobileBackupPins = localStorage.getItem('mobile-pin-backup');
-                    if (mobileBackupPins) {
-                        const parsedMobilePins = JSON.parse(mobileBackupPins);
-                        console.log('🔐 Найден мобильный backup PIN-кодов:', parsedMobilePins);
-                        appState.pinCodes = { ...appState.pinCodes, ...parsedMobilePins };
-                        restored = true;
-                    }
-                } catch (error) {
-                    console.error('❌ Ошибка восстановления мобильного backup:', error);
+                // Дополнительная проверка доступности Firebase функций
+                if (typeof getDoc === 'undefined') {
+                    console.error('❌ Firebase функции не доступны');
+                    return false;
                 }
                 
-                // 3. Пытаемся восстановить из основного localStorage
                 try {
-                    const mainStorage = localStorage.getItem(STORAGE_KEY);
-                    if (mainStorage) {
-                        const parsedMain = JSON.parse(mainStorage);
-                        if (parsedMain.pinCodes) {
-                            console.log('🔐 Найден основной localStorage PIN-кодов:', parsedMain.pinCodes);
-                            appState.pinCodes = { ...appState.pinCodes, ...parsedMain.pinCodes };
-                            restored = true;
-                        }
+                    const result = await loadPinCodesFromFirebase();
+                    if (result) {
+                        console.log('✅ PIN-коды восстановлены из Firebase');
+                        console.log('🔐 Текущие PIN-коды:', appState.pinCodes);
+                        return true;
+                    } else {
+                        console.log('🔐 PIN-коды не найдены в Firebase');
+                        return false;
                     }
                 } catch (error) {
-                    console.error('❌ Ошибка восстановления основного localStorage:', error);
-                }
-                
-                if (restored) {
-                    console.log('✅ PIN-коды восстановлены из доступных источников');
-                    console.log('🔐 Текущие PIN-коды:', appState.pinCodes);
-                    
-                    // Сохраняем восстановленные PIN-коды во все backup
-                    try {
-                        localStorage.setItem('pin-codes-backup', JSON.stringify(appState.pinCodes));
-                        localStorage.setItem('mobile-pin-backup', JSON.stringify(appState.pinCodes));
-                        console.log('🔐 Backup обновлены');
-                    } catch (saveError) {
-                        console.error('❌ Ошибка обновления backup:', saveError);
-                    }
-                    
-                    return true;
-                } else {
-                    console.log('❌ PIN-коды не найдены ни в одном источнике');
+                    console.error('❌ Ошибка восстановления PIN-кодов из Firebase:', error);
                     return false;
                 }
             }
@@ -3671,8 +3558,8 @@
                     // Обновляем локальное состояние
                     appState.saveStats = dataToSave.saveStats;
                     
-                    // Сохраняем backup PIN-кодов
-                    await savePinCodesToFirebase();
+                    // PIN-коды сохраняются отдельно через savePinCodesToFirebase
+                    // Здесь их не сохраняем, чтобы избежать дублирования
                     
                     console.log('✅ Данные успешно сохранены в Firebase');
                     showNotification('Данные сохранены в Firebase', 'success');
@@ -3709,10 +3596,7 @@
             function validatePinCodes(pinCodes) {
                 if (!pinCodes || typeof pinCodes !== 'object') {
                     console.warn('⚠️ PIN-коды отсутствуют или имеют неверный формат');
-                    return {
-                        'Михаил': null,
-                        'Admin': null
-                    };
+                    return {};
                 }
                 
                 const validated = {};
@@ -3735,9 +3619,7 @@
                     }
                 });
                 
-                // Убеждаемся, что есть базовые пользователи
-                if (!validated['Михаил']) validated['Михаил'] = null;
-                if (!validated['Admin']) validated['Admin'] = null;
+                // Не создаем пустые PIN-коды - они должны быть загружены из Firebase
                 
                 if (hasValidPins) {
                     console.log('✅ PIN-коды прошли валидацию');
@@ -3832,6 +3714,12 @@
                     if (activityCount > 0) {
                         console.log(`📅 Восстановлено ${activityCount} записей активности`);
                     }
+                }
+                
+                // PIN-коды НЕ восстанавливаем из localStorage - только из Firebase
+                if (restored.pinCodes) {
+                    delete restored.pinCodes;
+                    console.log('🔐 PIN-коды удалены из восстановленных данных (загрузка только из Firebase)');
                 }
                 
                 // Restore Date objects in tasks

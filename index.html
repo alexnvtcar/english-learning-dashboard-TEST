@@ -29,9 +29,9 @@
                     🔄
                     Синхронизировать PIN-коды
                 </div>
-                <div class="settings-item" onclick="forceRestorePinCodes(); showNotification('Восстановление PIN-кодов завершено', 'info');">
+                <div class="settings-item" onclick="forceRestorePinCodes().then(success => { if(success) showNotification('PIN-коды восстановлены из Firebase', 'success'); else showNotification('PIN-коды не найдены в Firebase', 'warning'); }).catch(error => { showNotification('Ошибка восстановления', 'error'); })">
                     🔐
-                    Восстановить PIN-коды
+                    Восстановить PIN-коды из Firebase
                 </div>
                 <div class="settings-item" onclick="forceShowVerification(); showNotification('Верификация принудительно показана', 'info');">
                     🔐
@@ -1112,7 +1112,7 @@
         <script type="module">
             // Import the functions you need from the SDKs you need
             import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-            import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+            import { getFirestore, doc, setDoc, getDoc, collection, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
             
             // Your web app's Firebase configuration
             const firebaseConfig = {
@@ -1136,16 +1136,17 @@
             window.setDoc = setDoc;
             window.getDoc = getDoc;
             window.collection = collection;
+            window.updateDoc = updateDoc;
             
             // Debug logging
             console.log('🔥 Firebase initialized successfully!');
             console.log('📱 App ID:', firebaseConfig.appId);
             console.log('🌐 Project ID:', firebaseConfig.projectId);
             console.log('💾 Firestore DB:', db);
-            console.log('🔧 Available functions:', { doc, setDoc, getDoc, collection });
+            console.log('🔧 Available functions:', { doc, setDoc, getDoc, collection, updateDoc });
             
             // Check if Firebase is available globally
-            if (window.db && window.doc && window.setDoc && window.getDoc) {
+            if (window.db && window.doc && window.setDoc && window.getDoc && window.updateDoc) {
                 console.log('✅ Firebase functions are globally available');
                 window.firebaseReady = true;
             } else {
