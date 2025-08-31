@@ -875,6 +875,13 @@
                 updateTimeLegend(timeData.weeklyTime);
             }
 
+            // Обработчик изменения размера окна для адаптивности
+            function handleResize() {
+                // Перерисовываем круговую диаграмму при изменении размера
+                const timeData = calculateLearningTimeData();
+                updateWeeklyTimeChart(timeData.weeklyTime);
+            }
+
             function calculateLearningTimeData() {
                 const state = getEffectiveState();
                 const activity = state.activityData || {};
@@ -972,10 +979,21 @@
                 // Форматируем время в формате HH:MM
                 const timeDisplay = formatTime(totalAverageWeeklyTime);
                 
+                // Адаптивный текст в зависимости от размера экрана
+                const isMobile = window.innerWidth <= 480;
+                const isTablet = window.innerWidth <= 768;
+                
+                let labelText = "среднее в неделю";
+                if (isMobile) {
+                    labelText = "среднее";
+                } else if (isTablet) {
+                    labelText = "среднее в неделю";
+                }
+                
                 document.getElementById('weeklyTimeChart').innerHTML = `
                     <div class="time-chart-center">
                         <div class="time-chart-total">${timeDisplay}</div>
-                        <div class="time-chart-label">среднее в неделю</div>
+                        <div class="time-chart-label">${labelText}</div>
                     </div>
                 `;
                 
@@ -2345,6 +2363,9 @@
                     showSyncStatus('offline', 'Офлайн режим');
                     showVerificationAfterSync();
                 }
+
+                // Добавляем слушатель изменения размера окна для адаптивности
+                window.addEventListener('resize', handleResize);
             }
 
             // Delete Task Function

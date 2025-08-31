@@ -818,10 +818,13 @@
             }
 
             .time-chart-label {
-                font-size: 0.75rem;
+                font-size: 0.7rem;
                 color: #64748b;
                 text-transform: uppercase;
-                letter-spacing: 0.05em;
+                letter-spacing: 0.02em;
+                text-align: center;
+                line-height: 1.1;
+                max-width: 120px;
             }
 
             .time-chart-legend {
@@ -1340,6 +1343,8 @@
                 box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
                 padding: 8px;
                 min-width: 200px;
+                max-height: 70vh;
+                overflow-y: auto;
                 display: none;
                 position: relative;
             }
@@ -2389,12 +2394,19 @@
                     font-size: 0.7rem;
                 }
 
+                /* Настройки меню для планшетов */
+                .settings-menu {
+                    max-height: 60vh;
+                    min-width: 180px;
+                    top: 50px;
+                }
+
                 .time-stat-card {
                     padding: 16px;
                 }
 
                 .time-stat-value {
-                    font-size: 1.5rem;
+                    font-size: 1.8rem;
                 }
 
                 .time-chart-container {
@@ -2415,6 +2427,11 @@
 
                 .time-chart-total {
                     font-size: 1.2rem;
+                }
+
+                .time-chart-label {
+                    font-size: 0.6rem;
+                    max-width: 80px;
                 }
 
                 .time-chart-legend {
@@ -2449,12 +2466,30 @@
                     height: 14px;
                 }
 
+                /* Настройки меню для мобильных */
+                .settings-menu {
+                    max-height: 50vh;
+                    min-width: 160px;
+                    top: 45px;
+                    left: 10px;
+                    right: 10px;
+                    width: auto;
+                }
+
+                .settings-close-btn {
+                    width: 24px;
+                    height: 24px;
+                    font-size: 14px;
+                    top: -10px;
+                    right: -10px;
+                }
+
                 .time-stat-icon {
                     font-size: 1.5rem;
                 }
 
                 .time-stat-value {
-                    font-size: 1.2rem;
+                    font-size: 1.6rem;
                 }
 
                 .time-chart {
@@ -2472,7 +2507,8 @@
                 }
 
                 .time-chart-label {
-                    font-size: 0.7rem;
+                    font-size: 0.5rem;
+                    max-width: 60px;
                 }
             }
         
