@@ -809,16 +809,6 @@
                 const el = document.getElementById('bestWeekXP');
                 if (el) el.textContent = `${bestWeekXP} XP`;
                 
-                // Обновляем подзаголовок
-                const subtitleEl = document.getElementById('bestWeekSubtitle');
-                if (subtitleEl) {
-                    if (bestWeekXP > 0) {
-                        subtitleEl.textContent = `максимальный XP за неделю`;
-                    } else {
-                        subtitleEl.textContent = `пока нет данных`;
-                    }
-                }
-                
                 console.log('🏆 Обновлен дисплей лучшей недели:', bestWeekXP, 'XP');
             }
 
@@ -3345,11 +3335,7 @@
                 
                 const bestWeekXP = Math.max(0, ...Object.values(weeklyData).map(w => w.xp));
                 
-                // Stars calculation
-                const totalStarsEarned = Object.values(weeklyData).reduce((sum, week) => {
-                    return sum + calculateWeeklyStars(week.xp);
-                }, 0);
-                const starsSpent = (state.rewards?.length || 0) * 3;
+
                 
                 // Best week calculation
                 const bestWeekData = getBestWeekData();
@@ -3394,8 +3380,6 @@
                     bestDayDate,
                     maxDayTasks,
                     bestWeekXP,
-                    totalStarsEarned,
-                    starsSpent,
                     bestWeek: bestWeekData,
                     bestWeekday,
                     recentXP,
@@ -3575,68 +3559,12 @@
             function renderOverviewTab(analytics) {
                 const state = getEffectiveState();
                 // Total stats
-                document.getElementById('totalActiveDays').textContent = analytics.totalActiveDays;
-                document.getElementById('totalTasksCompleted').textContent = analytics.totalTasksCompleted;
-                document.getElementById('avgXpPerDay').textContent = analytics.avgXpPerDay + ' XP';
-                document.getElementById('bestDay').textContent = `${analytics.bestDayXP} XP`;
-                
-                // Level progress ring
-                const levelProgress = (state.progress.currentLevelXP / 810) * 100;
-                const circumference = 2 * Math.PI * 52;
-                const fillLength = (levelProgress / 100) * circumference;
-                document.getElementById('levelRingFill').style.strokeDasharray = `${fillLength} ${circumference}`;
-                document.getElementById('levelRingText').textContent = `Lv.${state.progress.level}`;
-                
-                // Best week stats
-                const bestWeek = getBestWeekData();
-                const bestWeekXPStatEl = document.getElementById('bestWeekXPStat');
-                const bestWeekDateEl = document.getElementById('bestWeekDate');
-                const bestWeekTasksEl = document.getElementById('bestWeekTasks');
-                
-                if (bestWeekXPStatEl) bestWeekXPStatEl.textContent = `${bestWeek.xp} XP`;
-                if (bestWeekDateEl) bestWeekDateEl.textContent = bestWeek.date || '-';
-                if (bestWeekTasksEl) bestWeekTasksEl.textContent = bestWeek.tasks || '-';
-                
-                // Обновляем основной дисплей лучшей недели
-                updateBestWeekDisplay();
-                
-                // Принудительно обновляем отображение лучшей недели
-                updateBestWeekDisplay();
-                
-                // Stars and rewards
-                document.getElementById('totalStarsEarned').textContent = analytics.totalStarsEarned;
-                document.getElementById('starsSpent').textContent = analytics.starsSpent;
-                document.getElementById('rewardsCount').textContent = (state.rewards?.length || 0);
-                
-                // Weekly trend chart (simplified)
-                renderWeeklyTrendChart(analytics.weeklyData);
-            }
 
-            function renderWeeklyTrendChart(weeklyData) {
-                const container = document.getElementById('weeklyTrendChart');
-                if (!container) return;
+
                 
-                const weeks = Object.keys(weeklyData).sort().slice(-12); // Last 12 weeks
-                const maxXP = Math.max(100, ...weeks.map(w => weeklyData[w].xp));
+
                 
-                const bars = weeks.map((week, i) => {
-                    const xp = weeklyData[week].xp;
-                    const height = (xp / maxXP) * 100;
-                    const weekNum = i + 1;
-                    return `
-                        <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-                            <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 4px;">${xp}</div>
-                            <div style="width: 20px; background: linear-gradient(to top, #1e40af, #3b82f6); height: ${height}%; min-height: 4px; border-radius: 2px;"></div>
-                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">Н${weekNum}</div>
-                        </div>
-                    `;
-                }).join('');
-                
-                container.innerHTML = `
-                    <div style="display: flex; align-items: end; gap: 8px; height: 100%; padding: 16px;">
-                        ${bars}
-                    </div>
-                `;
+
             }
 
             function renderProgressCharts() {
@@ -3717,9 +3645,8 @@
 
             function updatePerformanceStats() {
                 const analytics = computeAnalyticsData();
-                document.getElementById('bestWeekday').textContent = analytics.bestWeekday;
-                document.getElementById('avgTasksPerDay').textContent = (analytics.totalTasksCompleted / Math.max(1, analytics.totalActiveDays)).toFixed(1);
-                document.getElementById('xpGrowth').textContent = `+${analytics.recentXP} XP`;
+
+
             }
 
             function updatePredictions() {
@@ -3754,9 +3681,8 @@
 
             function updateRecords() {
                 const analytics = computeAnalyticsData();
-                document.getElementById('maxDayXp').textContent = analytics.bestDayXP + ' XP';
-                document.getElementById('maxDayTasks').textContent = analytics.maxDayTasks;
-                document.getElementById('bestWeekXp').textContent = analytics.bestWeekXP + ' XP';
+
+
             }
 
             // Stub functions for charts that would need more complex implementation

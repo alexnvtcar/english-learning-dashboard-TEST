@@ -162,16 +162,7 @@
                     <div style="font-size: 0.875rem; color: #64748b">XP</div>
                 </div>
 
-                <div class="card stat-card">
-                    <div class="stat-icon">
-                        🏆
-                    </div>
-                    <div class="stat-label">Лучшая неделя</div>
-                    <div class="stat-value" id="bestWeekXP">0 XP</div>
-                    <div id="bestWeekSubtitle" style="font-size: 0.875rem; color: #64748b">
-                        максимальный XP за неделю
-                    </div>
-                </div>
+
             </div>
 
             <div class="grid grid-cols-2">
@@ -861,120 +852,15 @@
                 <!-- Overview Tab -->
                 <div class="tab-content active" id="overview-tab">
                     <div class="analytics-grid">
-                        <!-- Total Stats Card -->
-                        <div class="analytics-card">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #1e40af, #3b82f6);">
-                                        🏆
-                                    </div>
-                                    Общая статистика
-                                </div>
-                            </div>
-                            <div id="totalStatsContent">
-                                <div class="stat-row">
-                                    <span class="stat-label">Всего дней с активностью</span>
-                                    <span class="stat-value" id="totalActiveDays">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Всего заданий выполнено</span>
-                                    <span class="stat-value" id="totalTasksCompleted">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Среднее XP в день</span>
-                                    <span class="stat-value" id="avgXpPerDay">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Лучший день (XP)</span>
-                                    <span class="stat-value" id="bestDay">-</span>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Level Progress Ring -->
-                        <div class="analytics-card">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
-                                        📈
-                                    </div>
-                                    Прогресс уровня
-                                </div>
-                            </div>
-                            <div class="progress-ring" id="levelProgressRing">
-                                <svg viewBox="0 0 120 120">
-                                    <circle class="progress-ring-bg" cx="60" cy="60" r="52"></circle>
-                                    <circle class="progress-ring-fill" cx="60" cy="60" r="52" 
-                                            stroke-dasharray="0 327" id="levelRingFill"></circle>
-                                </svg>
-                                <div class="progress-ring-text" id="levelRingText">Lv.1</div>
-                            </div>
-                        </div>
 
-                        <!-- Weekly XP Trend -->
-                        <div class="analytics-card" style="grid-column: span 2;">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
-                                        📊
-                                    </div>
-                                    Тренд XP по неделям
-                                </div>
-                            </div>
-                            <div class="chart-container chart-large" id="weeklyTrendChart"></div>
-                        </div>
 
-                        <!-- Best Week -->
-                        <div class="analytics-card">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
-                                        🏆
-                                    </div>
-                                    Лучшая неделя
-                                </div>
-                            </div>
-                            <div id="bestWeekStatsContent">
-                                <div class="stat-row">
-                                    <span class="stat-label">Максимальный XP</span>
-                                    <span class="stat-value" id="bestWeekXPStat">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Неделя</span>
-                                    <span class="stat-value" id="bestWeekDate">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Задания выполнено</span>
-                                    <span class="stat-value" id="bestWeekTasks">-</span>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Stars Analytics -->
-                        <div class="analytics-card">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
-                                        ⭐
-                                    </div>
-                                    Звезды и награды
-                                </div>
-                            </div>
-                            <div id="starsStatsContent">
-                                <div class="stat-row">
-                                    <span class="stat-label">Всего звезд заработано</span>
-                                    <span class="stat-value" id="totalStarsEarned">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Звезд потрачено</span>
-                                    <span class="stat-value" id="starsSpent">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Наград получено</span>
-                                    <span class="stat-value" id="rewardsCount">-</span>
-                                </div>
-                            </div>
-                        </div>
+
+
+
+
+
                     </div>
                 </div>
 
@@ -1063,31 +949,7 @@
                             <div class="chart-container" id="weekdayPatternChart"></div>
                         </div>
 
-                        <!-- Performance Trends -->
-                        <div class="analytics-card">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
-                                        📈
-                                    </div>
-                                    Эффективность
-                                </div>
-                            </div>
-                            <div id="performanceContent">
-                                <div class="stat-row">
-                                    <span class="stat-label">Самый продуктивный день недели</span>
-                                    <span class="stat-value" id="bestWeekday">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Среднее заданий в день</span>
-                                    <span class="stat-value" id="avgTasksPerDay">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Рост XP (последние 4 недели)</span>
-                                    <span class="stat-value" id="xpGrowth">-</span>
-                                </div>
-                            </div>
-                        </div>
+
 
                         <!-- Study Sessions -->
                         <div class="analytics-card" style="grid-column: span 2;">
@@ -1146,31 +1008,7 @@
                             <div id="milestonesContent"></div>
                         </div>
 
-                        <!-- Records -->
-                        <div class="analytics-card">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #dc2626, #ef4444);">
-                                        👑
-                                    </div>
-                                    Рекорды
-                                </div>
-                            </div>
-                            <div id="recordsContent">
-                                <div class="stat-row">
-                                    <span class="stat-label">Максимум XP за день</span>
-                                    <span class="stat-value" id="maxDayXp">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Максимум заданий за день</span>
-                                    <span class="stat-value" id="maxDayTasks">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Лучшая неделя (XP)</span>
-                                    <span class="stat-value" id="bestWeekXp">-</span>
-                                </div>
-                            </div>
-                        </div>
+
 
                         <!-- Progress Comparison -->
                         <div class="analytics-card" style="grid-column: span 2;">
