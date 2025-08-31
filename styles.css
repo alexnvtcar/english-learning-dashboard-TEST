@@ -1600,4 +1600,75 @@
             #syncPromptModal .btn-secondary:hover {
                 background-color: #e0e0e0;
             }
+            
+            /* Sync Status Indicator Styles */
+            .sync-status-indicator {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(255, 255, 255, 0.95);
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 12px 16px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.3s ease;
+                backdrop-filter: blur(10px);
+            }
+            
+            .sync-status-indicator.syncing {
+                border-color: #3b82f6;
+                background: rgba(59, 130, 246, 0.1);
+            }
+            
+            .sync-status-indicator.success {
+                border-color: #10b981;
+                background: rgba(16, 185, 129, 0.1);
+            }
+            
+            .sync-status-indicator.error {
+                border-color: #ef4444;
+                background: rgba(239, 68, 68, 0.1);
+            }
+            
+            .sync-status-indicator.offline {
+                border-color: #6b7280;
+                background: rgba(107, 114, 128, 0.1);
+            }
+            
+            .sync-icon {
+                font-size: 16px;
+            }
+            
+            .sync-text {
+                color: #374151;
+                white-space: nowrap;
+            }
+            
+            .sync-status-indicator .sync-spinner {
+                width: 16px;
+                height: 16px;
+                border: 2px solid #3b82f6;
+                border-top: 2px solid transparent;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0;
+            }
+            
+            .sync-status-indicator.success .sync-text {
+                color: #065f46;
+            }
+            
+            .sync-status-indicator.error .sync-text {
+                color: #991b1b;
+            }
+            
+            .sync-status-indicator.offline .sync-text {
+                color: #374151;
+            }
         

@@ -273,8 +273,8 @@
                         userName: appState.userName || restoredData.userName || 'Михаил',
                         // isVerified всегда false при запуске
                         isVerified: false,
-                                                // Объединяем PIN-коды (сохраняем существующие и добавляем новые)
-                        pinCodes: { ...appState.pinCodes, ...restoredData.pinCodes }
+                                                // Валидируем и объединяем PIN-коды
+                        pinCodes: validatePinCodes({ ...appState.pinCodes, ...restoredData.pinCodes })
                     };
                     
                     console.log('✅ Локальное состояние загружено');
@@ -315,7 +315,9 @@
                     
                     try {
                         const sharedRef = doc(db, 'shared-data', 'main');
-                        const sharedSnap = await getDoc(sharedRef);
+                        const sharedSnap = await retryOperation(async () => {
+                            return await getDoc(sharedRef);
+                        }, 3, 1000);
                         
                         if (sharedSnap.exists()) {
                             firestoreData = sharedSnap.data();
@@ -323,7 +325,9 @@
                         } else {
                             // Если общих данных нет, пробуем загрузить данные пользователя
                             const userRef = doc(db, 'users', appState.userName);
-                            const userSnap = await getDoc(userRef);
+                            const userSnap = await retryOperation(async () => {
+                                return await getDoc(userRef);
+                            }, 3, 1000);
                             
                             if (userSnap.exists()) {
                                 firestoreData = userSnap.data();
@@ -335,7 +339,7 @@
                             }
                         }
                     } catch (error) {
-                        console.error('❌ Ошибка при загрузке данных:', error);
+                        console.error('❌ Ошибка при загрузке данных после всех попыток:', error);
                         return false;
                     }
                     
@@ -1485,8 +1489,24 @@
                 
                 console.log('✅ Приложение инициализировано');
                 
+                // Инициализируем статус синхронизации
+                updateSyncStatus();
+                
                 // Проверяем, нужна ли первичная синхронизация
                 checkFirstTimeSync();
+                
+                // Пытаемся загрузить backup PIN-кодов из Firebase при запуске
+                if (navigator.onLine && isFirebaseAvailable()) {
+                    loadPinCodesFromFirebase().then(success => {
+                        if (success) {
+                            console.log('✅ Backup PIN-кодов загружен при запуске');
+                        } else {
+                            console.log('🔑 Backup PIN-кодов не найден при запуске');
+                        }
+                    }).catch(error => {
+                        console.log('❌ Ошибка загрузки backup PIN-кодов при запуске:', error);
+                    });
+                }
             }
 
             // Delete Task Function
@@ -2534,10 +2554,19 @@
                 console.log('Интернет-соединение восстановлено');
                 showNotification('Интернет-соединение восстановлено', 'success');
                 
-                // Синхронизируем данные при восстановлении соединения
+                // Обновляем статус синхронизации
+                updateSyncStatus();
+                
+                // Синхронизируем данные при восстановлении соединения асинхронно
                 if (appState.isVerified) {
-                    syncWithFirestore().catch(error => {
-                        console.log('Ошибка синхронизации при восстановлении соединения:', error);
+                    syncWithFirestore().then(result => {
+                        if (result) {
+                            console.log('✅ Автоматическая синхронизация при восстановлении соединения завершена');
+                        } else {
+                            console.log('⚠️ Автоматическая синхронизация при восстановлении соединения не удалась');
+                        }
+                    }).catch(error => {
+                        console.log('❌ Ошибка автоматической синхронизации при восстановлении соединения:', error);
                     });
                 }
             });
@@ -2545,6 +2574,9 @@
             window.addEventListener('offline', () => {
                 console.log('Интернет-соединение потеряно');
                 showNotification('Интернет-соединение потеряно', 'warning');
+                
+                // Обновляем статус синхронизации
+                updateSyncStatus();
             });
 
             // Autocomplete interactions for reward ideas
@@ -2969,6 +3001,18 @@
                     }).catch(error => {
                         console.error('❌ Ошибка сохранения PIN-кода в Firebase:', error);
                     });
+                } else if (navigator.onLine && isFirebaseAvailable()) {
+                    // При первой установке PIN-кода также сохраняем backup
+                    console.log('🔐 Сохраняем backup PIN-кода в Firebase...');
+                    savePinCodesToFirebase().then(success => {
+                        if (success) {
+                            console.log('✅ Backup PIN-кода успешно сохранен в Firebase');
+                        } else {
+                            console.log('⚠️ Не удалось сохранить backup PIN-кода в Firebase');
+                        }
+                    }).catch(error => {
+                        console.error('❌ Ошибка сохранения backup PIN-кода в Firebase:', error);
+                    });
                 }
                 
                 hideSetupPinModal();
@@ -3126,6 +3170,77 @@
                 return cleaned;
             }
 
+            // Save PIN codes to Firebase backup
+            async function savePinCodesToFirebase() {
+                if (!navigator.onLine || !isFirebaseAvailable()) {
+                    console.log('🔐 Backup PIN-кодов отменен: нет интернета или Firebase');
+                    return false;
+                }
+
+                try {
+                    console.log('🔐 Сохраняем backup PIN-кодов в Firebase...');
+                    
+                    const pinBackupData = {
+                        pinCodes: appState.pinCodes,
+                        lastUpdated: new Date().toISOString(),
+                        backedUpBy: appState.userName,
+                        version: '1.0',
+                        backupType: 'pin-codes'
+                    };
+                    
+                    // Сохраняем в отдельную коллекцию для PIN-кодов
+                    const pinBackupRef = doc(db, 'pin-backups', 'main');
+                    await retryOperation(async () => {
+                        return await setDoc(pinBackupRef, pinBackupData, { merge: true });
+                    }, 3, 1000);
+                    
+                    console.log('✅ Backup PIN-кодов успешно сохранен в Firebase');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Ошибка сохранения backup PIN-кодов:', error);
+                    return false;
+                }
+            }
+
+            // Load PIN codes from Firebase backup
+            async function loadPinCodesFromFirebase() {
+                if (!navigator.onLine || !isFirebaseAvailable()) {
+                    console.log('🔐 Загрузка backup PIN-кодов отменена: нет интернета или Firebase');
+                    return false;
+                }
+
+                try {
+                    console.log('🔐 Загружаем backup PIN-кодов из Firebase...');
+                    
+                    const pinBackupRef = doc(db, 'pin-backups', 'main');
+                    const pinBackupSnap = await retryOperation(async () => {
+                        return await getDoc(pinBackupRef);
+                    }, 3, 1000);
+                    
+                    if (pinBackupSnap.exists()) {
+                        const backupData = pinBackupSnap.data();
+                        const backupPinCodes = backupData.pinCodes;
+                        
+                        if (backupPinCodes && typeof backupPinCodes === 'object') {
+                            // Валидируем backup PIN-коды
+                            const validatedBackupPins = validatePinCodes(backupPinCodes);
+                            
+                            // Объединяем с локальными PIN-кодами (локальные имеют приоритет)
+                            appState.pinCodes = { ...validatedBackupPins, ...appState.pinCodes };
+                            
+                            console.log('✅ Backup PIN-кодов загружен и применен');
+                            return true;
+                        }
+                    }
+                    
+                    console.log('🔐 Backup PIN-кодов не найден в Firebase');
+                    return false;
+                } catch (error) {
+                    console.error('❌ Ошибка загрузки backup PIN-кодов:', error);
+                    return false;
+                }
+            }
+
             // Save state to Firestore
             async function saveStateToFirestore() {
                 if (!isFirebaseAvailable()) {
@@ -3167,12 +3282,17 @@
                         }
                     };
                     
-                    // Сохраняем в общую коллекцию
+                    // Сохраняем в общую коллекцию с retry
                     const sharedRef = doc(db, 'shared-data', 'main');
-                    await setDoc(sharedRef, dataToSave, { merge: true });
+                    await retryOperation(async () => {
+                        return await setDoc(sharedRef, dataToSave, { merge: true });
+                    }, 3, 1000);
                     
                     // Обновляем локальное состояние
                     appState.saveStats = dataToSave.saveStats;
+                    
+                    // Сохраняем backup PIN-кодов
+                    await savePinCodesToFirebase();
                     
                     console.log('✅ Данные успешно сохранены в Firebase');
                     showNotification('Данные сохранены в Firebase', 'success');
@@ -3203,6 +3323,49 @@
                     
                     return false;
                 }
+            }
+
+            // Validate PIN codes
+            function validatePinCodes(pinCodes) {
+                if (!pinCodes || typeof pinCodes !== 'object') {
+                    console.warn('⚠️ PIN-коды отсутствуют или имеют неверный формат');
+                    return {
+                        'Михаил': null,
+                        'Admin': null
+                    };
+                }
+                
+                const validated = {};
+                let hasValidPins = false;
+                
+                // Проверяем каждый PIN-код
+                Object.keys(pinCodes).forEach(userName => {
+                    const pin = pinCodes[userName];
+                    
+                    if (pin && typeof pin === 'string' && pin.length === 4 && /^\d{4}$/.test(pin)) {
+                        validated[userName] = pin;
+                        hasValidPins = true;
+                        console.log(`✅ PIN-код для ${userName} валиден: ${pin}`);
+                    } else if (pin === null || pin === undefined) {
+                        validated[userName] = null;
+                        console.log(`🔑 PIN-код для ${userName} не установлен`);
+                    } else {
+                        console.warn(`⚠️ Некорректный PIN-код для ${userName}: ${pin}`);
+                        validated[userName] = null;
+                    }
+                });
+                
+                // Убеждаемся, что есть базовые пользователи
+                if (!validated['Михаил']) validated['Михаил'] = null;
+                if (!validated['Admin']) validated['Admin'] = null;
+                
+                if (hasValidPins) {
+                    console.log('✅ PIN-коды прошли валидацию');
+                } else {
+                    console.log('🔑 Все PIN-коды не установлены');
+                }
+                
+                return validated;
             }
 
             // Restore data types after loading from Firestore
@@ -3384,17 +3547,8 @@
                 restored.activityData = restored.activityData || {};
                 restored.rewardPlan = restored.rewardPlan || { description: '' };
                 
-                // Восстанавливаем PIN-коды, если они есть
-                if (restored.pinCodes && typeof restored.pinCodes === 'object') {
-                    console.log('🔐 PIN-коды найдены и восстановлены');
-                } else {
-                    // Если PIN-кодов нет, создаем пустую структуру
-                    restored.pinCodes = {
-                        'Михаил': null,
-                        'Admin': null
-                    };
-                    console.log('🔑 PIN-коды инициализированы по умолчанию');
-                }
+                // Валидируем и восстанавливаем PIN-коды
+                restored.pinCodes = validatePinCodes(restored.pinCodes);
                 
                 console.log('✅ Все типы данных восстановлены');
                 return restored;
@@ -3463,6 +3617,9 @@
                         // Обновляем локальное состояние
                         appState = { ...appState, ...restoredData, ...localSettings };
                         
+                        // Пытаемся загрузить backup PIN-кодов из Firebase
+                        await loadPinCodesFromFirebase();
+                        
                         // Обновляем UI
                         updateProgressDisplay();
                         renderTasks();
@@ -3505,6 +3662,28 @@
                 }
             }
 
+            // Retry mechanism for Firebase operations
+            async function retryOperation(operation, maxRetries = 3, delay = 1000) {
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    try {
+                        console.log(`🔄 Попытка ${attempt}/${maxRetries}...`);
+                        return await operation();
+                    } catch (error) {
+                        console.warn(`⚠️ Попытка ${attempt} не удалась:`, error.message);
+                        
+                        if (attempt === maxRetries) {
+                            console.error(`❌ Все ${maxRetries} попыток не удались`);
+                            throw error;
+                        }
+                        
+                        // Экспоненциальная задержка между попытками
+                        const waitTime = delay * Math.pow(2, attempt - 1);
+                        console.log(`⏳ Ожидание ${waitTime}ms перед следующей попыткой...`);
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                    }
+                }
+            }
+
             // Sync state with Firestore
             async function syncWithFirestore() {
                 if (!navigator.onLine) {
@@ -3522,38 +3701,58 @@
                 try {
                     console.log('🔄 Начинаем синхронизацию с Firebase...');
                     
+                    // Показываем индикатор синхронизации
+                    showSyncStatus('syncing');
+                    
                     // Показываем прогресс синхронизации
                     showNotification('Синхронизация...', 'info');
                     
-                    // Сначала загружаем данные из Firestore (последняя сохраненная версия)
-                    const loadResult = await loadStateFromFirestore();
+                    // Сначала загружаем данные из Firestore с retry
+                    const loadResult = await retryOperation(async () => {
+                        return await loadStateFromFirestore();
+                    }, 3, 1000);
                     
                     if (loadResult) {
                         console.log('✅ Общие данные загружены из Firebase');
                         showNotification('Данные загружены из Firebase', 'success');
                         
-                        // Затем сохраняем текущее состояние (обновляем Firebase)
-                        const saveResult = await saveStateToFirestore();
+                        // Затем сохраняем текущее состояние с retry
+                        const saveResult = await retryOperation(async () => {
+                            return await saveStateToFirestore();
+                        }, 3, 1000);
                         
                         if (saveResult) {
                             console.log('✅ Синхронизация завершена успешно');
                             showNotification('Синхронизация завершена успешно', 'success');
+                            
+                            // Показываем успешный статус
+                            showSyncStatus('success');
                             
                             // Показываем сводку синхронизации
                             showSyncSummary();
                         } else {
                             console.log('⚠️ Синхронизация завершена с предупреждениями');
                             showNotification('Синхронизация завершена с предупреждениями', 'warning');
+                            
+                            // Показываем статус с предупреждением
+                            showSyncStatus('error', 'С предупреждениями');
                         }
                     } else {
                         console.log('⚠️ Не удалось загрузить общие данные из Firebase');
                         showNotification('Не удалось загрузить данные из Firebase', 'warning');
+                        
+                        // Показываем статус ошибки
+                        showSyncStatus('error', 'Не удалось загрузить');
                     }
                     
                     return true;
                 } catch (error) {
-                    console.error('❌ Ошибка синхронизации:', error);
-                    showNotification('Ошибка синхронизации', 'error');
+                    console.error('❌ Ошибка синхронизации после всех попыток:', error);
+                    showNotification(`Ошибка синхронизации: ${error.message}`, 'error');
+                    
+                    // Показываем статус ошибки
+                    showSyncStatus('error', error.message);
+                    
                     return false;
                 }
             }
@@ -3802,6 +4001,71 @@
                 document.body.appendChild(modal);
             }
 
+            // Show sync status indicator
+            function showSyncStatus(status, message = '') {
+                // Удаляем существующий индикатор
+                const existingIndicator = document.getElementById('syncStatusIndicator');
+                if (existingIndicator) {
+                    existingIndicator.remove();
+                }
+
+                const indicator = document.createElement('div');
+                indicator.id = 'syncStatusIndicator';
+                indicator.className = `sync-status-indicator ${status}`;
+                
+                let icon, text;
+                switch (status) {
+                    case 'syncing':
+                        icon = '🔄';
+                        text = 'Синхронизация...';
+                        break;
+                    case 'success':
+                        icon = '✅';
+                        text = 'Синхронизировано';
+                        break;
+                    case 'error':
+                        icon = '❌';
+                        text = 'Ошибка синхронизации';
+                        break;
+                    case 'offline':
+                        icon = '📡';
+                        text = 'Офлайн режим';
+                        break;
+                    default:
+                        icon = 'ℹ️';
+                        text = message || 'Готово';
+                }
+
+                indicator.innerHTML = `
+                    <span class="sync-icon">${icon}</span>
+                    <span class="sync-text">${text}</span>
+                    ${status === 'syncing' ? '<div class="sync-spinner"></div>' : ''}
+                `;
+
+                // Добавляем в правый верхний угол
+                document.body.appendChild(indicator);
+                
+                // Автоматически скрываем через 3 секунды для успешных статусов
+                if (status === 'success') {
+                    setTimeout(() => {
+                        if (indicator.parentNode) {
+                            indicator.remove();
+                        }
+                    }, 3000);
+                }
+            }
+
+            // Update sync status based on connection
+            function updateSyncStatus() {
+                if (!navigator.onLine) {
+                    showSyncStatus('offline');
+                } else if (!isFirebaseAvailable()) {
+                    showSyncStatus('error', 'Firebase недоступен');
+                } else {
+                    showSyncStatus('success');
+                }
+            }
+
             // Check if first time sync is needed
             async function checkFirstTimeSync() {
                 // Проверяем, была ли уже первичная синхронизация
@@ -3879,25 +4143,30 @@
                         if (progress >= 100) clearInterval(progressInterval);
                     }, 50);
                     
-                    // Выполняем синхронизацию
-                    const syncResult = await syncWithFirestore();
-                    
-                    // Останавливаем анимацию
-                    clearInterval(progressInterval);
-                    if (progressFill) progressFill.style.width = '100%';
-                    
-                    if (syncResult) {
-                        // Показываем успешную синхронизацию
-                        showFirstTimeSyncSuccess();
+                    // Выполняем синхронизацию асинхронно
+                    syncWithFirestore().then(syncResult => {
+                        // Останавливаем анимацию
+                        clearInterval(progressInterval);
+                        if (progressFill) progressFill.style.width = '100%';
                         
-                        // Отмечаем, что первичная синхронизация выполнена
-                        localStorage.setItem('has-synced-before', 'true');
-                    } else {
-                        // Показываем ошибку синхронизации
+                        if (syncResult) {
+                            // Показываем успешную синхронизацию
+                            showFirstTimeSyncSuccess();
+                            
+                            // Отмечаем, что первичная синхронизация выполнена
+                            localStorage.setItem('has-synced-before', 'true');
+                        } else {
+                            // Показываем ошибку синхронизации
+                            showFirstTimeSyncError();
+                        }
+                    }).catch(error => {
+                        console.error('❌ Ошибка первичной синхронизации:', error);
+                        clearInterval(progressInterval);
                         showFirstTimeSyncError();
-                    }
+                    });
+                    
                 } catch (error) {
-                    console.error('❌ Ошибка первичной синхронизации:', error);
+                    console.error('❌ Ошибка запуска синхронизации:', error);
                     showFirstTimeSyncError();
                 }
             }
@@ -4173,4 +4442,12 @@
         } else {
             initApp();
         }
+        
+        // Make new functions globally available
+        window.savePinCodesToFirebase = savePinCodesToFirebase;
+        window.loadPinCodesFromFirebase = loadPinCodesFromFirebase;
+        window.validatePinCodes = validatePinCodes;
+        window.showSyncStatus = showSyncStatus;
+        window.updateSyncStatus = updateSyncStatus;
+        window.retryOperation = retryOperation;
         
