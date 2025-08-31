@@ -36,7 +36,7 @@
                     level: 15,
                     totalXP: 4250,
                     currentLevelXP: 0,
-                    streak: 12,
+                    bestWeekXP: 0,
                     weeklyXP: 340,
                     weeklyStars: 0,
                     starBank: 0,
@@ -355,11 +355,40 @@
                         appState.selectedDate = new Date();
                     }
                     
+                    // Обеспечиваем наличие bestWeekXP
+                    if (!appState.progress) {
+                        appState.progress = {};
+                    }
+                    if (typeof appState.progress.bestWeekXP === 'undefined') {
+                        appState.progress.bestWeekXP = 0;
+                        console.log('🏆 bestWeekXP инициализирован в loadLocalState');
+                    }
+                    
+                    console.log('🔄 Локальное состояние загружено, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПОСЛЕ ЗАГРУЗКИ ЛОКАЛЬНОГО СОСТОЯНИЯ
+                    
+                    // 1. Пересчитываем лучшую неделю
+                    recalculateBestWeek();
+                    
+                    // 2. Проверяем, что все показатели обновлены
+                    console.log('✅ Локальное состояние загружено, все показатели пересчитаны');
+                    
                 } catch (e) {
                     console.error('❌ Ошибка загрузки локального состояния:', e);
                     // Устанавливаем значения по умолчанию при ошибке
                     appState.currentMonth = new Date();
                     appState.selectedDate = new Date();
+                    
+                    console.log('🔄 Устанавливаем значения по умолчанию, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПРИ ОШИБКЕ
+                    
+                    // 1. Пересчитываем лучшую неделю
+                    recalculateBestWeek();
+                    
+                    // 2. Проверяем, что все показатели обновлены
+                    console.log('✅ Значения по умолчанию установлены, все показатели пересчитаны');
                 }
             }
 
@@ -591,6 +620,25 @@
                 
                 const welcomeEl = document.getElementById('welcomeMessage');
                 if (welcomeEl) welcomeEl.textContent = msg;
+                
+                console.log('🔄 Показываем приветствие, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ ПРИВЕТСТВИЯ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Приветствие показано, все показатели пересчитаны');
+                
                 document.getElementById('welcomeModal').classList.add('show');
             }
             function hideWelcomeModal() {
@@ -662,7 +710,7 @@
                     progress.level;
                 document.getElementById("totalXP").textContent =
                     progress.totalXP.toLocaleString();
-                updateStreakDisplay();
+                updateBestWeekDisplay();
 
                 const xpNeeded = getXPRequiredForLevel(progress.level);
                 const xpRemaining = Math.max(0, xpNeeded - progress.currentLevelXP);
@@ -676,6 +724,9 @@
                 updateProgressWeekSection();
                 updateMonthlyProgressSection();
                 updateRedeemControls();
+                
+                // Пересчитываем и обновляем отображение лучшей недели
+                recalculateBestWeek();
             }
 
             function isWeekday(date) {
@@ -702,20 +753,22 @@
                 }
             }
 
-            function updateStreakDisplay() {
-                const start = new Date(appState.resetDate || new Date());
-                const today = new Date();
-                let studied = 0;
-                let totalEligible = 0;
-                iterateDays(start, today, (d) => {
-                    if (isWeekday(d)) {
-                        totalEligible += 1;
-                        if (hasActivityOn(d)) studied += 1;
+            function updateBestWeekDisplay() {
+                const bestWeekXP = appState.progress.bestWeekXP || 0;
+                const el = document.getElementById('bestWeekXP');
+                if (el) el.textContent = `${bestWeekXP} XP`;
+                
+                // Обновляем подзаголовок
+                const subtitleEl = document.getElementById('bestWeekSubtitle');
+                if (subtitleEl) {
+                    if (bestWeekXP > 0) {
+                        subtitleEl.textContent = `максимальный XP за неделю`;
+                    } else {
+                        subtitleEl.textContent = `пока нет данных`;
                     }
-                });
-                const text = `${studied} / ${totalEligible}`;
-                const el = document.getElementById('currentStreak');
-                if (el) el.textContent = text;
+                }
+                
+                console.log('🏆 Обновлен дисплей лучшей недели:', bestWeekXP, 'XP');
             }
 
             function updateWeeklyStars() {
@@ -767,15 +820,40 @@
                         weekStartKey: '',
                         weeklyXP: 0,
                         weeklyStars: 0,
-                        starBank: 0
+                        starBank: 0,
+                        bestWeekXP: 0
                     };
                 }
                 
                 const currentKey = getWeekStartKey(new Date());
                 if (appState.progress.weekStartKey !== currentKey) {
+                    console.log('📅 Новая неделя, обновляем лучшую неделю...');
+                    
+                    // Обновляем лучшую неделю перед сбросом
+                    updateBestWeekProgress();
+                    
                     appState.progress.weekStartKey = currentKey;
                     appState.progress.weeklyXP = 0;
                     appState.progress.weeklyStars = 0;
+                    
+                    console.log('🔄 Неделя сброшена, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПОСЛЕ СБРОСА НЕДЕЛИ
+                    
+                    // 1. Пересчитываем лучшую неделю
+                    recalculateBestWeek();
+                    
+                    // 2. Обновляем все отображения
+                    updateProgressDisplay();
+                    updateBestWeekDisplay();
+                    updateRedeemControls();
+                    updateProgressWeekSection();
+                    updateMonthlyProgressSection();
+                    updateWeeklyStars();
+                    
+                    // 3. Проверяем, что все показатели обновлены
+                    console.log('✅ Неделя сброшена, все показатели пересчитаны');
+                    console.log('📅 Новая неделя:', currentKey);
                 }
             }
 
@@ -1026,9 +1104,30 @@
 
             function clearRewards() {
                 if (confirm('Удалить ВСЕ сохраненные награды?')) {
+                    console.log('🔄 Очищаем все награды...');
+                    
                     appState.rewards = [];
+                    
+                    console.log('🔄 Награды очищены, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                    
+                    // 1. Пересчитываем лучшую неделю
+                    recalculateBestWeek();
+                    
+                    // 2. Обновляем все отображения
                     renderRewards();
-                    showNotification('Все награды удалены', 'info');
+                    updateProgressDisplay();
+                    updateBestWeekDisplay();
+                    updateRedeemControls();
+                    updateProgressWeekSection();
+                    updateMonthlyProgressSection();
+                    updateWeeklyStars();
+                    
+                    // 3. Проверяем, что все показатели обновлены
+                    console.log('✅ Награды очищены, показатели обновлены');
+                    
+                    showNotification('Все награды удалены! Все показатели пересчитаны.', 'success');
                     // Автоматическое сохранение отключено
                 }
             }
@@ -1172,6 +1271,9 @@
                     appState.progress.totalXP += task.xpReward;
                     appState.progress.currentLevelXP += task.xpReward;
                     appState.progress.weeklyXP += task.xpReward;
+                    
+                    // Обновляем лучшую неделю
+                    updateBestWeekProgress();
 
                     // Check for level up
                     let xpNeeded = getXPRequiredForLevel(appState.progress.level);
@@ -1212,11 +1314,32 @@
                         completedAt: new Date(),
                     });
 
-                    // Update displays
+                    console.log('🔄 Задание выполнено, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                    
+                    // 1. Пересчитываем лучшую неделю
+                    recalculateBestWeek();
+                    
+                    // 2. Обновляем все отображения
                     updateProgressDisplay();
                     generateCalendar();
                     updateDayActivity();
                     renderWeeklyChart();
+                    updateBestWeekDisplay();
+                    updateRedeemControls();
+                    updateProgressWeekSection();
+                    updateMonthlyProgressSection();
+                    updateWeeklyStars();
+                    
+                    // 3. Проверяем, что все показатели обновлены
+                    console.log('✅ Задание выполнено, показатели обновлены');
+                    console.log('   - Получено XP:', task.xpReward);
+                    console.log('   - Новый общий XP:', appState.progress.totalXP);
+                    console.log('   - Новый уровень:', appState.progress.level);
+                    console.log('   - XP за неделю:', appState.progress.weeklyXP);
+                    console.log('   - Лучшая неделя:', appState.progress.bestWeekXP);
+                    
                     // Автоматическое сохранение отключено
 
                     taskElement.classList.remove("task-completed");
@@ -1245,9 +1368,31 @@
                 // Если поле Название задания содержит специальную команду очистки
                 if (name.trim().toLowerCase() === 'очистить' || name.trim().toLowerCase() === 'clear') {
                     if (confirm('Очистить все сохраненные задания?')) {
+                        console.log('🔄 Очищаем все задания через команду...');
+                        
                         appState.tasks = [];
+                        
+                        console.log('🔄 Задания очищены, пересчитываем все показатели...');
+                        
+                        // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                        
+                        // 1. Пересчитываем лучшую неделю
+                        recalculateBestWeek();
+                        
+                        // 2. Обновляем все отображения
                         renderTasks();
-                        showNotification('Все задания очищены', 'info');
+                        updateProgressDisplay();
+                        updateBestWeekDisplay();
+                        updateRedeemControls();
+                        updateProgressWeekSection();
+                        updateMonthlyProgressSection();
+                        updateWeeklyStars();
+                        
+                        // 3. Проверяем, что все показатели обновлены
+                        console.log('✅ Задания очищены через команду, показатели обновлены');
+                        
+                        showNotification('Все задания очищены! Все показатели пересчитаны.', 'success');
+                        
                         // Автоматическое сохранение отключено
                     }
                     document.getElementById("taskForm").reset();
@@ -1270,9 +1415,28 @@
                 };
 
                 appState.tasks.push(newTask);
+                
+                console.log('🔄 Новое задание добавлено, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
                 renderTasks();
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Новое задание добавлено, показатели обновлены');
+                
                 hideTaskModal();
-                showNotification("Новое задание добавлено!", "success");
+                showNotification("Новое задание добавлено! Все показатели пересчитаны.", "success");
                 // Автоматическое сохранение отключено
 
                 // Reset form
@@ -1305,15 +1469,31 @@
                 appState.progress.starBank -= starsCost;
                 appState.rewardPlan = { description: "" };
 
+                console.log('🔄 Награда получена, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
                 renderRewards();
+                updateProgressDisplay();
                 updateWeeklyStars();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Награда получена, показатели обновлены');
+                
                 hideRewardModal();
-                showNotification("Награда получена!", "success");
+                showNotification("Награда получена! Все показатели пересчитаны.", "success");
                 // Автоматическое сохранение отключено
 
                 // Reset form
                 document.getElementById("rewardForm").reset();
-                updateRedeemControls();
             }
 
             function selectDate(dateStr) {
@@ -1370,6 +1550,24 @@
 
             // Modal Functions
             function showTaskModal() {
+                console.log('🔄 Показываем модальное окно заданий, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ МОДАЛЬНОГО ОКНА ЗАДАНИЙ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Модальное окно заданий показано, все показатели пересчитаны');
+                
                 document.getElementById("taskModal").classList.add("show");
                 populateIconSelector(); // Populate icons when modal opens
             }
@@ -1404,6 +1602,25 @@
                 if (availableStarsEl) availableStarsEl.textContent = `${appState.progress.starBank || 0} ⭐`;
                 const confirmBtn = document.getElementById('confirmRedeemBtn');
                 if (confirmBtn) confirmBtn.disabled = (appState.progress.starBank || 0) < 3;
+                
+                console.log('🔄 Показываем модальное окно наград, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ МОДАЛЬНОГО ОКНА НАГРАД
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Модальное окно наград показано, все показатели пересчитаны');
+                
                 document.getElementById("rewardModal").classList.add("show");
             }
             // Idea Modal
@@ -1413,6 +1630,24 @@
                     showNotification('Награда уже запланирована. Сначала получите её, чтобы придумать новую.', 'info');
                     return;
                 }
+                console.log('🔄 Показываем модальное окно идей, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ МОДАЛЬНОГО ОКНА ИДЕЙ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Модальное окно идей показано, все показатели пересчитаны');
+                
                 document.getElementById('ideaModal').classList.add('show');
                 const input = document.getElementById('ideaDescription');
                 if (input) {
@@ -1432,9 +1667,31 @@
                 const cmd = desc.toLowerCase();
                 if (cmd === 'очистить' || cmd === 'clear') {
                     if (confirm('Удалить ВСЕ сохраненные награды?')) {
+                        console.log('🔄 Очищаем все награды через команду...');
+                        
                         appState.rewards = [];
+                        
+                        console.log('🔄 Награды очищены, пересчитываем все показатели...');
+                        
+                        // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                        
+                        // 1. Пересчитываем лучшую неделю
+                        recalculateBestWeek();
+                        
+                        // 2. Обновляем все отображения
                         renderRewards();
-                        showNotification('Все награды очищены', 'info');
+                        updateProgressDisplay();
+                        updateBestWeekDisplay();
+                        updateRedeemControls();
+                        updateProgressWeekSection();
+                        updateMonthlyProgressSection();
+                        updateWeeklyStars();
+                        
+                        // 3. Проверяем, что все показатели обновлены
+                        console.log('✅ Награды очищены через команду, показатели обновлены');
+                        
+                        showNotification('Все награды очищены! Все показатели пересчитаны.', 'success');
+                        
                         saveState();
                     }
                     document.getElementById('ideaForm').reset();
@@ -1444,9 +1701,28 @@
                 }
                 appState.rewardPlan = { description: desc };
                 addIdea(desc);
-                hideIdeaModal();
+                
+                console.log('🔄 Идея награды сохранена, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
                 updateRedeemControls();
-                showNotification('Награда сохранена!', 'success');
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Идея награды сохранена, показатели обновлены');
+                
+                hideIdeaModal();
+                showNotification('Награда сохранена! Все показатели пересчитаны.', 'success');
+                
                 saveState();
                 document.getElementById('ideaForm').reset();
             }
@@ -1514,7 +1790,14 @@
                 // Устанавливаем базовые значения по умолчанию
                 ensureWeeklyReset();
                 
-                // Добавляем демо-активность только если её нет
+                console.log('🔄 Инициализация приложения, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПРИ ИНИЦИАЛИЗАЦИИ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Добавляем демо-активность только если её нет
                 const hasAnyActivity = Object.keys(appState.activityData || {}).length > 0;
                 if (!hasAnyActivity) {
                     if (!appState.resetDate) appState.resetDate = new Date();
@@ -1544,7 +1827,12 @@
                             completedAt: new Date(Date.now() - 86400000),
                         },
                     ];
+                    
+                    console.log('✅ Демо-активность добавлена');
                 }
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Инициализация завершена, все показатели пересчитаны');
 
                 // Устанавливаем роль по умолчанию
                 if (!appState.role) appState.role = 'viewer';
@@ -1553,6 +1841,15 @@
                 if (!appState.pinCodes) {
                     appState.pinCodes = {};
                     console.log('🔑 PIN-коды инициализированы как пустые (загрузка только из Firebase)');
+                }
+                
+                // Инициализируем bestWeekXP
+                if (!appState.progress) {
+                    appState.progress = {};
+                }
+                if (typeof appState.progress.bestWeekXP === 'undefined') {
+                    appState.progress.bestWeekXP = 0;
+                    console.log('🏆 bestWeekXP инициализирован в initApp');
                 }
                 
                 console.log('🔐 Состояние PIN-кодов при инициализации:', appState.pinCodes);
@@ -1586,6 +1883,25 @@
                     if (hasPin) {
                         // Если PIN-код есть, показываем верификацию
                         console.log('🔐 PIN-код найден, показываем верификацию');
+                        
+                        console.log('🔄 Показываем верификацию, пересчитываем все показатели...');
+                        
+                        // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ ВЕРИФИКАЦИИ
+                        
+                        // 1. Пересчитываем лучшую неделю
+                        recalculateBestWeek();
+                        
+                        // 2. Обновляем все отображения
+                        updateProgressDisplay();
+                        updateBestWeekDisplay();
+                        updateRedeemControls();
+                        updateProgressWeekSection();
+                        updateMonthlyProgressSection();
+                        updateWeeklyStars();
+                        
+                        // 3. Проверяем, что все показатели обновлены
+                        console.log('✅ Верификация показана, все показатели пересчитаны');
+                        
                         showVerificationModal();
                     } else {
                         // Если PIN-кода нет, показываем выбор учетной записи
@@ -1594,7 +1910,14 @@
                     }
                 };
 
-                // Обновляем UI
+                console.log('🔄 Обновляем UI после инициализации...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ И ОБНОВЛЕНИЕ UI
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
                 updateProgressDisplay();
                 renderTasks();
                 renderRewards();
@@ -1602,7 +1925,14 @@
                 updateDayActivity();
                 renderWeeklyChart();
                 updateRedeemControls();
+                updateBestWeekDisplay();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
                 populateIconSelector();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ UI обновлен, все показатели пересчитаны');
                 
                 // Добавляем обработчики для кнопок Firebase
                 const testFirebaseBtn = document.getElementById('testFirebaseBtn');
@@ -1611,6 +1941,9 @@
                 }
                 
                 console.log('✅ Приложение инициализировано');
+                
+                // Восстанавливаем состояние блоков настроек
+                restoreSettingsBlocksState();
                 
                 // Инициализируем статус синхронизации
                 updateSyncStatus();
@@ -1670,9 +2003,30 @@
                 }
                 
                 if (confirm('Вы уверены, что хотите удалить это задание?')) {
+                    console.log('🔄 Удаляем задание...');
+                    
                     appState.tasks = appState.tasks.filter(task => task.id !== taskId);
+                    
+                    console.log('🔄 Задание удалено, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                    
+                    // 1. Пересчитываем лучшую неделю
+                    recalculateBestWeek();
+                    
+                    // 2. Обновляем все отображения
                     renderTasks();
-                    showNotification('Задание удалено', 'info');
+                    updateProgressDisplay();
+                    updateBestWeekDisplay();
+                    updateRedeemControls();
+                    updateProgressWeekSection();
+                    updateMonthlyProgressSection();
+                    updateWeeklyStars();
+                    
+                    // 3. Проверяем, что все показатели обновлены
+                    console.log('✅ Задание удалено, показатели обновлены');
+                    
+                    showNotification('Задание удалено! Все показатели пересчитаны.', 'success');
                     // Автоматическое сохранение отключено
                 }
             }
@@ -1687,6 +2041,8 @@
                     return;
                 }
 
+                console.log('🔄 Удаляем запись активности...');
+                
                 const activity = appState.activityData[dateStr];
                 if (!activity || !activity[index]) return;
 
@@ -1699,18 +2055,44 @@
                     delete appState.activityData[dateStr];
                 }
 
-                // Recalculate all progress from scratch
+                console.log('🔄 Активность удалена, пересчитываем все показатели...');
+
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                
+                // 1. Пересчитываем весь прогресс с нуля
                 recalculateAllProgress();
 
-                // Update all displays
+                // 2. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+
+                // 3. Обновляем все отображения
                 updateProgressDisplay();
                 generateCalendar();
                 updateDayActivity();
                 renderWeeklyChart();
                 updateRedeemControls();
+                
+                // 4. Принудительно обновляем отображение лучшей недели
+                updateBestWeekDisplay();
+                
+                // 5. Обновляем недельную и месячную секции
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                
+                // 6. Обновляем звезды
+                updateWeeklyStars();
+                
+                // 7. Проверяем, что все показатели обновлены
+                console.log('✅ Активность удалена, все показатели пересчитаны');
+                console.log('   - Удалено XP:', deletedXP);
+                console.log('   - Новый общий XP:', appState.progress.totalXP);
+                console.log('   - Новый уровень:', appState.progress.level);
+                console.log('   - XP за неделю:', appState.progress.weeklyXP);
+                console.log('   - Лучшая неделя:', appState.progress.bestWeekXP);
+
                 // Автоматическое сохранение отключено
 
-                showNotification(`Активность удалена (-${deletedXP} XP)`, 'info');
+                showNotification(`Активность удалена (-${deletedXP} XP)! Все показатели пересчитаны.`, 'success');
             }
 
             // Recalculate all progress from activity data
@@ -1739,8 +2121,9 @@
 
                     // Track weekly XP
                     const weekKey = getWeekStartKey(new Date(dateStr));
-                    if (!weeklyData[weekKey]) weeklyData[weekKey] = 0;
-                    weeklyData[weekKey] += dayXP;
+                    if (!weeklyData[weekKey]) weeklyData[weekKey] = { xp: 0, tasks: 0 };
+                    weeklyData[weekKey].xp += dayXP;
+                    weeklyData[weekKey].tasks += logs.length;
                 }
 
                 // Set total XP and calculate level
@@ -1759,7 +2142,7 @@
 
                 // Calculate current week progress
                 const currentWeekKey = getWeekStartKey(new Date());
-                appState.progress.weeklyXP = weeklyData[currentWeekKey] || 0;
+                appState.progress.weeklyXP = weeklyData[currentWeekKey] ? weeklyData[currentWeekKey].xp : 0;
                 appState.progress.weekStartKey = currentWeekKey;
 
                 // Calculate stars earned this week and transfer to star bank
@@ -1769,10 +2152,33 @@
                 // Calculate total star bank from all weeks
                 let totalStars = 0;
                 for (const weekKey in weeklyData) {
-                    const weekXP = weeklyData[weekKey];
+                    const weekXP = weeklyData[weekKey].xp;
                     totalStars += calculateWeeklyStars(weekXP);
                 }
                 appState.progress.starBank = Math.max(0, totalStars - (appState.rewards.length * 3));
+                
+                // Сохраняем недельные данные для пересчета лучшей недели
+                appState.weeklyData = weeklyData;
+                
+                console.log('🔄 Полный пересчет прогресса завершен, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПОСЛЕ ПЕРЕСЧЕТА ПРОГРЕССА
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Полный пересчет прогресса завершен, все показатели пересчитаны');
+                console.log('🔄 Недельные данные обновлены:', weeklyData);
+                console.log('🏆 Текущая неделя XP:', appState.progress.weeklyXP);
             }
 
             function clearTasks() {
@@ -1783,9 +2189,30 @@
                 }
                 
                 if (confirm('Удалить ВСЕ сохраненные задания?')) {
+                    console.log('🔄 Очищаем все задания...');
+                    
                     appState.tasks = [];
+                    
+                    console.log('🔄 Задания очищены, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                    
+                    // 1. Пересчитываем лучшую неделю
+                    recalculateBestWeek();
+                    
+                    // 2. Обновляем все отображения
                     renderTasks();
-                    showNotification('Все задания удалены', 'info');
+                    updateProgressDisplay();
+                    updateBestWeekDisplay();
+                    updateRedeemControls();
+                    updateProgressWeekSection();
+                    updateMonthlyProgressSection();
+                    updateWeeklyStars();
+                    
+                    // 3. Проверяем, что все показатели обновлены
+                    console.log('✅ Задания очищены, показатели обновлены');
+                    
+                    showNotification('Все задания удалены! Все показатели пересчитаны.', 'success');
                     // Автоматическое сохранение отключено
                 }
             }
@@ -1817,8 +2244,32 @@
                         appState.userName = incoming.userName;
                     }
                     
-                    updateProgressDisplay(); renderTasks(); renderRewards(); generateCalendar(); updateDayActivity(); renderWeeklyChart(); updateRedeemControls(); // Автоматическое сохранение отключено
-                    showNotification('Состояние синхронизировано', 'success');
+                    console.log('🔄 Импорт данных завершен, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                    
+                    // 1. Пересчитываем лучшую неделю
+                    recalculateBestWeek();
+                    
+                    // 2. Обновляем все отображения
+                    updateProgressDisplay();
+                    renderTasks();
+                    renderRewards();
+                    generateCalendar();
+                    updateDayActivity();
+                    renderWeeklyChart();
+                    updateRedeemControls();
+                    updateProgressWeekSection();
+                    updateMonthlyProgressSection();
+                    updateWeeklyStars();
+                    
+                    // 3. Принудительно обновляем отображение лучшей недели
+                    updateBestWeekDisplay();
+                    
+                    // 4. Проверяем, что все показатели обновлены
+                    console.log('✅ Импорт данных завершен, все показатели пересчитаны');
+                    
+                    showNotification('Состояние синхронизировано! Все показатели пересчитаны.', 'success');
                 } catch (e) {
                     showNotification('Ошибка применения состояния', 'error');
                 }
@@ -1961,8 +2412,31 @@
                 if (importedData.pinCodes) {
                     appState.pinCodes = { ...appState.pinCodes, ...importedData.pinCodes };
                 }
-                updateProgressDisplay(); renderTasks(); renderRewards(); generateCalendar(); updateDayActivity(); renderWeeklyChart(); updateRedeemControls(); saveState();
-                showNotification('Слепок применен', 'success');
+                console.log('🔄 Слепок применен, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                renderTasks();
+                renderRewards();
+                generateCalendar();
+                updateDayActivity();
+                renderWeeklyChart();
+                updateRedeemControls();
+                updateBestWeekDisplay();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Слепок применен, все показатели пересчитаны');
+                
+                saveState();
+                showNotification('Слепок применен! Все показатели пересчитаны.', 'success');
             }
 
             // Chart.js optional integration (loaded online) with fallback to existing DOM charts
@@ -2040,15 +2514,30 @@
                             appState.pinCodes = { ...appState.pinCodes, ...importedData.pinCodes };
                         }
 
-                        // Update UI
+                        console.log('🔄 Импорт данных завершен, пересчитываем все показатели...');
+                        
+                        // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                        
+                        // 1. Пересчитываем лучшую неделю
+                        recalculateBestWeek();
+                        
+                        // 2. Обновляем все отображения
                         updateProgressDisplay();
                         renderTasks();
                         renderRewards();
                         generateCalendar();
                         updateDayActivity();
                         renderWeeklyChart();
-
-                        showNotification('Данные импортированы успешно!', 'success');
+                        updateBestWeekDisplay();
+                        updateRedeemControls();
+                        updateProgressWeekSection();
+                        updateMonthlyProgressSection();
+                        updateWeeklyStars();
+                        
+                        // 3. Проверяем, что все показатели обновлены
+                        console.log('✅ Импорт данных завершен, все показатели пересчитаны');
+                        
+                        showNotification('Данные импортированы успешно! Все показатели пересчитаны.', 'success');
                         saveState();
                     } catch (error) {
                         showNotification('Ошибка при импорте данных: ' + error.message, 'error');
@@ -2069,16 +2558,21 @@
                 }
                 
                 if (confirm('Вы уверены, что хотите сбросить весь прогресс? Это действие нельзя отменить!')) {
-                    // Reset to initial state
+                    console.log('🔄 Начинаем полный сброс прогресса...');
+                    
+                    // Полностью сбрасываем прогресс
                     appState.progress = {
                         level: 1,
                         totalXP: 0,
                         currentLevelXP: 0,
-                        streak: 0,
+                        bestWeekXP: 0,
                         weeklyXP: 0,
-                        weeklyStars: 0
+                        weeklyStars: 0,
+                        starBank: 0,
+                        weekStartKey: getWeekStartKey(new Date())
                     };
                     
+                    // Сбрасываем задания к начальным
                     appState.tasks = [
                         {
                             id: 1,
@@ -2109,8 +2603,10 @@
                         }
                     ];
                     
+                    // Очищаем все награды и активность
                     appState.rewards = [];
                     appState.activityData = {};
+                    appState.rewardPlan = { description: "" };
                     appState.resetDate = new Date();
                     
                     // Сбрасываем имя пользователя к значению по умолчанию
@@ -2121,16 +2617,62 @@
                         'Михаил': null,
                         'Admin': null
                     };
+                    
+                    // Очищаем недельные данные
+                    appState.weeklyData = {};
+                    
+                    // Сбрасываем представления
+                    appState.progressView = { weekOffset: 0, monthOffset: 0 };
+                    appState.currentMonth = new Date();
+                    appState.selectedDate = new Date();
 
-                    // Update UI
+                    console.log('🔄 Прогресс сброшен, обновляем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                    
+                    // 1. Пересчитываем лучшую неделю (должна быть 0)
+                    recalculateBestWeek();
+                    
+                    // 2. Обновляем все отображения
                     updateProgressDisplay();
                     renderTasks();
                     renderRewards();
                     generateCalendar();
                     updateDayActivity();
                     renderWeeklyChart();
+                    
+                    // 3. Принудительно обновляем отображение лучшей недели
+                    updateBestWeekDisplay();
+                    
+                    // 4. Обновляем элементы управления наградами
+                    updateRedeemControls();
+                    
+                    // 5. Обновляем недельную секцию прогресса
+                    updateProgressWeekSection();
+                    
+                    // 6. Обновляем месячную секцию прогресса
+                    updateMonthlyProgressSection();
+                    
+                    // 7. Обновляем звезды
+                    updateWeeklyStars();
+                    
+                    // 8. Сбрасываем неделю
+                    ensureWeeklyReset();
+                    
+                    // 9. Проверяем, что все показатели действительно сброшены
+                    console.log('✅ Проверка сброса показателей:');
+                    console.log('   - Уровень:', appState.progress.level);
+                    console.log('   - Общий XP:', appState.progress.totalXP);
+                    console.log('   - XP за неделю:', appState.progress.weeklyXP);
+                    console.log('   - Лучшая неделя:', appState.progress.bestWeekXP);
+                    console.log('   - Звезды за неделю:', appState.progress.weeklyStars);
+                    console.log('   - Банк звезд:', appState.progress.starBank);
+                    console.log('   - Активность:', Object.keys(appState.activityData).length, 'дней');
+                    console.log('   - Награды:', appState.rewards.length);
+                    console.log('   - Задания:', appState.tasks.length);
 
-                    showNotification('Прогресс сброшен!', 'info');
+                    showNotification('Прогресс полностью сброшен! Все показатели обновлены.', 'success');
+                    
                     // Автоматическое сохранение отключено
                 }
                 toggleSettingsMenu();
@@ -2190,6 +2732,25 @@
                 const enabled = !!(appState.demoAnalytics && appState.demoAnalytics.enabled);
                 if (badge) badge.style.display = enabled ? 'inline-flex' : 'none';
                 if (btn) btn.textContent = enabled ? 'Выключить демо' : 'Демо';
+                
+                console.log('🔄 Показываем аналитику, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ АНАЛИТИКИ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Аналитика показана, все показатели пересчитаны');
+                
                 calculateAnalytics();
                 // Try Chart.js
                 tryLoadChartJs().then((ok)=>{ if (ok) { destroyAnalyticsCharts(); renderAnalyticsWithChartJS(); } });
@@ -2263,6 +2824,21 @@
                     weeklyData[weekKey].tasks += logs.length;
                 });
                 
+                // Сохраняем недельные данные в состоянии
+                state.weeklyData = weeklyData;
+                
+                // Учитываем текущую неделю при вычислении лучшей недели
+                const currentWeekKey = getWeekStartKey(new Date());
+                const currentWeekXPValue = state.progress.weeklyXP || 0;
+                
+                // Если текущая неделя не в исторических данных, добавляем её
+                if (!weeklyData[currentWeekKey]) {
+                    weeklyData[currentWeekKey] = { xp: currentWeekXPValue, tasks: 0 };
+                } else {
+                    // Если текущая неделя уже есть, обновляем XP
+                    weeklyData[currentWeekKey].xp = Math.max(weeklyData[currentWeekKey].xp, currentWeekXPValue);
+                }
+                
                 const bestWeekXP = Math.max(0, ...Object.values(weeklyData).map(w => w.xp));
                 
                 // Stars calculation
@@ -2271,10 +2847,9 @@
                 }, 0);
                 const starsSpent = (state.rewards?.length || 0) * 3;
                 
-                // Streak calculation
-                const currentStreakData = getCurrentStreakData();
-                const bestStreak = calculateBestStreak();
-                const consistency = totalActiveDays > 0 ? Math.round((currentStreakData.studied / Math.max(1, currentStreakData.total)) * 100) : 0;
+                // Best week calculation
+                const bestWeekData = getBestWeekData();
+                updateBestWeekProgress();
                 
                 // Weekday patterns
                 const weekdayData = [0,0,0,0,0,0,0]; // Sun-Sat
@@ -2317,9 +2892,7 @@
                     bestWeekXP,
                     totalStarsEarned,
                     starsSpent,
-                    currentStreak: currentStreakData,
-                    bestStreak,
-                    consistency,
+                    bestWeek: bestWeekData,
                     bestWeekday,
                     recentXP,
                     weeksToMax,
@@ -2329,48 +2902,164 @@
                 };
             }
 
-            function getCurrentStreakData() {
+            function getBestWeekData() {
                 const state = getEffectiveState();
-                const start = new Date(state.resetDate || new Date());
-                const today = new Date();
-                let studied = 0;
-                let totalEligible = 0;
-                iterateDays(start, today, (d) => {
-                    if (isWeekday(d)) {
-                        totalEligible += 1;
-                        if (hasActivityOn(d, state)) studied += 1;
+                const weeklyData = state.weeklyData || {};
+                
+                let bestWeek = { xp: 0, date: '—', tasks: '—' };
+                
+                // Проверяем исторические данные
+                Object.keys(weeklyData).forEach(weekKey => {
+                    const week = weeklyData[weekKey];
+                    if (week.xp > bestWeek.xp) {
+                        bestWeek = {
+                            xp: week.xp,
+                            date: weekKey,
+                            tasks: week.tasks || '—'
+                        };
                     }
                 });
-                return { studied, total: totalEligible };
+                
+                // Проверяем текущую неделю
+                const currentWeekXP = state.progress.weeklyXP || 0;
+                if (currentWeekXP > bestWeek.xp) {
+                    bestWeek = {
+                        xp: currentWeekXP,
+                        date: 'Текущая неделя',
+                        tasks: '—'
+                    };
+                }
+                
+                console.log('🏆 Данные лучшей недели:', bestWeek, 'Текущая неделя:', currentWeekXP);
+                return bestWeek;
             }
 
-            function calculateBestStreak() {
+            function updateBestWeekProgress() {
                 const state = getEffectiveState();
-                const activity = state.activityData || {};
-                const dates = Object.keys(activity).sort();
-                if (dates.length === 0) return 0;
+                const currentWeekXP = state.progress.weeklyXP || 0;
+                const currentBestWeek = state.progress.bestWeekXP || 0;
                 
-                let maxStreak = 0;
-                let currentStreak = 0;
-                let lastDate = null;
+                console.log('🏆 Проверка лучшей недели:', { currentWeekXP, currentBestWeek });
                 
-                dates.forEach(dateStr => {
-                    const currentDate = new Date(dateStr);
-                    if (lastDate) {
-                        const daysDiff = Math.round((currentDate - lastDate) / (24 * 60 * 60 * 1000));
-                        if (daysDiff === 1) {
-                            currentStreak++;
-                        } else {
-                            currentStreak = 1;
+                if (currentWeekXP > currentBestWeek) {
+                    state.progress.bestWeekXP = currentWeekXP;
+                    console.log('🏆 Новая лучшая неделя!', currentWeekXP, 'XP');
+                    
+                    console.log('🔄 Новая лучшая неделя, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПРИ НОВОЙ ЛУЧШЕЙ НЕДЕЛЕ
+                    
+                    // 1. Пересчитываем лучшую неделю
+                    recalculateBestWeek();
+                    
+                    // 2. Обновляем все отображения
+                    updateProgressDisplay();
+                    updateBestWeekDisplay();
+                    updateRedeemControls();
+                    updateProgressWeekSection();
+                    updateMonthlyProgressSection();
+                    updateWeeklyStars();
+                    
+                    // 3. Проверяем, что все показатели обновлены
+                    console.log('✅ Новая лучшая неделя, все показатели пересчитаны');
+                    
+                    // Сохраняем состояние при обновлении лучшей недели
+                    saveState();
+                } else {
+                    console.log('🏆 Текущая неделя не превзошла лучшую:', currentWeekXP, '<=', currentBestWeek);
+                    
+                    // Всегда пересчитываем лучшую неделю для актуальности
+                    recalculateBestWeek();
+                    
+                    // Принудительно обновляем отображение лучшей недели
+                    updateBestWeekDisplay();
+                }
+            }
+            
+            // Функция для пересчета лучшей недели на основе всех данных
+            function recalculateBestWeek() {
+                const state = getEffectiveState();
+                console.log('🔄 Пересчитываем лучшую неделю...');
+                
+                // Получаем текущий XP за неделю
+                const currentWeekXP = state.progress.weeklyXP || 0;
+                
+                // Вычисляем XP по неделям на основе activityData
+                const weeklyData = {};
+                const activityData = state.activityData || {};
+                
+                // Группируем активность по неделям
+                Object.keys(activityData).forEach(dateStr => {
+                    const logs = activityData[dateStr];
+                    if (Array.isArray(logs)) {
+                        const weekKey = getWeekStartKey(new Date(dateStr));
+                        if (!weeklyData[weekKey]) {
+                            weeklyData[weekKey] = { xp: 0, tasks: 0 };
                         }
-                    } else {
-                        currentStreak = 1;
+                        
+                        const dayXP = logs.reduce((sum, log) => sum + (log.xpEarned || 0), 0);
+                        weeklyData[weekKey].xp += dayXP;
+                        weeklyData[weekKey].tasks += logs.length;
                     }
-                    maxStreak = Math.max(maxStreak, currentStreak);
-                    lastDate = currentDate;
                 });
                 
-                return maxStreak;
+                // Сохраняем недельные данные для использования в других местах
+                state.weeklyData = weeklyData;
+                
+                let maxWeekXP = 0;
+                let bestWeekKey = '';
+                
+                // Проверяем исторические недели
+                Object.keys(weeklyData).forEach(weekKey => {
+                    const week = weeklyData[weekKey];
+                    if (week.xp > maxWeekXP) {
+                        maxWeekXP = week.xp;
+                        bestWeekKey = weekKey;
+                    }
+                });
+                
+                // Проверяем текущую неделю
+                if (currentWeekXP > maxWeekXP) {
+                    maxWeekXP = currentWeekXP;
+                    bestWeekKey = 'current';
+                }
+                
+                // Обновляем лучшую неделю
+                const oldBestWeek = state.progress.bestWeekXP || 0;
+                state.progress.bestWeekXP = maxWeekXP;
+                
+                console.log('🏆 Пересчет лучшей недели:', {
+                    old: oldBestWeek,
+                    new: maxWeekXP,
+                    currentWeekXP: currentWeekXP,
+                    bestWeek: bestWeekKey,
+                    weeklyData: weeklyData,
+                    historical: Object.keys(weeklyData).length
+                });
+                
+                // Если значение изменилось, пересчитываем все показатели
+                if (oldBestWeek !== maxWeekXP) {
+                    console.log('🔄 Лучшая неделя изменилась, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПРИ ИЗМЕНЕНИИ ЛУЧШЕЙ НЕДЕЛИ
+                    
+                    // 1. Обновляем все отображения
+                    updateProgressDisplay();
+                    updateBestWeekDisplay();
+                    updateRedeemControls();
+                    updateProgressWeekSection();
+                    updateMonthlyProgressSection();
+                    updateWeeklyStars();
+                    
+                    // 2. Проверяем, что все показатели обновлены
+                    console.log('✅ Лучшая неделя обновлена, все показатели пересчитаны');
+                    
+                    // Сохраняем состояние
+                    saveState();
+                    console.log('💾 Состояние сохранено после пересчета лучшей недели');
+                }
+                
+                return maxWeekXP;
             }
 
             function renderOverviewTab(analytics) {
@@ -2388,10 +3077,21 @@
                 document.getElementById('levelRingFill').style.strokeDasharray = `${fillLength} ${circumference}`;
                 document.getElementById('levelRingText').textContent = `Lv.${state.progress.level}`;
                 
-                // Streak stats
-                document.getElementById('currentStreakStat').textContent = `${analytics.currentStreak.studied}/${analytics.currentStreak.total}`;
-                document.getElementById('bestStreak').textContent = `${analytics.bestStreak} дней`;
-                document.getElementById('consistency').textContent = `${analytics.consistency}%`;
+                // Best week stats
+                const bestWeek = getBestWeekData();
+                const bestWeekXPStatEl = document.getElementById('bestWeekXPStat');
+                const bestWeekDateEl = document.getElementById('bestWeekDate');
+                const bestWeekTasksEl = document.getElementById('bestWeekTasks');
+                
+                if (bestWeekXPStatEl) bestWeekXPStatEl.textContent = `${bestWeek.xp} XP`;
+                if (bestWeekDateEl) bestWeekDateEl.textContent = bestWeek.date || '-';
+                if (bestWeekTasksEl) bestWeekTasksEl.textContent = bestWeek.tasks || '-';
+                
+                // Обновляем основной дисплей лучшей недели
+                updateBestWeekDisplay();
+                
+                // Принудительно обновляем отображение лучшей недели
+                updateBestWeekDisplay();
                 
                 // Stars and rewards
                 document.getElementById('totalStarsEarned').textContent = analytics.totalStarsEarned;
@@ -2798,6 +3498,24 @@
                 appState.isVerified = false;
                 showVerificationModal();
                 
+                console.log('🔄 Учетная запись изменена, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Учетная запись изменена, все показатели пересчитаны');
+                
                 showNotification(appState.userName === 'Михаил' ? 'Режим Михаила' : 'Режим администратора', 'info');
             }
 
@@ -2812,6 +3530,24 @@
                 const container = document.querySelector('.container');
                 if (overlay) overlay.classList.add('show');
                 if (container) container.classList.add('hidden');
+                
+                console.log('🔄 Показываем смену учетной записи, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Смена учетной записи показана, все показатели пересчитаны');
                 
                 toggleSettingsMenu(); // Close settings menu
             }
@@ -2898,6 +3634,25 @@
                 }
                 
                 resetPinInput();
+                
+                console.log('🔄 Показываем верификацию, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ ВЕРИФИКАЦИИ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Верификация показана, все показатели пересчитаны');
+                
                 document.getElementById('verificationModal').classList.add('show');
                 if (overlay) overlay.classList.add('show');
                 if (container) container.classList.add('hidden');
@@ -2944,6 +3699,25 @@
                 }
                 
                 resetSetupPinInput();
+                
+                console.log('🔄 Показываем установку PIN-кода, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ УСТАНОВКИ PIN-КОДА
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Установка PIN-кода показана, все показатели пересчитаны');
+                
                 document.getElementById('setupPinModal').classList.add('show');
                 if (overlay) overlay.classList.add('show');
                 if (container) container.classList.add('hidden');
@@ -2968,6 +3742,25 @@
             function showChangePinModal() {
                 // Устанавливаем флаг режима смены PIN-кода
                 isChangingPin = true;
+                
+                console.log('🔄 Показываем смену PIN-кода, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ СМЕНЫ PIN-КОДА
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Смена PIN-кода показана, все показатели пересчитаны');
+                
                 // First verify current PIN
                 showVerificationModal();
             }
@@ -3111,7 +3904,25 @@
                         // Применяем роли только после успешной верификации
                         applyRolePermissions();
                         
-                        showNotification('Вход выполнен успешно!', 'success');
+                        console.log('🔄 Вход выполнен успешно, пересчитываем все показатели...');
+                        
+                        // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                        
+                        // 1. Пересчитываем лучшую неделю
+                        recalculateBestWeek();
+                        
+                        // 2. Обновляем все отображения
+                        updateProgressDisplay();
+                        updateBestWeekDisplay();
+                        updateRedeemControls();
+                        updateProgressWeekSection();
+                        updateMonthlyProgressSection();
+                        updateWeeklyStars();
+                        
+                        // 3. Проверяем, что все показатели обновлены
+                        console.log('✅ Вход выполнен успешно, все показатели пересчитаны');
+                        
+                        showNotification('Вход выполнен успешно! Все показатели пересчитаны.', 'success');
                         
                         // Show welcome modal for Mikhail
                         if (appState.userName === 'Михаил') {
@@ -3180,6 +3991,24 @@
                     
                     // Применяем роли после успешной установки PIN-кода
                     applyRolePermissions();
+                    
+                    console.log('🔄 PIN-код установлен, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                    
+                    // 1. Пересчитываем лучшую неделю
+                    recalculateBestWeek();
+                    
+                    // 2. Обновляем все отображения
+                    updateProgressDisplay();
+                    updateBestWeekDisplay();
+                    updateRedeemControls();
+                    updateProgressWeekSection();
+                    updateMonthlyProgressSection();
+                    updateWeeklyStars();
+                    
+                    // 3. Проверяем, что все показатели обновлены
+                    console.log('✅ PIN-код установлен, все показатели пересчитаны');
                     
                     // Show welcome modal for Mikhail
                     if (appState.userName === 'Михаил') {
@@ -3461,6 +4290,25 @@
                         
                         if (saveResult) {
                             console.log('✅ PIN-коды успешно синхронизированы с Firebase');
+                            
+                            console.log('🔄 PIN-коды синхронизированы, пересчитываем все показатели...');
+                            
+                            // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                            
+                            // 1. Пересчитываем лучшую неделю
+                            recalculateBestWeek();
+                            
+                            // 2. Обновляем все отображения
+                            updateProgressDisplay();
+                            updateBestWeekDisplay();
+                            updateRedeemControls();
+                            updateProgressWeekSection();
+                            updateMonthlyProgressSection();
+                            updateWeeklyStars();
+                            
+                            // 3. Проверяем, что все показатели обновлены
+                            console.log('✅ PIN-коды синхронизированы, все показатели пересчитаны');
+                            
                             return true;
                         } else {
                             console.log('⚠️ PIN-коды загружены, но не сохранены в Firebase');
@@ -3469,6 +4317,12 @@
                     } else {
                         // Если загрузка не удалась, просто сохраняем текущие
                         const saveResult = await savePinCodesToFirebase();
+                        
+                        if (saveResult) {
+                            // Пересчитываем лучшую неделю после сохранения PIN-кодов
+                            recalculateBestWeek();
+                        }
+                        
                         return saveResult;
                     }
                 } catch (error) {
@@ -3497,6 +4351,25 @@
                     if (result) {
                         console.log('✅ PIN-коды восстановлены из Firebase');
                         console.log('🔐 Текущие PIN-коды:', appState.pinCodes);
+                        
+                        console.log('🔄 PIN-коды восстановлены, пересчитываем все показатели...');
+                        
+                        // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                        
+                        // 1. Пересчитываем лучшую неделю
+                        recalculateBestWeek();
+                        
+                        // 2. Обновляем все отображения
+                        updateProgressDisplay();
+                        updateBestWeekDisplay();
+                        updateRedeemControls();
+                        updateProgressWeekSection();
+                        updateMonthlyProgressSection();
+                        updateWeeklyStars();
+                        
+                        // 3. Проверяем, что все показатели обновлены
+                        console.log('✅ PIN-коды восстановлены, все показатели пересчитаны');
+                        
                         return true;
                     } else {
                         console.log('🔐 PIN-коды не найдены в Firebase');
@@ -3722,6 +4595,12 @@
                     console.log('🔐 PIN-коды удалены из восстановленных данных (загрузка только из Firebase)');
                 }
                 
+                // Обеспечиваем наличие bestWeekXP
+                if (restored.progress && typeof restored.progress.bestWeekXP === 'undefined') {
+                    restored.progress.bestWeekXP = 0;
+                    console.log('🏆 bestWeekXP инициализирован');
+                }
+                
                 // Restore Date objects in tasks
                 if (restored.tasks && Array.isArray(restored.tasks)) {
                     let taskCount = 0;
@@ -3896,7 +4775,24 @@
                         updateDayActivity();
                         renderWeeklyChart();
                         
-                        console.log('✅ Данные успешно загружены из Firebase');
+                        console.log('🔄 Данные загружены из Firebase, пересчитываем все показатели...');
+                        
+                        // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                        
+                        // 1. Пересчитываем лучшую неделю
+                        recalculateBestWeek();
+                        
+                        // 2. Обновляем все отображения
+                        updateProgressDisplay();
+                        updateBestWeekDisplay();
+                        updateRedeemControls();
+                        updateProgressWeekSection();
+                        updateMonthlyProgressSection();
+                        updateWeeklyStars();
+                        
+                        // 3. Проверяем, что все показатели обновлены
+                        console.log('✅ Данные успешно загружены из Firebase, все показатели пересчитаны');
+                        
                         // Уведомление о загрузке показывается только при синхронизации
                         
                         // Показываем детальную информацию о загрузке
@@ -3998,11 +4894,29 @@
                             
                             // Показываем сводку синхронизации
                             showSyncSummary();
+                            
+                            console.log('🔄 Синхронизация завершена успешно, пересчитываем все показатели...');
+                            
+                            // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                            
+                            // 1. Пересчитываем лучшую неделю
+                            recalculateBestWeek();
+                            
+                            // 2. Обновляем все отображения
+                            updateProgressDisplay();
+                            updateBestWeekDisplay();
+                            updateRedeemControls();
+                            updateProgressWeekSection();
+                            updateMonthlyProgressSection();
+                            updateWeeklyStars();
+                            
+                            // 3. Проверяем, что все показатели обновлены
+                            console.log('✅ Синхронизация завершена успешно, все показатели пересчитаны');
                         } else {
                             console.log('⚠️ Синхронизация завершена с предупреждениями');
                             showNotification('Синхронизация завершена с предупреждениями', 'warning');
                             
-                            // Показываем статус с предупреждением
+                            // Показываем статус с предупреждениями
                             showSyncStatus('error', 'С предупреждениями');
                         }
                     } else {
@@ -4418,6 +5332,24 @@
                         if (progressFill) progressFill.style.width = '100%';
                         
                         if (syncResult) {
+                            console.log('🔄 Первичная синхронизация завершена успешно, пересчитываем все показатели...');
+                            
+                            // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                            
+                            // 1. Пересчитываем лучшую неделю
+                            recalculateBestWeek();
+                            
+                            // 2. Обновляем все отображения
+                            updateProgressDisplay();
+                            updateBestWeekDisplay();
+                            updateRedeemControls();
+                            updateProgressWeekSection();
+                            updateMonthlyProgressSection();
+                            updateWeeklyStars();
+                            
+                            // 3. Проверяем, что все показатели обновлены
+                            console.log('✅ Первичная синхронизация завершена, все показатели пересчитаны');
+                            
                             // Показываем успешную синхронизацию
                             showFirstTimeSyncSuccess();
                             
@@ -4557,6 +5489,25 @@
             // Show account selection modal
             function showAccountSelection() {
                 console.log('👤 Показываем выбор учетной записи');
+                
+                console.log('🔄 Показываем выбор учетной записи, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ ВЫБОРА УЧЕТНОЙ ЗАПИСИ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Выбор учетной записи показан, все показатели пересчитаны');
+                
                 document.getElementById('accountModal').classList.add('show');
                 const overlay = document.getElementById('modalOverlay');
                 const container = document.querySelector('.container');
@@ -4633,6 +5584,24 @@
                             await setDoc(mikhailRef, { deleted: true, migratedAt: new Date().toISOString() });
                         }
                         
+                        console.log('🔄 Миграция завершена, пересчитываем все показатели...');
+                        
+                        // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                        
+                        // 1. Пересчитываем лучшую неделю
+                        recalculateBestWeek();
+                        
+                        // 2. Обновляем все отображения
+                        updateProgressDisplay();
+                        updateBestWeekDisplay();
+                        updateRedeemControls();
+                        updateProgressWeekSection();
+                        updateMonthlyProgressSection();
+                        updateWeeklyStars();
+                        
+                        // 3. Проверяем, что все показатели обновлены
+                        console.log('✅ Миграция завершена, все показатели пересчитаны');
+                        
                         return true;
                     }
                     
@@ -4697,34 +5666,159 @@
             }
 
                     function stopAutoSync() {
-            if (autoSyncInterval) {
-                clearInterval(autoSyncInterval);
-                autoSyncInterval = null;
-                console.log('Автосинхронизация остановлена');
+                if (autoSyncInterval) {
+                    clearInterval(autoSyncInterval);
+                    autoSyncInterval = null;
+                    console.log('Автосинхронизация остановлена');
+                }
             }
-        }
 
-        // Initialize the app when DOM is loaded
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initApp);
-        } else {
-            initApp();
-        }
+            // Initialize the app when DOM is loaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initApp);
+            } else {
+                initApp();
+            }
         
-        // Make new functions globally available
-        window.savePinCodesToFirebase = savePinCodesToFirebase;
-        window.loadPinCodesFromFirebase = loadPinCodesFromFirebase;
-        window.validatePinCodes = validatePinCodes;
-        window.showSyncStatus = showSyncStatus;
-        window.updateSyncStatus = updateSyncStatus;
-        window.retryOperation = retryOperation;
-        window.forceSyncPinCodes = forceSyncPinCodes;
-        window.checkDeviceCapabilities = checkDeviceCapabilities;
-        window.forceRestorePinCodes = forceRestorePinCodes;
-        
-        // Глобальная функция для принудительного показа верификации (для отладки)
-        window.forceShowVerification = () => {
-            console.log('🔐 Принудительный показ верификации...');
-            showVerificationAfterSync();
-        };
+            // Функция для восстановления состояния блоков настроек
+            function restoreSettingsBlocksState() {
+                try {
+                    const blockTitles = document.querySelectorAll('.settings-block-title');
+                    blockTitles.forEach(blockTitle => {
+                        const blockName = blockTitle.textContent.trim();
+                        const blockContent = blockTitle.nextElementSibling;
+                        
+                        if (blockContent && blockContent.classList.contains('settings-block-content')) {
+                            // ВСЕГДА сворачиваем блоки при запуске/обновлении
+                            blockContent.classList.remove('expanded');
+                            blockContent.classList.add('collapsed');
+                            blockTitle.classList.add('collapsed');
+                            console.log('📁 Блок свернут при запуске:', blockName);
+                        }
+                    });
+                    
+                    // Очищаем сохраненные состояния, чтобы они не мешали
+                    const blockNames = ['Основные настройки', 'Управление PIN-кодами', 'Firebase операции', 'Техническая диагностика', 'Управление данными', 'Опасные операции'];
+                    blockNames.forEach(name => {
+                        localStorage.removeItem(`settings-block-${name}`);
+                    });
+                    
+                    console.log('✅ Все блоки меню свернуты по умолчанию');
+                } catch (error) {
+                    console.error('❌ Ошибка восстановления состояния блоков настроек:', error);
+                }
+            }
+
+            // Функция для переключения блоков настроек
+            function toggleSettingsBlock(blockTitle) {
+                const blockContent = blockTitle.nextElementSibling;
+                if (blockContent && blockContent.classList.contains('settings-block-content')) {
+                    const isCurrentlyCollapsed = blockContent.classList.contains('collapsed');
+                    
+                    if (isCurrentlyCollapsed) {
+                        // Разворачиваем блок
+                        blockContent.classList.remove('collapsed');
+                        blockContent.classList.add('expanded');
+                        blockTitle.classList.remove('collapsed');
+                        console.log('📂 Блок развернут:', blockTitle.textContent.trim());
+                    } else {
+                        // Сворачиваем блок
+                        blockContent.classList.remove('expanded');
+                        blockContent.classList.add('collapsed');
+                        blockTitle.classList.add('collapsed');
+                        console.log('📁 Блок свернут:', blockTitle.textContent.trim());
+                    }
+                }
+            }
+
+            // Make new functions globally available
+            window.savePinCodesToFirebase = savePinCodesToFirebase;
+            window.loadPinCodesFromFirebase = loadPinCodesFromFirebase;
+            window.validatePinCodes = validatePinCodes;
+            window.showSyncStatus = showSyncStatus;
+            window.updateSyncStatus = updateSyncStatus;
+            window.retryOperation = retryOperation;
+            window.forceSyncPinCodes = forceSyncPinCodes;
+            window.checkDeviceCapabilities = checkDeviceCapabilities;
+            window.forceRestorePinCodes = forceRestorePinCodes;
+            
+            // Глобальная функция для показа верификации после синхронизации
+            window.showVerificationAfterSync = () => {
+                console.log('🔐 Проверяем PIN-коды для показа верификации...');
+                
+                // Проверяем, загружены ли PIN-коды из Firebase
+                if (Object.keys(appState.pinCodes).length === 0) {
+                    console.log('❌ PIN-коды не загружены из Firebase');
+                    showNotification('PIN-коды не загружены. Проверьте интернет-соединение.', 'error');
+                    
+                    // Показываем выбор учетной записи, если PIN-коды не загружены
+                    showAccountSelection();
+                    return;
+                }
+                
+                // Проверяем, есть ли у пользователя PIN-код
+                const hasPin = appState.pinCodes[appState.userName];
+                console.log(`🔐 Результат проверки PIN-кода для ${appState.userName}:`, hasPin ? 'найден' : 'не найден');
+                
+                if (hasPin) {
+                    // Если PIN-код есть, показываем верификацию
+                    console.log('🔐 PIN-код найден, показываем верификацию');
+                    
+                    console.log('🔄 Показываем верификацию, пересчитываем все показатели...');
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ ВЕРИФИКАЦИИ
+                    
+                    // 1. Пересчитываем лучшую неделю
+                    recalculateBestWeek();
+                    
+                    // 2. Обновляем все отображения
+                    updateProgressDisplay();
+                    updateBestWeekDisplay();
+                    updateRedeemControls();
+                    updateProgressWeekSection();
+                    updateMonthlyProgressSection();
+                    updateWeeklyStars();
+                    
+                    // 3. Проверяем, что все показатели обновлены
+                    console.log('✅ Верификация показана, все показатели пересчитаны');
+                    
+                    showVerificationModal();
+                } else {
+                    // Если PIN-кода нет, показываем выбор учетной записи
+                    console.log('👤 PIN-код не найден, показываем выбор учетной записи');
+                    showAccountSelection();
+                }
+            };
+
+            // Глобальная функция для принудительного показа верификации (для отладки)
+            window.forceShowVerification = () => {
+                console.log('🔐 Принудительный показ верификации...');
+                
+                console.log('🔄 Принудительный показ верификации, пересчитываем все показатели...');
+                
+                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПРИНУДИТЕЛЬНЫМ ПОКАЗОМ ВЕРИФИКАЦИИ
+                
+                // 1. Пересчитываем лучшую неделю
+                recalculateBestWeek();
+                
+                // 2. Обновляем все отображения
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                
+                // 3. Проверяем, что все показатели обновлены
+                console.log('✅ Принудительный показ верификации, все показатели пересчитаны');
+                
+                showVerificationAfterSync();
+            };
+            
+            // Глобальные функции для управления блоками настроек
+            window.toggleSettingsBlock = toggleSettingsBlock;
+            window.restoreSettingsBlocksState = restoreSettingsBlocksState;
+            
+            // Глобальные функции для верификации
+            window.showVerificationAfterSync = showVerificationAfterSync;
         

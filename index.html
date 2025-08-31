@@ -17,71 +17,98 @@
                 📊
             </button>
             <div class="settings-menu" id="settingsMenu">
-                <div class="settings-item" onclick="showChangeAccountModal()">
-                    👤
-                    Сменить учетную запись
+                <!-- Основные настройки -->
+                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Основные настройки</div>
+                <div class="settings-block-content">
+                    <div class="settings-item" onclick="showChangeAccountModal()">
+                        👤
+                        Сменить учетную запись
+                    </div>
                 </div>
-                <div class="settings-item" onclick="showChangePinModal()">
-                    🔐
-                    Сменить PIN-код
+                <!-- Блок управления PIN-кодами -->
+                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Управление PIN-кодами</div>
+                <div class="settings-block-content">
+                    <div class="settings-item" onclick="showChangePinModal()">
+                        🔐
+                        Сменить PIN-код
+                    </div>
+                    <div class="settings-item" onclick="forceSyncPinCodes().then(success => { if(success) showNotification('PIN-коды синхронизированы', 'success'); else showNotification('Ошибка синхронизации PIN-кодов', 'error'); }).catch(error => { showNotification('Ошибка синхронизации', 'error'); })">
+                        🔄
+                        Синхронизировать PIN-коды
+                    </div>
+                    <div class="settings-item" onclick="forceRestorePinCodes().then(success => { if(success) showNotification('PIN-коды восстановлены из Firebase', 'success'); else showNotification('PIN-коды не найдены в Firebase', 'warning'); }).catch(error => { showNotification('Ошибка восстановления', 'error'); })">
+                        🔐
+                        Восстановить PIN-коды из Firebase
+                    </div>
                 </div>
-                <div class="settings-item" onclick="forceSyncPinCodes().then(success => { if(success) showNotification('PIN-коды синхронизированы', 'success'); else showNotification('Ошибка синхронизации PIN-кодов', 'error'); }).catch(error => { showNotification('Ошибка синхронизации', 'error'); })">
-                    🔄
-                    Синхронизировать PIN-коды
+                
+                <hr class="settings-divider">
+                <!-- Блок технической диагностики -->
+                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Техническая диагностика</div>
+                <div class="settings-block-content">
+                    <div class="settings-item" onclick="forceShowVerification(); showNotification('Верификация принудительно показана', 'info');">
+                        🔐
+                        Показать верификацию
+                    </div>
+                    <div class="settings-item" onclick="testFirebaseConnection()">
+                        🧪
+                        Тест Firebase
+                    </div>
+                    <div class="settings-item" onclick="showFirebaseDiagnostics()">
+                        🔍
+                        Диагностика Firebase
+                    </div>
+                    <div class="settings-item" onclick="checkDeviceCapabilities()">
+                        📱
+                        Диагностика устройства
+                    </div>
                 </div>
-                <div class="settings-item" onclick="forceRestorePinCodes().then(success => { if(success) showNotification('PIN-коды восстановлены из Firebase', 'success'); else showNotification('PIN-коды не найдены в Firebase', 'warning'); }).catch(error => { showNotification('Ошибка восстановления', 'error'); })">
-                    🔐
-                    Восстановить PIN-коды из Firebase
+                <!-- Блок Firebase операций -->
+                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Firebase операции</div>
+                <div class="settings-block-content">
+                    <div class="settings-item" onclick="saveStateToFirestore()">
+                        💾
+                        Сохранить в Firebase
+                    </div>
+                    <div class="settings-item" onclick="syncWithFirestore()">
+                        🔄
+                        Синхронизировать
+                    </div>
                 </div>
-                <div class="settings-item" onclick="forceShowVerification(); showNotification('Верификация принудительно показана', 'info');">
-                    🔐
-                    Показать верификацию
+                
+                <hr class="settings-divider">
+                
+                <!-- Блок управления данными -->
+                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Управление данными</div>
+                <div class="settings-block-content">
+                    <div class="settings-item" onclick="exportData()">
+                        💾
+                        Экспорт данных
+                    </div>
+                    <div class="settings-item" onclick="document.getElementById('importFile').click()">
+                        📤
+                        Импорт данных
+                    </div>
                 </div>
-                <div class="settings-item" onclick="logoutUser()">
-                    🚪
-                    Выйти из профиля
-                </div>
-                <div class="settings-item" onclick="saveStateToFirestore()">
-                    💾
-                    Сохранить в Firebase
-                </div>
-                <div class="settings-item" onclick="syncWithFirestore()">
-                    🔄
-                    Синхронизировать
-                </div>
-                <div class="settings-item" onclick="testFirebaseConnection()">
-                    🧪
-                    Тест Firebase
-                </div>
-                <div class="settings-item" onclick="showFirebaseDiagnostics()">
-                    🔍
-                    Диагностика Firebase
-                </div>
-                <div class="settings-item" onclick="checkDeviceCapabilities()">
-                    📱
-                    Диагностика устройства
-                </div>
-                                 <div class="settings-item" onclick="exportData()">
-                     💾
-                     Экспорт данных
-                 </div>
-                 <div class="settings-item" onclick="document.getElementById('importFile').click()">
-                     📤
-                     Импорт данных
-                 </div>
                  
-                 <div class="settings-item danger" onclick="clearTasks()">
-                     🗑️
-                     Очистить задания
-                 </div>
-                 <div class="settings-item danger" onclick="clearRewards()">
-                     🎁
-                     Очистить награды
-                 </div>
-                 <div class="settings-item danger" onclick="resetProgress()">
-                     🔄
-                     Сбросить прогресс
-                 </div>
+                 <hr class="settings-divider">
+                 
+                                 <!-- Блок опасных операций -->
+                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Опасные операции</div>
+                <div class="settings-block-content">
+                    <div class="settings-item danger" onclick="clearTasks()">
+                        🗑️
+                        Очистить задания
+                    </div>
+                    <div class="settings-item danger" onclick="clearRewards()">
+                        🎁
+                        Очистить награды
+                    </div>
+                    <div class="settings-item danger" onclick="resetProgress()">
+                        🔄
+                        Сбросить прогресс
+                    </div>
+                </div>
             </div>
             <input type="file" id="importFile" class="file-input" accept="application/json,.json" onchange="importData(event)">
         </div>
@@ -123,13 +150,13 @@
                 </div>
 
                 <div class="card stat-card">
-                                    <div class="stat-icon">
-                    🔥
-                </div>
-                    <div class="stat-label">Серия</div>
-                    <div class="stat-value" id="currentStreak">0 / 0</div>
-                    <div id="streakSubtitle" style="font-size: 0.875rem; color: #64748b">
-                        учебных дней с начала (Пн–Пт)
+                    <div class="stat-icon">
+                        🏆
+                    </div>
+                    <div class="stat-label">Лучшая неделя</div>
+                    <div class="stat-value" id="bestWeekXP">0 XP</div>
+                    <div id="bestWeekSubtitle" style="font-size: 0.875rem; color: #64748b">
+                        максимальный XP за неделю
                     </div>
                 </div>
             </div>
@@ -823,28 +850,28 @@
                             <div class="chart-container chart-large" id="weeklyTrendChart"></div>
                         </div>
 
-                        <!-- Learning Streak -->
+                        <!-- Best Week -->
                         <div class="analytics-card">
                             <div class="analytics-card-header">
                                 <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #dc2626, #ef4444);">
-                                        🔥
+                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
+                                        🏆
                                     </div>
-                                    Статистика серий
+                                    Лучшая неделя
                                 </div>
                             </div>
-                            <div id="streakStatsContent">
+                            <div id="bestWeekStatsContent">
                                 <div class="stat-row">
-                                    <span class="stat-label">Текущая серия</span>
-                                    <span class="stat-value" id="currentStreakStat">-</span>
+                                    <span class="stat-label">Максимальный XP</span>
+                                    <span class="stat-value" id="bestWeekXPStat">-</span>
                                 </div>
                                 <div class="stat-row">
-                                    <span class="stat-label">Лучшая серия</span>
-                                    <span class="stat-value" id="bestStreak">-</span>
+                                    <span class="stat-label">Неделя</span>
+                                    <span class="stat-value" id="bestWeekDate">-</span>
                                 </div>
                                 <div class="stat-row">
-                                    <span class="stat-label">Консистентность</span>
-                                    <span class="stat-value" id="consistency">-</span>
+                                    <span class="stat-label">Задания выполнено</span>
+                                    <span class="stat-value" id="bestWeekTasks">-</span>
                                 </div>
                             </div>
                         </div>

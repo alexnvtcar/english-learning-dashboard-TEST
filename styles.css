@@ -892,6 +892,89 @@
                 background: #fee2e2;
             }
 
+            /* Разделители для блоков настроек */
+            .settings-divider {
+                height: 1px;
+                background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+                margin: 8px 0;
+                border: none;
+            }
+
+            .settings-block-title {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                padding: 8px 16px;
+                margin: 0;
+                background: #f8fafc;
+                border-radius: 4px;
+                margin-bottom: 4px;
+                cursor: pointer;
+                user-select: none;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .settings-block-title:hover {
+                background: #e2e8f0;
+                color: #475569;
+            }
+
+            .settings-block-title::after {
+                content: '▼';
+                font-size: 0.6rem;
+                transition: transform 0.2s ease;
+            }
+
+            .settings-block-title.collapsed::after {
+                transform: rotate(-90deg);
+            }
+
+            .settings-block-content {
+                max-height: 0; /* По умолчанию свернуты */
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+
+            .settings-block-content.expanded {
+                max-height: 500px; /* Развернутые блоки */
+            }
+
+            .settings-block-content.collapsed {
+                max-height: 0;
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            /* Анимация для плавного перехода */
+            .settings-block-content {
+                transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                            opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                            transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            /* Стили для иконки сворачивания */
+            .settings-block-title::after {
+                content: '▼';
+                font-size: 0.6rem;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                opacity: 0.7;
+            }
+
+            .settings-block-title:hover::after {
+                opacity: 1;
+            }
+
+            .settings-block-title.collapsed::after {
+                transform: rotate(-90deg);
+            }
+
             /* File input styling */
             .file-input {
                 display: none;
