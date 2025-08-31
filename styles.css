@@ -804,7 +804,7 @@
                 gap: 12px;
             }
 
-            .settings-btn, .analytics-btn {
+            .settings-btn, .analytics-btn, .save-btn {
                 width: 50px;
                 height: 50px;
                 border: none;
@@ -816,6 +816,8 @@
                 font-size: 1.2rem;
                 transition: all 0.3s ease;
                 color: white;
+                position: relative;
+                overflow: hidden;
             }
 
             .settings-btn {
@@ -838,6 +840,108 @@
                 background: linear-gradient(135deg, #047857, #059669);
                 transform: translateY(-2px);
                 box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
+            }
+
+            /* Save Button Styles */
+            .save-btn {
+                background: linear-gradient(135deg, #1f2937, #374151);
+                box-shadow: 0 4px 12px rgba(31, 41, 55, 0.3);
+                width: 50px;
+                height: 50px;
+                padding: 0;
+                border-radius: 50%;
+                gap: 0;
+            }
+
+            .save-btn:hover {
+                background: linear-gradient(135deg, #111827, #1f2937);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(31, 41, 55, 0.4);
+            }
+
+            .save-btn:active {
+                transform: translateY(0);
+                box-shadow: 0 2px 8px rgba(31, 41, 55, 0.3);
+            }
+
+            .save-btn .save-icon {
+                font-size: 1.2rem;
+                animation: pulse 2s infinite;
+            }
+
+            .save-btn .save-text {
+                display: none;
+            }
+
+            /* Save Button Loading State */
+            .save-btn.loading {
+                background: linear-gradient(135deg, #6b7280, #9ca3af);
+                pointer-events: none;
+            }
+
+            .save-btn.loading .save-icon {
+                animation: spin 1s linear infinite;
+            }
+
+            .save-btn.loading .save-text {
+                display: none;
+            }
+
+            /* Save Button Success State */
+            .save-btn.success {
+                background: linear-gradient(135deg, #059669, #10b981);
+                animation: successPulse 0.6s ease;
+            }
+
+            .save-btn.success .save-icon {
+                animation: none;
+                transform: scale(1.2);
+            }
+
+            /* Save Button Error State */
+            .save-btn.error {
+                background: linear-gradient(135deg, #dc2626, #ef4444);
+                animation: errorShake 0.6s ease;
+            }
+
+            /* Animations */
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+            }
+
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+
+            @keyframes successPulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+                100% { transform: scale(1); }
+            }
+
+            @keyframes errorShake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+
+            /* Responsive adjustments for save button */
+            @media (max-width: 768px) {
+                .save-btn {
+                    width: 50px;
+                    padding: 0;
+                }
+                
+                .save-btn .save-text {
+                    display: none;
+                }
+                
+                .save-btn:hover {
+                    width: 50px;
+                    min-width: 50px;
+                }
             }
 
             .settings-menu {
