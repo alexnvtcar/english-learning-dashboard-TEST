@@ -1,4 +1,99 @@
-﻿            // Available icons for tasks (replaced Font Awesome with emojis)
+﻿            // Система управления таймаутами
+            const activeTimeouts = new Set();
+
+            function safeSetTimeout(callback, delay) {
+                const timeoutId = setTimeout(() => {
+                    activeTimeouts.delete(timeoutId);
+                    callback();
+                }, delay);
+                activeTimeouts.add(timeoutId);
+                return timeoutId;
+            }
+
+            function clearAllTimeouts() {
+                activeTimeouts.forEach(id => clearTimeout(id));
+                activeTimeouts.clear();
+            }
+
+            // Кэш DOM элементов
+            const DOM_CACHE = {
+                taskList: null,
+                currentLevel: null,
+                totalXP: null,
+                weeklyProgress: null,
+                monthlyProgress: null,
+                achievementsUnlocked: null,
+                rewardsReceived: null,
+                totalStarsSpent: null
+            };
+
+            function getCachedElement(id) {
+                if (!DOM_CACHE[id]) {
+                    DOM_CACHE[id] = document.getElementById(id);
+                }
+                return DOM_CACHE[id];
+            }
+
+            function safeGetCachedElement(id) {
+                const element = getCachedElement(id);
+                if (!element) {
+                    console.warn(`Element with id "${id}" not found`);
+                }
+                return element;
+            }
+
+            function invalidateCache(id) {
+                if (DOM_CACHE[id]) {
+                    DOM_CACHE[id] = null;
+                }
+            }
+
+            // Обработка ошибок
+            function safeExecute(fn, context = 'Unknown') {
+                try {
+                    return fn();
+                } catch (error) {
+                    console.error(`Error in ${context}:`, error);
+                    showNotification('Произошла ошибка. Попробуйте еще раз.', 'error');
+                }
+            }
+
+            // Валидация данных
+            function validateTaskData(task) {
+                if (!task.name || task.name.trim().length === 0) {
+                    throw new Error('Название задания не может быть пустым');
+                }
+                if (!task.xpReward || task.xpReward < 1) {
+                    throw new Error('XP награда должна быть больше 0');
+                }
+                if (!task.duration || task.duration < 1) {
+                    throw new Error('Длительность должна быть больше 0');
+                }
+                return true;
+            }
+
+            // Безопасное обновление UI
+            function safeUpdateUI() {
+                if (document.readyState === 'complete') {
+                    try {
+                        updateProgressDisplay();
+                        renderTasks();
+                        renderRewards();
+                        generateCalendar();
+                        updateDayActivity();
+                        renderWeeklyChart();
+                    } catch (error) {
+                        console.error('Ошибка при обновлении UI:', error);
+                    }
+                } else {
+                    // Если DOM не готов, ждем его готовности
+                    document.addEventListener('DOMContentLoaded', () => {
+                        safeUpdateUI();
+                    });
+                }
+            }
+
+            // Available icons for tasks (replaced Font Awesome with emojis)
             const availableIcons = [
                 { class: "📚", name: "Книга" },
                 { class: "✏️", name: "Карандаш" },
@@ -25,24 +120,24 @@
             // Application State
             let appState = {
                 user: {
-                    id: "demo-user",
-                    username: "demo",
+                    id: "user",
+                    username: "user",
                 },
                 role: 'viewer',
                 userName: 'Михаил',
                 pinCodes: {}, // PIN-коды загружаются только из Firebase
                 isVerified: false,
                 progress: {
-                    level: 15,
-                    totalXP: 4250,
+                    level: 1,
+                    totalXP: 0,
                     currentLevelXP: 0,
                     bestWeekXP: 0,
-                    weeklyXP: 340,
+                    weeklyXP: 0,
                     weeklyStars: 0,
                     starBank: 0,
                     weekStartKey: null,
                 },
-                demoAnalytics: { enabled: false },
+
                 tasks: [
                     {
                         id: 1,
@@ -80,120 +175,22 @@
                 resetDate: new Date(),
                 progressView: { weekOffset: 0, monthOffset: 0 },
                 isInitializing: true, // Флаг для отслеживания инициализации
+                
+                // Настройки бэкапов
+                backupSettings: {
+                    autoBackup: true,
+                    backupFrequency: 'daily', // daily, weekly, monthly
+                    maxBackups: 7, // количество хранимых бэкапов
+                    lastBackup: null,
+                    nextBackup: null,
+                    backupTypes: {
+                        scheduled: true,
+                        manual: true
+                    }
+                }
             };
 
-            // Demo analytics helpers
-            let demoStateCache = null;
-            function seededRandom(seed) {
-                let x = 0;
-                for (let i = 0; i < seed.length; i++) x = (x * 31 + seed.charCodeAt(i)) >>> 0;
-                return function() {
-                    // xorshift32
-                    x ^= x << 13; x >>>= 0;
-                    x ^= x >>> 17; x >>>= 0;
-                    x ^= x << 5; x >>>= 0;
-                    return (x >>> 0) / 0xffffffff;
-                };
-            }
-            function randomInRange(rng, min, max) {
-                return Math.floor(rng() * (max - min + 1)) + min;
-            }
-            function buildDemoState() {
-                const rng = seededRandom('english-analytics-demo');
-                const today = new Date();
-                const start = new Date();
-                start.setMonth(start.getMonth() - 6);
-                start.setHours(0,0,0,0);
-
-                const activityData = {};
-                const taskCatalog = [
-                    { name: 'Изучение новых слов', xp: 40, category: 'vocabulary' },
-                    { name: 'Грамматические упражнения', xp: 60, category: 'grammar' },
-                    { name: 'Аудирование', xp: 50, category: 'listening' },
-                    { name: 'Разговорная практика', xp: 70, category: 'speaking' },
-                    { name: 'Чтение текста', xp: 45, category: 'reading' },
-                ];
-
-                // simulate daily activity with weekly cycles and occasional spikes
-                let cursor = new Date(start);
-                let totalXP = 0;
-                const weekTotals = {};
-                while (cursor <= today) {
-                    const dateKey = formatDate(cursor);
-                    const day = cursor.getDay(); // 0..6
-                    const isWeekend = day === 0 || day === 6;
-                    const sessions = isWeekend ? (rng() < 0.35 ? 1 : 0) : (rng() < 0.85 ? (rng() < 0.5 ? 2 : 1) : 0);
-                    if (sessions > 0) {
-                        activityData[dateKey] = [];
-                        for (let s = 0; s < sessions; s++) {
-                            const t = taskCatalog[randomInRange(rng, 0, taskCatalog.length - 1)];
-                            const variance = randomInRange(rng, -15, 25);
-                            const xp = Math.max(15, t.xp + variance);
-                            totalXP += xp;
-                            activityData[dateKey].push({
-                                taskId: s + 1,
-                                taskName: t.name,
-                                xpEarned: xp,
-                                completedAt: new Date(cursor),
-                                category: t.category,
-                            });
-                        }
-                        const weekKey = getWeekStartKey(cursor);
-                        weekTotals[weekKey] = (weekTotals[weekKey] || 0) + activityData[dateKey].reduce((a,b)=>a+(b.xpEarned||0),0);
-                    }
-                    cursor.setDate(cursor.getDate() + 1);
-                }
-
-                // compute level based on 810 xp per level
-                const xpPerLevel = 810;
-                const level = Math.min(100, Math.floor(totalXP / xpPerLevel) + 1);
-                const currentLevelXP = level >= 100 ? 0 : (totalXP % xpPerLevel);
-
-                // current week
-                const currentWeekKey = getWeekStartKey(new Date());
-                const weeklyXP = weekTotals[currentWeekKey] || 0;
-                const weeklyStars = calculateWeeklyStars(weeklyXP);
-
-                // stars and rewards demo
-                let totalStars = 0;
-                Object.values(weekTotals).forEach(xp => totalStars += calculateWeeklyStars(xp));
-                const rewardsCount = Math.max(1, Math.floor(totalStars / 5));
-                const rewards = [];
-                for (let i = 0; i < rewardsCount; i++) {
-                    const d = new Date(today);
-                    d.setDate(d.getDate() - i * 14 - randomInRange(rng, 0, 3));
-                    rewards.push({ id: Date.now() - i, description: 'Демо-награда #' + (i+1), starsUsed: 3, redeemedAt: d });
-                }
-                const starBank = Math.max(0, totalStars - rewards.length * 3);
-
-                return {
-                    user: appState.user,
-                    userName: appState.userName || 'Михаил',
-                    progress: {
-                        level,
-                        totalXP,
-                        currentLevelXP,
-                        streak: 0,
-                        weeklyXP,
-                        weeklyStars,
-                        starBank,
-                        weekStartKey: currentWeekKey,
-                    },
-                    tasks: appState.tasks,
-                    rewards,
-                    currentMonth: appState.currentMonth,
-                    selectedDate: appState.selectedDate,
-                    activityData,
-                    rewardPlan: { description: 'Демо: поход в кино' },
-                    resetDate: start,
-                    demoAnalytics: { enabled: true },
-                };
-            }
             function getEffectiveState() {
-                if (appState.demoAnalytics && appState.demoAnalytics.enabled) {
-                    if (!demoStateCache) demoStateCache = buildDemoState();
-                    return demoStateCache;
-                }
                 return appState;
             }
 
@@ -469,16 +466,17 @@
                             pinCodes: appState.pinCodes // Сохраняем PIN-коды локально
                         };
                         
+                        // Сохраняем настройки бэкапов, если они есть в загруженных данных
+                        if (restoredData.backupSettings) {
+                            console.log('🔄 Загружаем настройки бэкапов из Firebase:', restoredData.backupSettings);
+                            localSettings.backupSettings = restoredData.backupSettings;
+                        }
+                        
                         // Обновляем локальное состояние
                         appState = { ...appState, ...restoredData, ...localSettings };
                         
-                        // Обновляем UI
-                        updateProgressDisplay();
-                        renderTasks();
-                        renderRewards();
-                        generateCalendar();
-                        updateDayActivity();
-                        renderWeeklyChart();
+                        // Обновляем UI безопасно
+                        safeUpdateUI();
                         
                         console.log('✅ Данные успешно загружены из Firebase');
                         // Уведомление о загрузке показывается только при синхронизации
@@ -586,7 +584,8 @@
                 const blocksToHide = [
                     { element: document.getElementById('techDiagnosticsBlock'), divider: document.getElementById('dividerBeforeTech') },
                     { element: document.getElementById('firebaseOperationsBlock'), divider: document.getElementById('dividerBeforeFirebase') },
-                    { element: document.getElementById('dangerousOperationsBlock'), divider: document.getElementById('dividerBeforeDanger') }
+                    { element: document.getElementById('dangerousOperationsBlock'), divider: document.getElementById('dividerBeforeDanger') },
+                    { element: document.getElementById('backupManagementBlock'), divider: document.getElementById('dividerBeforeBackups') }
                 ];
                 
                 blocksToHide.forEach(({ element, divider }) => {
@@ -627,10 +626,18 @@
                 messageEl.textContent = message;
                 notification.className = `notification ${type} show`;
 
-                setTimeout(() => {
+                safeSetTimeout(() => {
                     notification.classList.remove("show");
                 }, 3000);
             }
+
+
+
+
+
+
+
+
 
             // Welcome modal texts (random unique praise each time)
             const welcomePhrases = [
@@ -748,17 +755,42 @@
 
             function calculateWeeklyStars(weeklyXP) {
                 const thresholds = [500, 750];
-                return thresholds.filter((threshold) => weeklyXP >= threshold).length;
+                const stars = thresholds.filter((threshold) => weeklyXP >= threshold).length;
+                console.log('⭐ calculateWeeklyStars:', { weeklyXP, thresholds, stars });
+                return stars;
+            }
+
+            // Function to get next weekly target (fixed at 750 XP)
+            function getNextWeeklyTarget() {
+                return 750;
+            }
+
+            // Function to get weekly progress percentage (based on 750 XP max)
+            function getWeeklyProgressPercent(weeklyXP = null) {
+                const currentXP = weeklyXP !== null ? weeklyXP : appState.progress.weeklyXP;
+                return Math.min(100, (currentXP / 750) * 100);
+            }
+
+            // Function to get weekly progress stage
+            function getWeeklyProgressStage(currentXP) {
+                if (currentXP < 500) {
+                    return 'beginner'; // 0-499 XP
+                } else if (currentXP < 750) {
+                    return 'intermediate'; // 500-749 XP
+                } else {
+                    return 'expert'; // 750+ XP
+                }
             }
 
             // DOM Updates
             function updateProgressDisplay() {
                 const { progress } = appState;
 
-                document.getElementById("currentLevel").textContent =
-                    progress.level;
-                document.getElementById("totalXP").textContent =
-                    progress.totalXP.toLocaleString();
+                const currentLevelEl = safeGetCachedElement("currentLevel");
+                const totalXPEl = safeGetCachedElement("totalXP");
+                
+                if (currentLevelEl) currentLevelEl.textContent = progress.level;
+                if (totalXPEl) totalXPEl.textContent = progress.totalXP.toLocaleString();
                 updateBestWeekDisplay();
 
                 const xpNeeded = getXPRequiredForLevel(progress.level);
@@ -816,9 +848,46 @@
             function updateWeeklyStars() {
                 const stars = document.querySelectorAll("#weeklyStars .star");
                 const newEarned = calculateWeeklyStars(appState.progress.weeklyXP);
-                if (newEarned > (appState.progress.weeklyStars || 0)) {
-                    appState.progress.starBank = (appState.progress.starBank || 0) + (newEarned - (appState.progress.weeklyStars || 0));
+                const oldEarned = appState.progress.weeklyStars || 0;
+                const oldStarBank = appState.progress.starBank || 0;
+                
+                // Сохраняем старое значение weeklyStars перед обновлением
+                const previousWeeklyStars = oldEarned;
+                
+                // Используем правильное сравнение: newEarned vs previousWeeklyStars
+                const starsGained = newEarned - previousWeeklyStars;
+                const nextStarThreshold = newEarned < 2 ? (newEarned === 0 ? 500 : 750) : null;
+                
+                console.log('⭐ updateWeeklyStars called:', {
+                    weeklyXP: appState.progress.weeklyXP,
+                    previousWeeklyStars,
+                    newEarned,
+                    starsGained,
+                    oldStarBank,
+                    nextStarThreshold: nextStarThreshold ? `${nextStarThreshold} XP` : 'Максимум достигнут'
+                });
+                
+
+                
+                if (newEarned > previousWeeklyStars) {
+                    appState.progress.starBank = (appState.progress.starBank || 0) + starsGained;
+                    
+                    console.log('⭐ Звезды получены! Показываем уведомления:', {
+                        starsGained,
+                        newEarned,
+                        weeklyXP: appState.progress.weeklyXP,
+                        newStarBank: appState.progress.starBank
+                    });
+                    // Star notifications and achievement checks removed
+                } else {
+                    console.log('⭐ Звезды НЕ получены. Причина:', {
+                        newEarned,
+                        previousWeeklyStars,
+                        condition: newEarned > previousWeeklyStars,
+                        weeklyXP: appState.progress.weeklyXP
+                    });
                 }
+                
                 appState.progress.weeklyStars = newEarned;
 
                 stars.forEach((star, index) => {
@@ -955,12 +1024,22 @@
 
 
             function formatTime(minutes) {
-                if (!minutes || minutes === 0) return '00:00';
+                if (!minutes || minutes === 0) return '0 ч 0 мин';
                 
                 const hours = Math.floor(minutes / 60);
                 const mins = Math.round(minutes % 60);
                 
-                return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+                // Если есть часы, показываем и часы, и минуты
+                if (hours > 0) {
+                    if (mins > 0) {
+                        return `${hours} ч ${mins} мин`;
+                    } else {
+                        return `${hours} ч`;
+                    }
+                } else {
+                    // Если нет часов, показываем только минуты
+                    return `${mins} мин`;
+                }
             }
 
             function updateWeeklyTimeChart(weeklyTime) {
@@ -974,11 +1053,11 @@
                 const isMobile = window.innerWidth <= 480;
                 const isTablet = window.innerWidth <= 768;
                 
-                let labelText = "среднее в неделю";
+                let labelText = "в неделю";
                 if (isMobile) {
-                    labelText = "среднее";
+                    labelText = "в неделю";
                 } else if (isTablet) {
-                    labelText = "среднее в неделю";
+                    labelText = "в неделю";
                 }
                 
                 document.getElementById('weeklyTimeChart').innerHTML = `
@@ -1032,7 +1111,7 @@
                         legendHTML += `
                             <div class="time-legend-item">
                                 <div class="time-legend-color" style="background-color: ${colors[index]};"></div>
-                                <span>${days[index]}: ${formatTime(time)} среднее</span>
+                                <span>${days[index]}: ${formatTime(time)}</span>
                                 <span style="color: #94a3b8; font-size: 0.75rem;">(${percentage}%)</span>
                             </div>
                         `;
@@ -1188,6 +1267,15 @@
                 base.setDate(base.getDate() - day + (offset * 7));
                 return base;
             }
+            
+            // Function to get week start for a specific date
+            function getWeekStartForDate(date) {
+                const weekStart = new Date(date);
+                const day = (weekStart.getDay() + 6) % 7; // 0=Mon
+                weekStart.setHours(0, 0, 0, 0);
+                weekStart.setDate(weekStart.getDate() - day);
+                return weekStart;
+            }
 
             function formatWeekRangeLabel(weekStart) {
                 const end = new Date(weekStart);
@@ -1215,11 +1303,15 @@
                 const label = document.getElementById('weekRangeLabel');
                 if (label) label.textContent = formatWeekRangeLabel(start);
                 const weekXP = computeWeekXP(start);
-                const weeklyProgressPct = calculateXPProgress(weekXP, 750);
+                
+                // Правильный расчет процента недельного прогресса (максимум 750 XP)
+                const weeklyProgressPct = Math.min(100, (weekXP / 750) * 100);
+                
                 const weeklyBar = document.getElementById('weeklyBar');
                 if (weeklyBar) weeklyBar.style.width = `${weeklyProgressPct}%`;
                 const weeklyText = document.getElementById('weeklyProgress');
                 if (weeklyText) weeklyText.textContent = `${weekXP} / 750 XP`;
+                
                 // Update threshold markers
                 const m500 = document.getElementById('marker500');
                 const m750 = document.getElementById('marker750');
@@ -1228,6 +1320,13 @@
                 updateWeeklyStarsDisplayForXP(weekXP);
                 renderWeeklyChart(start);
                 updateWeekNavControls();
+                
+                console.log('📊 Недельный прогресс обновлен:', {
+                    weekOffset: offset,
+                    weekStart: start.toISOString().split('T')[0],
+                    weekXP: weekXP,
+                    progressPercent: weeklyProgressPct
+                });
             }
 
             function updateWeekNavControls() {
@@ -1241,6 +1340,20 @@
                 appState.progressView.weekOffset = newOffset;
                 updateProgressWeekSection();
                 // Автоматическое сохранение отключено
+            }
+
+            function changeMonthProgress(direction) {
+                const newOffset = (appState.progressView?.monthOffset || 0) + direction;
+                if (newOffset > 0) return; // prevent going to future
+                appState.progressView.monthOffset = newOffset;
+                updateMonthlyProgressSection();
+                updateMonthNavControls();
+                // Автоматическое сохранение отключено
+            }
+
+            function updateMonthNavControls() {
+                const nextBtn = document.getElementById('monthNextBtn');
+                if (nextBtn) nextBtn.disabled = (appState.progressView?.monthOffset || 0) >= 0;
             }
 
             function updateWeeklyStarsDisplayForXP(weeklyXP) {
@@ -1257,10 +1370,27 @@
             }
 
             function updateMonthlyProgressSection() {
+                const offset = appState.progressView?.monthOffset || 0;
                 const now = new Date();
-                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-                const nextMonth = new Date(now.getFullYear(), now.getMonth()+1, 1);
+                const targetMonth = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+                const monthStart = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1);
+                const nextMonth = new Date(targetMonth.getFullYear(), targetMonth.getMonth()+1, 1);
                 const daysInMonth = Math.round((nextMonth - monthStart)/(24*60*60*1000));
+                
+                // Update month label
+                const label = document.getElementById('monthProgressLabel');
+                if (label) {
+                    if (offset === 0) {
+                        label.textContent = 'Текущий месяц';
+                    } else {
+                        const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                                          'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+                        const monthName = monthNames[targetMonth.getMonth()];
+                        const year = targetMonth.getFullYear();
+                        label.textContent = `${monthName} ${year}`;
+                    }
+                }
+                
                 let monthXP = 0;
                 const xpByDay = [];
                 for (let i=0;i<daysInMonth;i++) {
@@ -1278,6 +1408,7 @@
                 const text = document.getElementById('monthlyProgressText');
                 if (text) text.textContent = `${monthXP} / 3000 XP`;
                 renderMonthlyInlineChart(monthStart, xpByDay);
+                updateMonthNavControls();
             }
 
             function renderMonthlyInlineChart(monthStart, xpByDay) {
@@ -1303,7 +1434,8 @@
             }
 
             function renderTasks() {
-                const taskList = document.getElementById("taskList");
+                const taskList = safeGetCachedElement("taskList");
+                if (!taskList) return;
                 
                 // Показываем/скрываем кнопку добавления задания в зависимости от роли
                 const addTaskBtn = document.getElementById('addTaskBtn');
@@ -1315,60 +1447,106 @@
                     .map(
                         (task) => `
                 <div class="task-item">
-                    <div class="task-info" onclick="completeTask(event, ${task.id})" onkeydown="if(event.key==='Enter'||event.key===' '){completeTask(event, ${task.id})}" role="button" tabindex="0" style="flex: 1; cursor: pointer;">
+                    <div class="task-main" onclick="completeTask(event, ${task.id})" onkeydown="if(event.key==='Enter'||event.key===' '){completeTask(event, ${task.id})}" role="button" tabindex="0">
+                        <div class="task-header">
                         <div class="task-icon">
                             ${task.icon}
                         </div>
                         <div class="task-details">
                             <h4>${escapeHTML(task.name)}</h4>
-                            <p>${escapeHTML(task.description)} • ${task.duration} мин</p>
+                                <button class="btn-description" onclick="showTaskDescription(event, ${task.id})" title="Подробное описание" aria-label="Подробное описание">
+                                    📄 Подробнее
+                                </button>
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="task-reward">
-                            ⭐
-                            +${task.xpReward} XP
+                        <div class="task-meta">
+                            <div class="task-duration">⏱️ ${task.duration} мин</div>
+                            <div class="task-reward">⭐ +${task.xpReward} XP</div>
+                        </div>
                         </div>
                         ${appState.role === 'admin' ? `
+                    <div class="task-actions">
                         <button class="btn-icon-edit" onclick="editTask(${task.id})" title="Редактировать задание" aria-label="Редактировать задание">
                             ✏️
                         </button>
-                        ` : ''}
-                        ${appState.role === 'admin' ? `
                         <button class="btn-icon-delete" onclick="deleteTask(${task.id})" title="Удалить задание" aria-label="Удалить задание">
                             🗑️
                         </button>
-                        ` : ''}
                     </div>
+                        ` : ''}
                 </div>
             `,
                     )
                     .join("");
             }
 
-            function renderRewards() {
-                const rewardsList = document.getElementById("rewardsList");
-
-                if (appState.rewards.length === 0) {
-                    rewardsList.innerHTML = `
-                    <div style="text-align: center; padding: 20px; color: #64748b; font-size: 0.875rem;">
-                        Пока нет полученных наград
+            // Function to show task description modal
+            function showTaskDescription(event, taskId) {
+                event.stopPropagation(); // Prevent task completion when clicking description button
+                
+                const task = appState.tasks.find(t => t.id === taskId);
+                if (!task) return;
+                
+                // Create modal content
+                const modalContent = `
+                    <div class="description-modal-overlay" onclick="hideTaskDescription()">
+                        <div class="description-modal-content" onclick="event.stopPropagation()">
+                            <div class="description-modal-header">
+                                <div class="description-modal-icon">${task.icon}</div>
+                                <h3 class="description-modal-title">${escapeHTML(task.name)}</h3>
+                                <button class="description-modal-close" onclick="hideTaskDescription()" aria-label="Закрыть">
+                                    ✕
+                                </button>
+                            </div>
+                            <div class="description-modal-body">
+                                <div class="description-modal-meta">
+                                    <div class="description-meta-item">
+                                        <span class="description-meta-icon">⏱️</span>
+                                        <span class="description-meta-text">${task.duration} минут</span>
+                                    </div>
+                                    <div class="description-meta-item">
+                                        <span class="description-meta-icon">⭐</span>
+                                        <span class="description-meta-text">+${task.xpReward} XP</span>
+                                    </div>
+                                </div>
+                                <div class="description-modal-description">
+                                    <h4>Описание задания:</h4>
+                                    <p>${escapeHTML(task.description)}</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
-                    return;
+                
+                // Add modal to body
+                document.body.insertAdjacentHTML('beforeend', modalContent);
+                
+                // Add animation class after a small delay
+                requestAnimationFrame(() => {
+                    const modal = document.querySelector('.description-modal-overlay');
+                    if (modal) {
+                        modal.classList.add('show');
+                    }
+                });
+            }
+            
+            // Function to hide task description modal
+            function hideTaskDescription() {
+                const modal = document.querySelector('.description-modal-overlay');
+                if (modal) {
+                    modal.classList.remove('show');
+                    safeSetTimeout(() => {
+                        modal.remove();
+                    }, 300);
                 }
+            }
 
-                const cards = appState.rewards.slice(-9).reverse().map(reward => `
-                    <div class="reward-card" title="${new Date(reward.redeemedAt).toLocaleDateString('ru-RU')}">
-                        <div class="rc-top">
-                            <span class="reward-chip">⭐ -${reward.starsUsed} ⭐</span>
-                            🎁
-                        </div>
-                        <div class="reward-title">${escapeHTML(reward.description)}</div>
-                        <div class="reward-date-2">${new Date(reward.redeemedAt).toLocaleDateString('ru-RU')}</div>
-                    </div>
-                `).join('');
-                rewardsList.innerHTML = `<div class="rewards-grid">${cards}</div>`;
+            function renderRewards() {
+                // Update achievements bank
+                updateAchievementsBank();
+                
+                // Update rewards bank
+                updateRewardsBank();
             }
 
             function clearRewards() {
@@ -1381,7 +1559,10 @@
                     
                     // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
                     
-                    // 1. Пересчитываем лучшую неделю
+                    // 1. Пересчитываем весь прогресс с нуля (включая звезды)
+                    recalculateAllProgress();
+                    
+                    // 2. Пересчитываем лучшую неделю
                     recalculateBestWeek();
                     
                     // 2. Обновляем все отображения
@@ -1559,67 +1740,285 @@
                 const task = appState.tasks.find((t) => t.id === taskId);
                 if (!task) return;
 
+                // Show confirmation modal instead of immediate completion
+                showTaskCompletionModal(task);
+            }
+
+            // Function to show task completion confirmation modal
+            function showTaskCompletionModal(task) {
+                // Calculate initial weekly progress for today's date
+                const today = new Date();
+                const weekStart = getWeekStartForDate(today);
+                const currentWeekXP = computeWeekXP(weekStart);
+                const initialXP = task.xpReward; // Начальное значение XP из задания
+                const initialTotalXP = currentWeekXP + initialXP; // Текущий + добавляемый XP
+                const initialProgressPercent = getWeeklyProgressPercent(initialTotalXP);
+                const initialStage = getWeeklyProgressStage(initialTotalXP);
+                
+                // Create modal content
+                const modalContent = `
+                    <div class="completion-modal-overlay" onclick="hideTaskCompletionModal()">
+                        <div class="completion-modal-content" onclick="event.stopPropagation()">
+                            <div class="completion-modal-header">
+                                <div class="completion-modal-icon">${task.icon}</div>
+                                <h3 class="completion-modal-title">Подтверждение выполнения</h3>
+                                <button class="completion-modal-close" onclick="hideTaskCompletionModal()" aria-label="Закрыть">
+                                    ✕
+                                </button>
+                            </div>
+                            <div class="completion-modal-body">
+                                <div class="completion-task-info">
+                                    <h4>${escapeHTML(task.name)}</h4>
+                                    <p class="completion-task-description">${escapeHTML(task.description)}</p>
+                                </div>
+                                
+                                <div class="completion-adjustments">
+                                    <h4>Настройки выполнения:</h4>
+                                    <p class="completion-hint">Укажите дату выполнения и реальные значения XP и времени (от 1 до 500):</p>
+                                    
+                                    <div class="completion-input-group">
+                                        <label for="completionDate">Дата выполнения:</label>
+                                        <div class="completion-input-wrapper">
+                                            <input type="date" id="completionDate" value="${new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" class="completion-input">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="completion-input-group">
+                                        <label for="completionXP">Получено XP:</label>
+                                        <div class="completion-input-wrapper">
+                                            <input type="number" id="completionXP" value="${task.xpReward}" min="1" max="500" class="completion-input">
+                                            <span class="completion-input-suffix">XP</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="completion-input-group">
+                                        <label for="completionTime">Затрачено времени:</label>
+                                        <div class="completion-input-wrapper">
+                                            <input type="number" id="completionTime" value="${task.duration}" min="1" max="500" class="completion-input">
+                                            <span class="completion-input-suffix">мин</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="completion-weekly-progress">
+                                    <h4>Недельный прогресс:</h4>
+                                    <div class="weekly-progress-container">
+                                        <div class="weekly-progress-bar ${initialStage}">
+                                            <div class="weekly-progress-fill" id="weeklyProgressFill" style="width: ${initialProgressPercent}%"></div>
+                                            <div class="weekly-progress-text">
+                                                <span class="current-weekly-xp">${initialTotalXP}</span>
+                                                <span class="weekly-xp-separator">/</span>
+                                                <span class="max-weekly-xp">750</span>
+                                                <span class="weekly-xp-label">XP</span>
+                                            </div>
+                                        </div>
+                                        <div class="weekly-progress-preview" id="weeklyProgressPreview">
+                                            <div class="xp-addition-animation">
+                                                <span class="xp-addition-text">+<span id="previewXPAddition">${task.xpReward}</span> XP</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="completion-modal-footer">
+                                <button class="btn btn-secondary" onclick="hideTaskCompletionModal()">
+                                    Отмена
+                                </button>
+                                <button class="btn btn-primary" onclick="confirmTaskCompletion(${task.id})">
+                                    ✅ Подтвердить выполнение
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add modal to body
+                document.body.insertAdjacentHTML('beforeend', modalContent);
+                
+                // Add event listeners for real-time preview updates
+                const xpInput = document.getElementById('completionXP');
+                const timeInput = document.getElementById('completionTime');
+                const dateInput = document.getElementById('completionDate');
+                
+                xpInput.addEventListener('input', updateCompletionPreview);
+                timeInput.addEventListener('input', updateCompletionPreview);
+                dateInput.addEventListener('change', updateCompletionPreview);
+                
+                // Initial preview update to show correct progress
+                requestAnimationFrame(() => {
+                    updateCompletionPreview();
+                });
+                
+                // Add animation class after a small delay
+                requestAnimationFrame(() => {
+                    const modal = document.querySelector('.completion-modal-overlay');
+                    if (modal) {
+                        modal.classList.add('show');
+                    }
+                });
+            }
+            
+            // Function to update completion preview
+            function updateCompletionPreview() {
+                const xpInput = document.getElementById('completionXP');
+                const timeInput = document.getElementById('completionTime');
+                const dateInput = document.getElementById('completionDate');
+                
+                if (!xpInput || !timeInput || !dateInput) return;
+                
+                const newXP = parseInt(xpInput.value) || 0;
+                const newTime = parseInt(timeInput.value) || 0;
+                const completionDate = new Date(dateInput.value);
+                
+                // Update XP addition text
+                const previewXPAddition = document.getElementById('previewXPAddition');
+                if (previewXPAddition) {
+                    previewXPAddition.textContent = newXP;
+                }
+                
+                // Calculate current weekly XP for the selected date's week
+                const weekStart = getWeekStartForDate(completionDate);
+                const currentWeekXP = computeWeekXP(weekStart);
+                const newWeeklyXP = currentWeekXP + newXP;
+                
+                // Calculate new progress percentage (based on 750 XP max)
+                const newProgressPercent = Math.min(100, (newWeeklyXP / 750) * 100);
+                const newStage = getWeeklyProgressStage(newWeeklyXP);
+                
+                // Update weekly progress bar with animation
+                const weeklyProgressFill = document.getElementById('weeklyProgressFill');
+                const weeklyProgressBar = document.querySelector('.weekly-progress-bar');
+                const currentWeeklyXPText = document.querySelector('.current-weekly-xp');
+                
+                if (weeklyProgressFill && weeklyProgressBar) {
+                    // Update progress bar class for color changes
+                    weeklyProgressBar.className = `weekly-progress-bar ${newStage}`;
+                    
+                    // Animate the progress bar
+                    weeklyProgressFill.style.transition = 'width 0.5s ease-out';
+                    weeklyProgressFill.style.width = newProgressPercent + '%';
+                    
+                    // Update current XP text
+                    if (currentWeeklyXPText) {
+                        currentWeeklyXPText.textContent = newWeeklyXP;
+                    }
+                    
+                    // Add pulse animation to show XP addition
+                    const xpAdditionAnimation = document.querySelector('.xp-addition-animation');
+                    if (xpAdditionAnimation) {
+                        xpAdditionAnimation.classList.add('pulse');
+                        safeSetTimeout(() => {
+                            xpAdditionAnimation.classList.remove('pulse');
+                        }, 500);
+                    }
+                }
+                
+                console.log('📊 Предварительный просмотр недельного прогресса:', {
+                    completionDate: completionDate.toISOString().split('T')[0],
+                    weekStart: weekStart.toISOString().split('T')[0],
+                    currentWeekXP: currentWeekXP,
+                    newXP: newXP,
+                    newWeeklyXP: newWeeklyXP,
+                    progressPercent: newProgressPercent,
+                    stage: newStage
+                });
+            }
+            
+            // Function to hide task completion modal
+            function hideTaskCompletionModal() {
+                const modal = document.querySelector('.completion-modal-overlay');
+                if (modal) {
+                    modal.classList.remove('show');
+                    safeSetTimeout(() => {
+                        modal.remove();
+                    }, 300);
+                }
+            }
+            
+            // Function to confirm task completion with custom values
+            function confirmTaskCompletion(taskId) {
+                const task = appState.tasks.find((t) => t.id === taskId);
+                if (!task) return;
+                
+                const dateInput = document.getElementById('completionDate');
+                const xpInput = document.getElementById('completionXP');
+                const timeInput = document.getElementById('completionTime');
+                
+                if (!dateInput || !xpInput || !timeInput) return;
+                
+                const completionDate = new Date(dateInput.value);
+                const customXP = parseInt(xpInput.value);
+                const customTime = parseInt(timeInput.value);
+                
+                // Validate date
+                if (isNaN(completionDate.getTime())) {
+                    showNotification('Выберите корректную дату выполнения', 'error');
+                    return;
+                }
+                
+                // Check if date is in the future (not allowed)
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Reset time to start of day
+                completionDate.setHours(0, 0, 0, 0); // Reset time to start of day
+                
+                if (completionDate > today) {
+                    showNotification('Нельзя выполнять задания в будущем. Выберите сегодняшнюю дату или дату в прошлом.', 'error');
+                    return;
+                }
+                
+                // Validate inputs
+                if (isNaN(customXP) || customXP < 1 || customXP > 500) {
+                    showNotification('XP должно быть от 1 до 500', 'error');
+                    return;
+                }
+                
+                if (isNaN(customTime) || customTime < 1 || customTime > 500) {
+                    showNotification('Время должно быть от 1 до 500 минут', 'error');
+                    return;
+                }
+                
+                // Hide modal first
+                hideTaskCompletionModal();
+                
+                // Execute task completion with custom values and date
+                executeTaskCompletion(task, customXP, customTime, completionDate);
+            }
+            
+            // Function to execute actual task completion
+            function executeTaskCompletion(task, customXP, customTime, completionDate = new Date()) {
                 // Animate task completion
-                const taskElement = e.currentTarget.closest('.task-item');
+                const taskElement = document.querySelector(`[onclick*="completeTask(event, ${task.id})"]`).closest('.task-item');
                 taskElement.classList.add("task-completed");
 
-                setTimeout(() => {
-                    ensureWeeklyReset();
-                    // Update progress
-                    appState.progress.totalXP += task.xpReward;
-                    appState.progress.currentLevelXP += task.xpReward;
-                    appState.progress.weeklyXP += task.xpReward;
-                    
-                    // Обновляем лучшую неделю
-                    updateBestWeekProgress();
-
-                    // Check for level up
-                    let xpNeeded = getXPRequiredForLevel(appState.progress.level);
-                    let leveledUp = false;
-                    while (xpNeeded > 0 && appState.progress.currentLevelXP >= xpNeeded && appState.progress.level < 100) {
-                        appState.progress.currentLevelXP -= xpNeeded;
-                        appState.progress.level += 1;
-                        leveledUp = true;
-                        xpNeeded = getXPRequiredForLevel(appState.progress.level);
-                    }
-                    if (appState.progress.level >= 100) {
-                        appState.progress.level = 100;
-                        appState.progress.currentLevelXP = 0;
-                    }
-
-                    if (leveledUp) {
-                        showNotification(
-                            `Поздравляем! Вы достигли ${appState.progress.level} уровня!`,
-                            "success",
-                        );
-                        document.getElementById("currentLevel").classList.add("level-up");
-                        setTimeout(() => {
-                            document.getElementById("currentLevel").classList.remove("level-up");
-                        }, 1000);
-                    } else {
-                        showNotification(`Задание выполнено! +${task.xpReward} XP`, "success");
-                    }
-
-                    // Log activity
-                    const today = formatDate(new Date());
-                    if (!appState.activityData[today]) {
-                        appState.activityData[today] = [];
+                safeSetTimeout(() => {
+                    // Log activity with custom values and date first
+                    const activityDate = formatDate(completionDate);
+                    if (!appState.activityData[activityDate]) {
+                        appState.activityData[activityDate] = [];
                     }
                     
-                    // Используем реальную длительность задания
-                    const timeSpent = task.duration || 15;
-                    
-                    appState.activityData[today].push({
+                    appState.activityData[activityDate].push({
                         taskId: task.id,
                         taskName: task.name,
-                        xpEarned: task.xpReward,
-                        timeSpent: timeSpent,
-                        completedAt: new Date(),
+                        xpEarned: customXP,
+                        timeSpent: customTime,
+                        completedAt: completionDate,
                     });
 
                     console.log('🔄 Задание выполнено, пересчитываем все показатели...');
                     
-                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
+                    // Сохраняем текущий уровень перед пересчетом
+                    const oldLevel = appState.progress.level;
+                    console.log('🔄 Сохраняем старый уровень:', oldLevel);
+                    
+                    // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ (включая прогресс)
+                    recalculateAllProgress();
+                    
+                    // Восстанавливаем lastCheckedLevel на старый уровень
+                    appState.progress.lastCheckedLevel = oldLevel;
+                    console.log('🔄 Восстанавливаем lastCheckedLevel на:', oldLevel, 'новый уровень:', appState.progress.level);
+                    
+                    // Achievement checks removed
                     
                     // 1. Пересчитываем лучшую неделю
                     recalculateBestWeek();
@@ -1631,13 +2030,33 @@
                     renderWeeklyChart();
                     updateBestWeekDisplay();
                     updateRedeemControls();
+                    
+                    // Обновляем недельный прогресс с учетом текущего просмотра
                     updateProgressWeekSection();
+                    
                     updateMonthlyProgressSection();
-                    updateWeeklyStars();
+                    
+                    // Show task completion notification immediately
+                    showTaskCompletionNotification(task, customXP);
+                    
+                    // Delay star notifications to ensure modal is closed
+                    safeSetTimeout(() => {
+                        updateWeeklyStars();
+                    }, 1000); // 1 second delay to ensure modal is closed
+                    
+                    // Update achievements bank
+                    updateAchievementsBank();
+                    
+                    // Show completion notification
+                    const isToday = formatDate(completionDate) === formatDate(new Date());
+                    const dateStr = isToday ? 'сегодня' : completionDate.toLocaleDateString('ru-RU');
+                    showNotification(`Задание выполнено ${dateStr}! +${customXP} XP`, "success");
                     
                     // 3. Проверяем, что все показатели обновлены
                     console.log('✅ Задание выполнено, показатели обновлены');
-                    console.log('   - Получено XP:', task.xpReward);
+                    console.log('   - Получено XP:', customXP);
+                    console.log('   - Затрачено времени:', customTime);
+                    console.log('   - Дата выполнения:', activityDate);
                     console.log('   - Новый общий XP:', appState.progress.totalXP);
                     console.log('   - Новый уровень:', appState.progress.level);
                     console.log('   - XP за неделю:', appState.progress.weeklyXP);
@@ -1647,32 +2066,38 @@
                     updateLearningTimeDisplay();
                     
                     // Автоматически сохраняем в Firebase после выполнения задания
-                    setTimeout(() => {
+                    // Увеличиваем задержку, чтобы уведомления о звездах успели показаться
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
-                    }, 1000);
+                    }, 3000); // 3 секунды вместо 1
 
                     taskElement.classList.remove("task-completed");
-                }, 600);
+                }, 100);
             }
 
             function addTask(event) {
                 event.preventDefault();
 
-                // Проверяем роль пользователя
-                if (appState.role === 'viewer') {
-                    showNotification('Режим просмотра: добавление заданий недоступно', 'warning');
-                    return;
-                }
+                return safeExecute(() => {
+                    // Проверяем роль пользователя
+                    if (appState.role === 'viewer') {
+                        showNotification('Режим просмотра: добавление заданий недоступно', 'warning');
+                        return;
+                    }
 
-                const name = document.getElementById("taskName").value;
-                const description =
-                    document.getElementById("taskDescription").value;
-                let xpReward = parseInt(
-                    document.getElementById("taskXP").value, 10
-                );
-                let duration = parseInt(
-                    document.getElementById("taskDuration").value, 10
-                );
+                    const name = document.getElementById("taskName").value;
+                    const description =
+                        document.getElementById("taskDescription").value;
+                    let xpReward = parseInt(
+                        document.getElementById("taskXP").value, 10
+                    );
+                    let duration = parseInt(
+                        document.getElementById("taskDuration").value, 10
+                    );
+
+                    // Валидация данных
+                    const taskData = { name, xpReward, duration };
+                    validateTaskData(taskData);
 
                 // Если поле Название задания содержит специальную команду очистки
                 if (name.trim().toLowerCase() === 'очистить' || name.trim().toLowerCase() === 'clear') {
@@ -1685,7 +2110,10 @@
                         
                         // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
                         
-                        // 1. Пересчитываем лучшую неделю
+                        // 1. Пересчитываем весь прогресс с нуля (включая звезды)
+                        recalculateAllProgress();
+                        
+                        // 2. Пересчитываем лучшую неделю
                         recalculateBestWeek();
                         
                         // 2. Обновляем все отображения
@@ -1696,6 +2124,7 @@
                         updateProgressWeekSection();
                         updateMonthlyProgressSection();
                         updateWeeklyStars();
+                        updateAchievementsBank();
                         
                         // 3. Проверяем, что все показатели обновлены
                         console.log('✅ Задания очищены через команду, показатели обновлены');
@@ -1703,7 +2132,7 @@
                         showNotification('Все задания очищены! Все показатели пересчитаны.', 'success');
                         
                                             // Автоматически сохраняем в Firebase после очистки заданий
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
                     }
@@ -1713,8 +2142,8 @@
 
                 if (Number.isNaN(xpReward)) xpReward = 50;
                 if (Number.isNaN(duration)) duration = 15;
-                xpReward = Math.min(500, Math.max(10, xpReward));
-                duration = Math.min(120, Math.max(5, duration));
+                xpReward = Math.min(500, Math.max(1, xpReward));
+                duration = Math.min(500, Math.max(1, duration));
 
                 const newTask = {
                     id: Date.now(),
@@ -1732,7 +2161,10 @@
                 
                 // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
                 
-                // 1. Пересчитываем лучшую неделю
+                // 1. Пересчитываем весь прогресс с нуля (включая звезды)
+                recalculateAllProgress();
+                
+                // 2. Пересчитываем лучшую неделю
                 recalculateBestWeek();
                 
                 // 2. Обновляем все отображения
@@ -1743,6 +2175,7 @@
                 updateProgressWeekSection();
                 updateMonthlyProgressSection();
                 updateWeeklyStars();
+                updateAchievementsBank();
                 
                                     // 3. Проверяем, что все показатели обновлены
                     console.log('✅ Новое задание добавлено, показатели обновлены');
@@ -1751,13 +2184,14 @@
                     showNotification("Новое задание добавлено! Все показатели пересчитаны.", "success");
                     
                     // Автоматически сохраняем в Firebase после добавления задания
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
 
-                // Reset form
-                document.getElementById("taskForm").reset();
-                renderWeeklyChart();
+                    // Reset form
+                    document.getElementById("taskForm").reset();
+                    renderWeeklyChart();
+                }, 'addTask');
             }
 
             function addReward(event) {
@@ -1782,14 +2216,19 @@
                 };
 
                 appState.rewards.push(newReward);
-                appState.progress.starBank -= starsCost;
                 appState.rewardPlan = { description: "" };
+
+                // Show reward notification
+                showRewardNotification(planned, starsCost);
 
                 console.log('🔄 Награда получена, пересчитываем все показатели...');
                 
                 // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
                 
-                // 1. Пересчитываем лучшую неделю
+                // 1. Пересчитываем весь прогресс с нуля (включая звезды)
+                recalculateAllProgress();
+                
+                // 2. Пересчитываем лучшую неделю
                 recalculateBestWeek();
                 
                 // 2. Обновляем все отображения
@@ -1800,6 +2239,7 @@
                 updateRedeemControls();
                 updateProgressWeekSection();
                 updateMonthlyProgressSection();
+                updateAchievementsBank();
                 
                                     // 3. Проверяем, что все показатели обновлены
                     console.log('✅ Награда получена, показатели обновлены');
@@ -1808,7 +2248,7 @@
                     showNotification("Награда получена! Все показатели пересчитаны.", "success");
                     
                     // Автоматически сохраняем в Firebase после получения награды
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
 
@@ -1817,11 +2257,17 @@
             }
 
             function selectDate(dateStr) {
-                appState.selectedDate = new Date(dateStr);
-                generateCalendar();
-                updateDayActivity();
-                // Автоматическое сохранение отключено
-                renderWeeklyChart();
+                console.log('🗓️ Выбрана дата:', dateStr);
+                try {
+                    appState.selectedDate = new Date(dateStr);
+                    console.log('✅ Дата успешно установлена:', appState.selectedDate);
+                    generateCalendar();
+                    updateDayActivity();
+                    // Автоматическое сохранение отключено
+                    renderWeeklyChart();
+                } catch (error) {
+                    console.error('❌ Ошибка при выборе даты:', error, 'dateStr:', dateStr);
+                }
             }
 
             function changeMonth(direction) {
@@ -1898,7 +2344,7 @@
             function hideTaskModal() {
                 document.getElementById("taskModal").classList.remove("show");
                 // Reset icon selection to first icon
-                setTimeout(() => {
+                safeSetTimeout(() => {
                     const firstIcon = document.querySelector('.icon-option');
                     if (firstIcon) {
                         document.querySelectorAll('.icon-option').forEach(option => {
@@ -1940,7 +2386,7 @@
             function hideEditTaskModal() {
                 document.getElementById("editTaskModal").classList.remove("show");
                 // Reset icon selection to first icon
-                setTimeout(() => {
+                safeSetTimeout(() => {
                     const firstIcon = document.querySelector('#editIconSelector .icon-option');
                     if (firstIcon) {
                         document.querySelectorAll('#editIconSelector .icon-option').forEach(option => {
@@ -2005,8 +2451,8 @@
 
                 if (Number.isNaN(xpReward)) xpReward = 50;
                 if (Number.isNaN(duration)) duration = 15;
-                xpReward = Math.min(500, Math.max(10, xpReward));
-                duration = Math.min(120, Math.max(5, duration));
+                xpReward = Math.min(500, Math.max(1, xpReward));
+                duration = Math.min(500, Math.max(1, duration));
 
                 // Обновляем задание
                 task.name = name;
@@ -2019,7 +2465,10 @@
                 
                 // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
                 
-                // 1. Пересчитываем лучшую неделю
+                // 1. Пересчитываем весь прогресс с нуля (включая звезды)
+                recalculateAllProgress();
+                
+                // 2. Пересчитываем лучшую неделю
                 recalculateBestWeek();
                 
                 // 2. Обновляем все отображения
@@ -2031,6 +2480,7 @@
                 updateMonthlyProgressSection();
                 updateWeeklyStars();
                 updateLearningTimeDisplay();
+                updateAchievementsBank();
                 
                 // 3. Проверяем, что все показатели обновлены
                 console.log('✅ Задание обновлено, показатели пересчитаны');
@@ -2039,7 +2489,7 @@
                 showNotification("Задание обновлено! Все показатели пересчитаны.", "success");
                 
                 // Автоматически сохраняем в Firebase после обновления задания
-                setTimeout(() => {
+                safeSetTimeout(() => {
                     saveDataToFirebaseSilent();
                 }, 1000);
             }
@@ -2157,7 +2607,7 @@
                         showNotification('Все награды очищены! Все показатели пересчитаны.', 'success');
                         
                                             // Автоматически сохраняем в Firebase после очистки наград
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
                         
@@ -2193,7 +2643,7 @@
                 showNotification('Награда сохранена! Все показатели пересчитаны.', 'success');
                 
                                     // Автоматически сохраняем в Firebase после сохранения идеи награды
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
                 
@@ -2314,6 +2764,12 @@
                 // Обновляем отображение времени обучения
                 updateLearningTimeDisplay();
                 
+                // Обновляем банк достижений
+                updateAchievementsBank();
+                
+                // Обновляем банк наград
+                updateRewardsBank();
+                
                 // Автоматическое сохранение отключено при инициализации
                 // saveDataToFirebase();
 
@@ -2374,8 +2830,8 @@
                         // 1. Пересчитываем лучшую неделю
                         recalculateBestWeek();
                         
-                        // 2. Обновляем все отображения
-                        updateProgressDisplay();
+                        // 2. Обновляем все отображения безопасно
+                        safeUpdateUI();
                         updateBestWeekDisplay();
                         updateRedeemControls();
                         updateProgressWeekSection();
@@ -2460,12 +2916,12 @@
                 updateSyncStatus();
                 
                 // Проверяем, нужна ли первичная синхронизация (с задержкой, чтобы не мешать загрузке PIN-кодов)
-                setTimeout(() => {
+                safeSetTimeout(() => {
                     checkFirstTimeSync();
                 }, 1000);
                 
                 // Резервный таймаут - если что-то пошло не так, показываем верификацию через 10 секунд
-                const fallbackTimeout = setTimeout(() => {
+                const fallbackTimeout = safeSetTimeout(() => {
                     console.log('⏰ Резервный таймаут: показываем верификацию принудительно...');
                     showSyncStatus('error', 'Принудительный запуск');
                     showVerificationAfterSync();
@@ -2525,7 +2981,10 @@
                     
                     // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
                     
-                    // 1. Пересчитываем лучшую неделю
+                    // 1. Пересчитываем весь прогресс с нуля (включая звезды)
+                    recalculateAllProgress();
+                    
+                    // 2. Пересчитываем лучшую неделю
                     recalculateBestWeek();
                     
                     // 2. Обновляем все отображения
@@ -2536,6 +2995,7 @@
                     updateProgressWeekSection();
                     updateMonthlyProgressSection();
                     updateWeeklyStars();
+                    updateAchievementsBank();
                     
                     // 3. Проверяем, что все показатели обновлены
                     console.log('✅ Задание удалено, показатели обновлены');
@@ -2543,7 +3003,7 @@
                     showNotification('Задание удалено! Все показатели пересчитаны.', 'success');
                     
                     // Автоматически сохраняем в Firebase после удаления задания
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
                 }
@@ -2600,7 +3060,10 @@
                 // 6. Обновляем звезды
                 updateWeeklyStars();
                 
-                // 7. Проверяем, что все показатели обновлены
+                // 7. Обновляем банк достижений
+                updateAchievementsBank();
+                
+                // 8. Проверяем, что все показатели обновлены
                 console.log('✅ Активность удалена, все показатели пересчитаны');
                 console.log('   - Удалено XP:', deletedXP);
                 console.log('   - Новый общий XP:', appState.progress.totalXP);
@@ -2609,11 +3072,86 @@
                 console.log('   - Лучшая неделя:', appState.progress.bestWeekXP);
 
                                     // Автоматически сохраняем в Firebase после удаления активности
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
 
                 showNotification(`Активность удалена (-${deletedXP} XP)! Все показатели пересчитаны.`, 'success');
+            }
+
+            // Test function to verify weekly calculations
+            function testWeeklyCalculations() {
+                console.log('🧪 Тестирование недельных расчетов...');
+                
+                // Test getWeekStartKey
+                const testDates = [
+                    new Date('2025-01-15'), // Wednesday
+                    new Date('2025-01-13'), // Monday
+                    new Date('2025-01-19'), // Sunday
+                ];
+                
+                testDates.forEach(date => {
+                    const weekStart = getWeekStartKey(date);
+                    console.log(`📅 ${date.toLocaleDateString('ru-RU')} (${['ВС','ПН','ВТ','СР','ЧТ','ПТ','СБ'][date.getDay()]}) -> неделя начинается: ${weekStart}`);
+                });
+                
+                // Test weekly data calculation
+                const dates = Object.keys(appState.activityData).sort();
+                console.log('📊 Все даты активностей:', dates);
+                
+                const weeklyData = {};
+                dates.forEach(dateStr => {
+                    const logs = appState.activityData[dateStr];
+                    if (!Array.isArray(logs)) return;
+                    
+                    const dayXP = logs.reduce((sum, log) => sum + (log.xpEarned || 0), 0);
+                    const weekKey = getWeekStartKey(new Date(dateStr));
+                    
+                    if (!weeklyData[weekKey]) weeklyData[weekKey] = { xp: 0, tasks: 0 };
+                    weeklyData[weekKey].xp += dayXP;
+                    weeklyData[weekKey].tasks += logs.length;
+                    
+                    console.log(`📈 ${dateStr}: ${dayXP} XP -> неделя ${weekKey} (всего: ${weeklyData[weekKey].xp} XP)`);
+                });
+                
+                console.log('📊 Итоговые недельные данные:', weeklyData);
+                
+                // Test current week
+                const currentWeekKey = getWeekStartKey(new Date());
+                console.log(`📅 Текущая неделя: ${currentWeekKey}`);
+                console.log(`📈 XP за текущую неделю: ${weeklyData[currentWeekKey]?.xp || 0}`);
+            }
+
+            // Test function for cross-week scenarios
+            function testCrossWeekScenarios() {
+                console.log('🧪 Тестирование межнедельных сценариев...');
+                
+                // Test current week calculation
+                const currentWeekKey = getWeekStartKey(new Date());
+                const currentWeekXP = computeWeekXP(new Date(currentWeekKey));
+                console.log(`📅 Текущая неделя (${currentWeekKey}): ${currentWeekXP} XP`);
+                
+                // Test previous week calculation
+                const prevWeek = new Date(currentWeekKey);
+                prevWeek.setDate(prevWeek.getDate() - 7);
+                const prevWeekKey = formatDate(prevWeek);
+                const prevWeekXP = computeWeekXP(prevWeek);
+                console.log(`📅 Предыдущая неделя (${prevWeekKey}): ${prevWeekXP} XP`);
+                
+                // Test next week calculation
+                const nextWeek = new Date(currentWeekKey);
+                nextWeek.setDate(nextWeek.getDate() + 7);
+                const nextWeekKey = formatDate(nextWeek);
+                const nextWeekXP = computeWeekXP(nextWeek);
+                console.log(`📅 Следующая неделя (${nextWeekKey}): ${nextWeekXP} XP`);
+                
+                // Test weekly progress display
+                console.log(`📊 Отображаемый недельный прогресс: ${appState.progress.weeklyXP} XP`);
+                console.log(`📊 Звезды за неделю: ${appState.progress.weeklyStars}`);
+                console.log(`📊 Банк звезд: ${appState.progress.starBank}`);
+                
+                // Test best week
+                console.log(`🏆 Лучшая неделя: ${appState.progress.bestWeekXP} XP`);
             }
 
             // Recalculate all progress from activity data
@@ -2625,6 +3163,7 @@
                 appState.progress.weeklyXP = 0;
                 appState.progress.weeklyStars = 0;
                 appState.progress.starBank = 0;
+                appState.progress.lastCheckedLevel = 0; // Сбрасываем счетчик достижений
 
                 // Get all activity dates sorted chronologically
                 const dates = Object.keys(appState.activityData).sort();
@@ -2676,12 +3215,24 @@
                     const weekXP = weeklyData[weekKey].xp;
                     totalStars += calculateWeeklyStars(weekXP);
                 }
-                appState.progress.starBank = Math.max(0, totalStars - (appState.rewards.length * 3));
+                
+                // Calculate total stars spent on rewards
+                const totalStarsSpent = appState.rewards.reduce((sum, reward) => sum + (reward.starsUsed || 0), 0);
+                appState.progress.starBank = Math.max(0, totalStars - totalStarsSpent);
                 
                 // Сохраняем недельные данные для пересчета лучшей недели
                 appState.weeklyData = weeklyData;
                 
+                // Обновляем lastCheckedLevel для корректной работы системы достижений
+                appState.progress.lastCheckedLevel = appState.progress.level;
+                
                 console.log('🔄 Полный пересчет прогресса завершен, пересчитываем все показатели...');
+                
+                // Test weekly calculations for debugging
+                testWeeklyCalculations();
+                
+                // Additional test for cross-week scenarios
+                testCrossWeekScenarios();
                 
                 // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПОСЛЕ ПЕРЕСЧЕТА ПРОГРЕССА
                 
@@ -2695,6 +3246,7 @@
                 updateProgressWeekSection();
                 updateMonthlyProgressSection();
                 updateWeeklyStars();
+                updateAchievementsBank();
                 
                                     // 3. Проверяем, что все показатели обновлены
                     console.log('✅ Полный пересчет прогресса завершен, все показатели пересчитаны');
@@ -2702,7 +3254,7 @@
                     console.log('🏆 Текущая неделя XP:', appState.progress.weeklyXP);
                     
                     // Автоматически сохраняем в Firebase после полного пересчета прогресса
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
             }
@@ -2723,7 +3275,10 @@
                     
                     // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ
                     
-                    // 1. Пересчитываем лучшую неделю
+                    // 1. Пересчитываем весь прогресс с нуля (включая звезды)
+                    recalculateAllProgress();
+                    
+                    // 2. Пересчитываем лучшую неделю
                     recalculateBestWeek();
                     
                     // 2. Обновляем все отображения
@@ -2734,6 +3289,7 @@
                     updateProgressWeekSection();
                     updateMonthlyProgressSection();
                     updateWeeklyStars();
+                    updateAchievementsBank();
                     
                     // 3. Проверяем, что все показатели обновлены
                     console.log('✅ Задания очищены, показатели обновлены');
@@ -2741,7 +3297,7 @@
                     showNotification('Все задания удалены! Все показатели пересчитаны.', 'success');
                     
                     // Автоматически сохраняем в Firebase после очистки заданий
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
                 }
@@ -2778,7 +3334,7 @@
                 }
                 
                 // Закрываем меню с небольшой задержкой для анимации
-                setTimeout(() => {
+                safeSetTimeout(() => {
                     menu.classList.remove('show');
                     const btn = document.querySelector('.settings-btn');
                     if (btn) btn.setAttribute('aria-expanded', 'false');
@@ -2811,11 +3367,7 @@
                         closeSettingsMenu();
                     }
                     
-                    // Закрытие модального окна аналитики по Escape
-                    const analyticsModal = document.getElementById('analyticsModal');
-                    if (analyticsModal && analyticsModal.classList.contains('show')) {
-                        hideAnalyticsModal();
-                    }
+
                 }
             });
 
@@ -2890,16 +3442,39 @@
                 }
                 
                 const dataToExport = {
+                    // Основные данные приложения
                     progress: appState.progress,
                     tasks: appState.tasks,
                     rewards: appState.rewards,
                     activityData: appState.activityData,
                     rewardPlan: appState.rewardPlan,
                     resetDate: appState.resetDate,
+                    
+                    // Информация о пользователе
+                    user: appState.user,
                     userName: appState.userName,
+                    role: appState.role,
+                    isVerified: appState.isVerified,
                     pinCodes: appState.pinCodes,
+                    
+                    // Настройки интерфейса
+                    currentMonth: appState.currentMonth,
+                    selectedDate: appState.selectedDate,
+                    progressView: appState.progressView,
+                    
+                    // Метаданные экспорта
                     exportDate: new Date().toISOString(),
-                    version: '1.0'
+                    version: '1.1',
+                    exportInfo: {
+                        exportedBy: appState.userName,
+                        exportRole: appState.role,
+                        totalTasks: appState.tasks.length,
+                        totalRewards: appState.rewards.length,
+                        totalActivityDays: Object.keys(appState.activityData).length,
+                        currentLevel: appState.progress.level,
+                        totalXP: appState.progress.totalXP,
+                        starBank: appState.progress.starBank
+                    }
                 };
 
                 const dataStr = JSON.stringify(dataToExport, null, 2);
@@ -2908,7 +3483,8 @@
                 
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `english-learning-progress-${formatDate(new Date())}.json`;
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                link.download = `english-learning-backup-${appState.userName}-${timestamp}.json`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -3036,42 +3612,13 @@
                         showNotification('Слепок применен! Все показатели пересчитаны.', 'success');
                         
                                             // Автоматически сохраняем в Firebase после применения снимка
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
             }
 
-            // Chart.js optional integration (loaded online) with fallback to existing DOM charts
-            let analyticsCharts = [];
-            async function tryLoadChartJs() {
-                if (window.Chart && typeof window.Chart === 'function') return true;
-                try {
-                    await loadExternalScript('https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js');
-                    return !!window.Chart;
-                } catch { return false; }
-            }
-            function destroyAnalyticsCharts() { analyticsCharts.forEach(ch => { try { ch.destroy(); } catch {} }); analyticsCharts = []; }
-            function renderAnalyticsWithChartJS() {
-                const ok = !!(window.Chart);
-                if (!ok) return;
-                // Example: comparison of last 4 weeks XP totals
-                const weeks = [];
-                const totals = [];
-                for (let w = -3; w <= 0; w++) {
-                    const start = getWeekStartFromOffset(w);
-                    weeks.push(formatWeekRangeLabel(start));
-                    totals.push(computeWeekXP(start));
-                }
-                const cv = document.getElementById('comparisonChartCanvas');
-                if (cv) {
-                    const ctx = cv.getContext('2d');
-                    analyticsCharts.push(new Chart(ctx, {
-                        type: 'bar',
-                        data: { labels: weeks, datasets: [{ label: 'XP за неделю', data: totals, backgroundColor: '#3b82f6' }] },
-                        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-                    }));
-                }
-            }
+
+
             function loadExternalScript(src) {
                 return new Promise((resolve, reject) => {
                     const s = document.createElement('script'); s.src = src; s.async = true; s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
@@ -3145,7 +3692,7 @@
                         showNotification('Данные импортированы успешно! Все показатели пересчитаны.', 'success');
                         
                         // Автоматически сохраняем в Firebase после импорта данных
-                        setTimeout(() => {
+                        safeSetTimeout(() => {
                             saveDataToFirebaseSilent();
                         }, 1000);
                         
@@ -3180,7 +3727,8 @@
                         weeklyXP: 0,
                         weeklyStars: 0,
                         starBank: 0,
-                        weekStartKey: getWeekStartKey(new Date())
+                        weekStartKey: getWeekStartKey(new Date()),
+                        lastCheckedLevel: 0  // Сбрасываем счетчик достижений
                     };
                     
                     // Сбрасываем задания к начальным
@@ -3288,7 +3836,7 @@
                     showNotification('Прогресс полностью сброшен! Все показатели обновлены.', 'success');
                     
                     // Автоматически сохраняем в Firebase после сброса прогресса
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
                 }
@@ -3301,7 +3849,7 @@
                 const editTaskModal = document.getElementById("editTaskModal");
                 const rewardModal = document.getElementById("rewardModal");
                 const ideaModal = document.getElementById("ideaModal");
-                const analyticsModal = document.getElementById("analyticsModal");
+
                 const settingsMenu = document.getElementById("settingsMenu");
 
                 if (event.target === taskModal) {
@@ -3316,9 +3864,7 @@
                 if (event.target === ideaModal) {
                     hideIdeaModal();
                 }
-                if (event.target === analyticsModal) {
-                    hideAnalyticsModal();
-                }
+
 
                 
                 // Close settings menu if clicked outside
@@ -3336,7 +3882,7 @@
                     hideEditTaskModal();
                     hideRewardModal();
                     hideIdeaModal();
-                    hideAnalyticsModal();
+
 
                     const menu = document.getElementById('settingsMenu');
                     if (menu) menu.classList.remove('show');
@@ -3345,205 +3891,16 @@
                 }
             });
 
-            // Analytics Functions
-            function showAnalyticsModal() {
-                const modal = document.getElementById('analyticsModal');
-                modal.classList.add('show');
-                
-                // Анимация появления кнопки закрытия
-                const closeBtn = modal.querySelector('.analytics-close-btn');
-                if (closeBtn) {
-                    closeBtn.style.animation = 'analyticsCloseBtnAppear 0.6s ease-out';
-                }
-                
-                // sync demo UI
-                const badge = document.getElementById('demoBadge');
-                const btn = document.getElementById('toggleDemoBtn');
-                const enabled = !!(appState.demoAnalytics && appState.demoAnalytics.enabled);
-                if (badge) badge.style.display = enabled ? 'inline-flex' : 'none';
-                if (btn) btn.textContent = enabled ? 'Выключить демо' : 'Демо';
-                
-                console.log('🔄 Показываем аналитику, пересчитываем все показатели...');
-                
-                // ПОЛНЫЙ ПЕРЕСЧЕТ ВСЕХ ПОКАЗАТЕЛЕЙ ПЕРЕД ПОКАЗОМ АНАЛИТИКИ
-                
-                // 1. Пересчитываем лучшую неделю
-                recalculateBestWeek();
-                
-                // 2. Обновляем все отображения
-                updateProgressDisplay();
-                updateBestWeekDisplay();
-                updateRedeemControls();
-                updateProgressWeekSection();
-                updateMonthlyProgressSection();
-                updateWeeklyStars();
-                
-                // 3. Проверяем, что все показатели обновлены
-                console.log('✅ Аналитика показана, все показатели пересчитаны');
-                
-                // Автоматическое сохранение отключено при показе аналитики
-                // saveDataToFirebase();
-                
-                calculateAnalytics();
-                // Try Chart.js
-                tryLoadChartJs().then((ok)=>{ if (ok) { destroyAnalyticsCharts(); renderAnalyticsWithChartJS(); } });
-            }
+            // Initialize app when page loads (removed duplicate)
 
-            function hideAnalyticsModal() {
-                const modal = document.getElementById('analyticsModal');
-                const closeBtn = modal.querySelector('.analytics-close-btn');
-                
-                // Анимация исчезновения кнопки закрытия
-                if (closeBtn) {
-                    closeBtn.style.animation = 'analyticsCloseBtnDisappear 0.4s ease-in forwards';
-                }
-                
-                // Закрываем модальное окно с небольшой задержкой для анимации
-                setTimeout(() => {
-                    modal.classList.remove('show');
-                    
-                    // Сбрасываем анимацию кнопки
-                    if (closeBtn) {
-                        closeBtn.style.animation = '';
-                    }
-                }, 300);
-            }
 
-            function switchAnalyticsTab(tabName) {
-                // Remove active from all tabs and content
-                document.querySelectorAll('.analytics-tab').forEach(tab => tab.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                
-                // Add active to clicked tab and corresponding content
-                event.target.classList.add('active');
-                document.getElementById(tabName + '-tab').classList.add('active');
-                
-                // Recalculate charts for active tab
-                if (tabName === 'progress') renderProgressCharts();
-                if (tabName === 'patterns') renderPatternCharts();
-                if (tabName === 'achievements') renderAchievementCharts();
-            }
 
-            function calculateAnalytics() {
-                const analytics = computeAnalyticsData();
-                renderOverviewTab(analytics);
-            }
 
-            function computeAnalyticsData() {
-                const state = getEffectiveState();
-                const activity = state.activityData || {};
-                const dates = Object.keys(activity).sort();
-                
-                // Basic stats
-                const totalActiveDays = dates.length;
-                const totalTasksCompleted = dates.reduce((sum, date) => {
-                    return sum + (activity[date] ? activity[date].length : 0);
-                }, 0);
-                
-                const totalXP = state.progress.totalXP;
-                const avgXpPerDay = totalActiveDays > 0 ? Math.round(totalXP / totalActiveDays) : 0;
-                
-                // Best day
-                let bestDayXP = 0;
-                let bestDayDate = '';
-                let bestDayTasks = 0;
-                let maxDayTasks = 0;
-                
-                dates.forEach(date => {
-                    const logs = activity[date] || [];
-                    const dayXP = logs.reduce((sum, log) => sum + (log.xpEarned || 0), 0);
-                    const dayTasks = logs.length;
-                    
-                    if (dayXP > bestDayXP) {
-                        bestDayXP = dayXP;
-                        bestDayDate = date;
-                    }
-                    if (dayTasks > maxDayTasks) {
-                        maxDayTasks = dayTasks;
-                    }
-                });
-                
-                // Weekly data
-                const weeklyData = {};
-                dates.forEach(date => {
-                    const weekKey = getWeekStartKey(new Date(date));
-                    if (!weeklyData[weekKey]) weeklyData[weekKey] = { xp: 0, tasks: 0 };
-                    const logs = activity[date] || [];
-                    weeklyData[weekKey].xp += logs.reduce((sum, log) => sum + (log.xpEarned || 0), 0);
-                    weeklyData[weekKey].tasks += logs.length;
-                });
-                
-                // Сохраняем недельные данные в состоянии
-                state.weeklyData = weeklyData;
-                
-                // Учитываем текущую неделю при вычислении лучшей недели
-                const currentWeekKey = getWeekStartKey(new Date());
-                const currentWeekXPValue = state.progress.weeklyXP || 0;
-                
-                // Если текущая неделя не в исторических данных, добавляем её
-                if (!weeklyData[currentWeekKey]) {
-                    weeklyData[currentWeekKey] = { xp: currentWeekXPValue, tasks: 0 };
-                } else {
-                    // Если текущая неделя уже есть, обновляем XP
-                    weeklyData[currentWeekKey].xp = Math.max(weeklyData[currentWeekKey].xp, currentWeekXPValue);
-                }
-                
-                const bestWeekXP = Math.max(0, ...Object.values(weeklyData).map(w => w.xp));
-                
 
-                
-                // Best week calculation
-                const bestWeekData = getBestWeekData();
-                updateBestWeekProgress();
-                
-                // Weekday patterns
-                const weekdayData = [0,0,0,0,0,0,0]; // Sun-Sat
-                dates.forEach(date => {
-                    const d = new Date(date);
-                    const day = d.getDay();
-                    const logs = activity[date] || [];
-                    weekdayData[day] += logs.reduce((sum, log) => sum + (log.xpEarned || 0), 0);
-                });
-                
-                const bestWeekdayIndex = weekdayData.indexOf(Math.max(...weekdayData));
-                const weekdayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-                const bestWeekday = weekdayNames[bestWeekdayIndex];
-                
-                // Growth calculation (last 4 weeks)
-                const now = new Date();
-                const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
-                const recentXP = dates.filter(date => new Date(date) >= fourWeeksAgo)
-                    .reduce((sum, date) => {
-                        const logs = activity[date] || [];
-                        return sum + logs.reduce((s, log) => s + (log.xpEarned || 0), 0);
-                    }, 0);
-                
-                // Predictions
-                const avgXpPerWeek = totalActiveDays > 0 ? (totalXP / (totalActiveDays / 7)) : 0;
-                const xpToMaxLevel = (100 - state.progress.level) * 810;
-                const weeksToMax = avgXpPerWeek > 0 ? Math.ceil(xpToMaxLevel / avgXpPerWeek) : '∞';
-                
-                const currentWeekXP = state.progress.weeklyXP;
-                const nextStarXP = currentWeekXP >= 750 ? 'Все звезды получены' : 
-                                  currentWeekXP >= 500 ? `${750 - currentWeekXP} XP` : `${500 - currentWeekXP} XP`;
-                
-                return {
-                    totalActiveDays,
-                    totalTasksCompleted,
-                    avgXpPerDay,
-                    bestDayXP,
-                    bestDayDate,
-                    maxDayTasks,
-                    bestWeekXP,
-                    bestWeek: bestWeekData,
-                    bestWeekday,
-                    recentXP,
-                    weeksToMax,
-                    nextStarXP,
-                    weeklyData,
-                    weekdayData
-                };
-            }
+
+
+
+
 
             function getBestWeekData() {
                 const state = getEffectiveState();
@@ -3711,286 +4068,915 @@
                 return maxWeekXP;
             }
 
-            function renderOverviewTab(analytics) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            // Function to check for new achievements
+            function checkForNewAchievements() {
                 const state = getEffectiveState();
-                // Total stats
-
-
+                const currentLevel = state.progress.level;
+                
+                // Get last checked level from state
+                const lastCheckedLevel = state.progress.lastCheckedLevel || 0;
+                
+                console.log('🏆 checkForNewAchievements called:', {
+                    currentLevel,
+                    lastCheckedLevel,
+                    hasNewLevel: currentLevel > lastCheckedLevel,
+                    totalXP: state.progress.totalXP
+                });
                 
 
                 
-
+                // Check if we have a new level
+                if (currentLevel > lastCheckedLevel) {
+                    console.log('🏆 Новый уровень обнаружен! Ищем достижение...');
+                    
+                    // Achievement notification removed
+                    console.log('🏆 Достижение найдено для уровня:', currentLevel, 'но уведомление отключено');
+                    
+                    // Update last checked level
+                    state.progress.lastCheckedLevel = currentLevel;
+                    console.log('🏆 Обновлен lastCheckedLevel на:', currentLevel);
+                } else {
+                    console.log('🏆 Новых уровней не обнаружено');
+                }
             }
 
-            function renderProgressCharts() {
-                renderActivityHeatmap();
-                renderMonthlyChart();
-                renderTaskDistribution();
-                renderLevelTimeline();
+            // Function to get achievement for specific level
+            function getAchievementForLevel(level) {
+                const achievements = [
+                    // Уровни 1-5 (каждый уровень)
+                    { level: 1, title: '🌱 Первые шаги', description: 'Новичок в изучении английского языка. Начало увлекательного путешествия!', icon: '🌱' },
+                    { level: 2, title: '📚 Ученик', description: 'Осваиваете основы английского языка. Каждый день приносит новые знания!', icon: '📚' },
+                    { level: 3, title: '🎯 Целеустремленный', description: 'Показываете стабильный прогресс в изучении языка. Продолжайте в том же духе!', icon: '🎯' },
+                    { level: 4, title: '💪 Упорный', description: 'Демонстрируете настойчивость в изучении английского. Результат не заставит себя ждать!', icon: '💪' },
+                    { level: 5, title: '⭐ Уверенный новичок', description: 'Преодолели первые трудности! Теперь вы уверенно чувствуете себя в основах языка.', icon: '⭐' },
+                    
+                    // Уровни каждые 5 (10, 15, 20, 25...)
+                    { level: 10, title: '🚀 Активный изучающий', description: 'Достигли 10 уровня! Ваш английский становится все более уверенным.', icon: '🚀' },
+                    { level: 15, title: '🎓 Уверенный пользователь', description: '15 уровень покорен! Вы можете уверенно общаться на базовые темы.', icon: '🎓' },
+                    { level: 20, title: '🌟 Продвинутый ученик', description: '20 уровень! Ваши знания английского языка становятся глубокими и прочными.', icon: '🌟' },
+                    { level: 25, title: '💎 Опытный знаток', description: 'Четверть пути пройдена! Вы владеете английским на хорошем уровне.', icon: '💎' },
+                    { level: 30, title: '🏆 Мастер слова', description: '30 уровень! Ваш английский позволяет свободно выражать мысли.', icon: '🏆' },
+                    { level: 35, title: '🎭 Лингвистический артист', description: '35 уровень! Вы владеете языком с художественной точностью.', icon: '🎭' },
+                    { level: 40, title: '🧠 Языковой гений', description: '40 уровень! Ваше понимание английского языка поражает глубиной.', icon: '🧠' },
+                    { level: 45, title: '👑 Король английского', description: '45 уровень! Вы достигли высот в изучении языка.', icon: '👑' },
+                    { level: 50, title: '🎪 Половина пути к совершенству', description: '50 уровень! Половина пути пройдена. Вы на правильном пути к мастерству!', icon: '🎪' },
+                    { level: 55, title: '🌟 Звезда лингвистики', description: '55 уровень! Ваши знания английского сияют ярко.', icon: '🌟' },
+                    { level: 60, title: '🎯 Снайпер языка', description: '60 уровень! Вы попадаете в цель каждым словом.', icon: '🎯' },
+                    { level: 65, title: '⚡ Молния в изучении', description: '65 уровень! Ваш прогресс молниеносен и впечатляющ.', icon: '⚡' },
+                    { level: 70, title: '🔥 Огненный мастер', description: '70 уровень! Ваше владение языком пылает страстью и мастерством.', icon: '🔥' },
+                    { level: 75, title: '🎨 Художник слова', description: '75 уровень! Вы создаете шедевры из английских слов.', icon: '🎨' },
+                    { level: 80, title: '🏅 Чемпион английского', description: '80 уровень! Вы чемпион в изучении английского языка.', icon: '🏅' },
+                    { level: 85, title: '🎪 Виртуоз языка', description: '85 уровень! Ваше владение английским виртуозно.', icon: '🎪' },
+                    { level: 90, title: '👑 Император лингвистики', description: '90 уровень! Вы правите миром английского языка.', icon: '👑' },
+                    { level: 95, title: '🌟 Божественный оратор', description: '95 уровень! Ваша речь божественно красива и точна.', icon: '🌟' },
+                    { level: 100, title: '🏆 Богоподобный уровень', description: '100 уровень! Вы достигли богоподобного мастерства в английском языке!', icon: '🏆' }
+                ];
+                
+                return achievements.find(a => a.level === level);
             }
 
-            function renderActivityHeatmap() {
-                const container = document.getElementById('activityHeatmap');
-                if (!container) return;
+            // Function to update achievements bank
+            function updateAchievementsBank() {
+                console.log('🏆 updateAchievementsBank called');
+                const container = document.getElementById('achievementsBankContent');
+                const state = getEffectiveState();
+                const currentLevel = state.progress.level;
                 
-                const today = new Date();
-                const oneYearAgo = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000);
+                console.log('Container element:', container);
+                console.log('Current level:', currentLevel);
                 
-                const cells = [];
-                const current = new Date(oneYearAgo);
-                
-                while (current <= today) {
-                    const dateKey = formatDate(current);
-                    const state = getEffectiveState();
-                    const logs = (state.activityData[dateKey] || []);
-                    const xp = logs.reduce((sum, log) => sum + (log.xpEarned || 0), 0);
-                    
-                    let level = 0;
-                    if (xp > 0) level = 1;
-                    if (xp >= 100) level = 2;
-                    if (xp >= 200) level = 3;
-                    if (xp >= 300) level = 4;
-                    if (xp >= 400) level = 5;
-                    
-                    cells.push(`<div class="heatmap-cell" data-level="${level}" title="${dateKey}: ${xp} XP"></div>`);
-                    current.setDate(current.getDate() + 1);
+                if (!container) {
+                    console.log('❌ Container not found!');
+                    return;
                 }
                 
-                container.innerHTML = cells.join('');
-            }
-
-            function renderPatternCharts() {
-                renderWeekdayPattern();
-                renderSessionsChart();
-                updatePerformanceStats();
-                updatePredictions();
-            }
-
-            function renderWeekdayPattern() {
-                const container = document.getElementById('weekdayPatternChart');
-                if (!container) return;
+                // Get all achievements
+                const allAchievements = [
+                    // Уровни 1-5 (каждый уровень)
+                    { level: 1, title: '🌱 Первые шаги', description: 'Новичок в изучении английского языка. Начало увлекательного путешествия!', icon: '🌱' },
+                    { level: 2, title: '📚 Ученик', description: 'Осваиваете основы английского языка. Каждый день приносит новые знания!', icon: '📚' },
+                    { level: 3, title: '🎯 Целеустремленный', description: 'Показываете стабильный прогресс в изучении языка. Продолжайте в том же духе!', icon: '🎯' },
+                    { level: 4, title: '💪 Упорный', description: 'Демонстрируете настойчивость в изучении английского. Результат не заставит себя ждать!', icon: '💪' },
+                    { level: 5, title: '⭐ Уверенный новичок', description: 'Преодолели первые трудности! Теперь вы уверенно чувствуете себя в основах языка.', icon: '⭐' },
+                    
+                    // Уровни каждые 5 (10, 15, 20, 25...)
+                    { level: 10, title: '🚀 Активный изучающий', description: 'Достигли 10 уровня! Ваш английский становится все более уверенным.', icon: '🚀' },
+                    { level: 15, title: '🎓 Уверенный пользователь', description: '15 уровень покорен! Вы можете уверенно общаться на базовые темы.', icon: '🎓' },
+                    { level: 20, title: '🌟 Продвинутый ученик', description: '20 уровень! Ваши знания английского языка становятся глубокими и прочными.', icon: '🌟' },
+                    { level: 25, title: '💎 Опытный знаток', description: 'Четверть пути пройдена! Вы владеете английским на хорошем уровне.', icon: '💎' },
+                    { level: 30, title: '🏆 Мастер слова', description: '30 уровень! Ваш английский позволяет свободно выражать мысли.', icon: '🏆' },
+                    { level: 35, title: '🎭 Лингвистический артист', description: '35 уровень! Вы владеете языком с художественной точностью.', icon: '🎭' },
+                    { level: 40, title: '🧠 Языковой гений', description: '40 уровень! Ваше понимание английского языка поражает глубиной.', icon: '🧠' },
+                    { level: 45, title: '👑 Король английского', description: '45 уровень! Вы достигли высот в изучении языка.', icon: '👑' },
+                    { level: 50, title: '🎪 Половина пути к совершенству', description: '50 уровень! Половина пути пройдена. Вы на правильном пути к мастерству!', icon: '🎪' },
+                    { level: 55, title: '🌟 Звезда лингвистики', description: '55 уровень! Ваши знания английского сияют ярко.', icon: '🌟' },
+                    { level: 60, title: '🎯 Снайпер языка', description: '60 уровень! Вы попадаете в цель каждым словом.', icon: '🎯' },
+                    { level: 65, title: '⚡ Молния в изучении', description: '65 уровень! Ваш прогресс молниеносен и впечатляющ.', icon: '⚡' },
+                    { level: 70, title: '🔥 Огненный мастер', description: '70 уровень! Ваше владение языком пылает страстью и мастерством.', icon: '🔥' },
+                    { level: 75, title: '🎨 Художник слова', description: '75 уровень! Вы создаете шедевры из английских слов.', icon: '🎨' },
+                    { level: 80, title: '🏅 Чемпион английского', description: '80 уровень! Вы чемпион в изучении английского языка.', icon: '🏅' },
+                    { level: 85, title: '🎪 Виртуоз языка', description: '85 уровень! Ваше владение английским виртуозно.', icon: '🎪' },
+                    { level: 90, title: '👑 Император лингвистики', description: '90 уровень! Вы правите миром английского языка.', icon: '👑' },
+                    { level: 95, title: '🌟 Божественный оратор', description: '95 уровень! Ваша речь божественно красива и точна.', icon: '🌟' },
+                    { level: 100, title: '🏆 Богоподобный уровень', description: '100 уровень! Вы достигли богоподобного мастерства в английском языке!', icon: '🏆' }
+                ];
                 
-                const analytics = computeAnalyticsData();
-                const weekdayLabels = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-                const maxXP = Math.max(1, ...analytics.weekdayData);
+                // Calculate statistics
+                const achievedCount = allAchievements.filter(a => currentLevel >= a.level).length;
+                const progressPercent = Math.round((currentLevel / 100) * 100);
+                const currentStatus = getCurrentAchievementStatus(currentLevel);
                 
-                const bars = analytics.weekdayData.map((xp, i) => {
-                    const height = (xp / maxXP) * 100;
+                // Update summary
+                document.getElementById('achievementsUnlocked').textContent = achievedCount;
+                document.getElementById('achievementsProgress').textContent = `${progressPercent}%`;
+                document.getElementById('currentAchievementLevel').textContent = currentStatus;
+                
+                // Render all achievements
+                container.innerHTML = allAchievements.map(achievement => {
+                    const achieved = currentLevel >= achievement.level;
                     return `
-                        <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-                            <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 4px;">${xp}</div>
-                            <div style="width: 24px; background: linear-gradient(to top, #0ea5e9, #38bdf8); height: ${height}%; min-height: 4px; border-radius: 2px;"></div>
-                            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">${weekdayLabels[i]}</div>
+                        <div class="achievement-bank-item ${achieved ? 'achieved' : 'locked'}">
+                            <div class="achievement-bank-icon">${achievement.icon}</div>
+                            <div class="achievement-bank-content">
+                                <div class="achievement-bank-title">${achievement.title}</div>
+                                <div class="achievement-bank-level">Уровень ${achievement.level}</div>
+                                <div class="achievement-bank-description">${achievement.description}</div>
+                            </div>
+                            <div class="achievement-bank-status">
+                                ${achieved ? 
+                                    '<span class="achievement-bank-status-achieved">✅ Получено</span>' : 
+                                    `<span class="achievement-bank-status-locked">🔒 ${currentLevel}/${achievement.level}</span>`
+                                }
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Function to get current achievement status
+            function getCurrentAchievementStatus(level) {
+                if (level >= 100) return 'Богоподобный';
+                if (level >= 90) return 'Император';
+                if (level >= 80) return 'Чемпион';
+                if (level >= 70) return 'Мастер';
+                if (level >= 60) return 'Эксперт';
+                if (level >= 50) return 'Продвинутый';
+                if (level >= 40) return 'Опытный';
+                if (level >= 30) return 'Уверенный';
+                if (level >= 20) return 'Развивающийся';
+                if (level >= 10) return 'Активный';
+                if (level >= 5) return 'Уверенный новичок';
+                if (level >= 1) return 'Новичок';
+                return 'Начинающий';
+            }
+
+            // Achievements Bank Panel Functions
+            let currentSelectedLevel = 1;
+            let achievementsBankExpanded = false;
+
+            function toggleAchievementsBank() {
+                console.log('🏆 toggleAchievementsBank called');
+                const content = document.getElementById('achievementsBankPanelContent');
+                const toggle = document.getElementById('achievementsBankToggle');
+                
+                console.log('Content element:', content);
+                console.log('Toggle element:', toggle);
+                console.log('Current expanded state:', achievementsBankExpanded);
+                
+                if (achievementsBankExpanded) {
+                    content.style.display = 'none';
+                    toggle.classList.remove('expanded');
+                    achievementsBankExpanded = false;
+                    console.log('🏆 Bank collapsed');
+                } else {
+                    // Update achievements bank content
+                    console.log('🏆 Updating achievements bank content...');
+                    updateAchievementsBank();
+                    
+                    content.style.display = 'block';
+                    toggle.classList.add('expanded');
+                    achievementsBankExpanded = true;
+                    console.log('🏆 Bank expanded');
+                }
+            }
+
+            // Rewards Bank Panel Functions
+            let rewardsBankExpanded = false;
+
+            function toggleRewardsBank() {
+                console.log('🎁 toggleRewardsBank called');
+                const content = document.getElementById('rewardsBankPanelContent');
+                const toggle = document.getElementById('rewardsBankToggle');
+                
+                console.log('Content element:', content);
+                console.log('Toggle element:', toggle);
+                console.log('Current expanded state:', rewardsBankExpanded);
+                
+                if (rewardsBankExpanded) {
+                    content.style.display = 'none';
+                    toggle.classList.remove('expanded');
+                    rewardsBankExpanded = false;
+                    console.log('🎁 Rewards bank collapsed');
+                } else {
+                    // Update rewards bank content
+                    console.log('🎁 Updating rewards bank content...');
+                    updateRewardsBank();
+                    
+                    content.style.display = 'block';
+                    toggle.classList.add('expanded');
+                    rewardsBankExpanded = true;
+                    console.log('🎁 Rewards bank expanded');
+                    
+                    // Отладочная информация после открытия панели
+                    safeSetTimeout(() => {
+                        const container = document.getElementById('rewardsBankContent');
+                        if (container) {
+                            console.log('After panel opened:', {
+                                containerVisible: container.offsetParent !== null,
+                                containerScrollHeight: container.scrollHeight,
+                                containerClientHeight: container.clientHeight,
+                                containerMaxHeight: window.getComputedStyle(container).maxHeight,
+                                shouldShowScroll: container.scrollHeight > container.clientHeight
+                            });
+                        }
+                    }, 100);
+                }
+            }
+
+
+
+            // Simple test function to check if notifications work at all
+            function testSimpleNotification() {
+                console.log('🧪 Простой тест уведомления...');
+                
+                // Create a simple notification
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    z-index: 99999;
+                    background: red;
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    font-size: 20px;
+                    font-weight: bold;
+                `;
+                notification.textContent = 'ТЕСТ УВЕДОМЛЕНИЯ';
+                
+                document.body.appendChild(notification);
+                console.log('🧪 Простое уведомление добавлено в DOM');
+                
+                // Remove after 3 seconds
+                safeSetTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                        console.log('🧪 Простое уведомление удалено');
+                    }
+                }, 3000);
+            }
+
+
+
+            // Test function to simulate task completion and star earning
+            function testTaskCompletionWithStar() {
+                console.log('🎯 Тестируем выполнение задания с получением звезды...');
+                
+                // Simulate earning enough XP for a star
+                const testXP = 500; // Enough for 1 star
+                appState.progress.weeklyXP = testXP;
+                
+                console.log('⭐ Принудительно обновляем звезды...');
+                updateWeeklyStars();
+            }
+
+
+
+            // Test function to simulate level up and achievement
+            function testLevelUpAchievement() {
+                console.log('🎯 Тестируем повышение уровня и достижение...');
+                
+                // Simulate level up
+                const oldLevel = appState.progress.level;
+                appState.progress.level = 2;
+                appState.progress.lastCheckedLevel = oldLevel;
+                
+                console.log('🏆 Проверяем новые достижения...');
+                checkForNewAchievements();
+            }
+
+            // Test function to check achievement modal visibility
+            function testAchievementModalVisibility() {
+                console.log('🏆 ТЕСТ ВИДИМОСТИ МОДАЛЬНОГО ОКНА ДОСТИЖЕНИЯ');
+                console.log('==========================================');
+                
+                // Создаем тестовое модальное окно
+                const modalContent = `
+                    <div class="achievement-modal-overlay" id="testAchievementModal">
+                        <div class="achievement-modal-content">
+                            <div class="achievement-modal-header">
+                                <div class="achievement-modal-icon">🎉</div>
+                                <h2 class="achievement-modal-title">ТЕСТ ВИДИМОСТИ</h2>
+                            </div>
+                            <div class="achievement-modal-body">
+                                <div class="achievement-modal-achievement">
+                                    <div class="achievement-modal-achievement-icon">🧪</div>
+                                    <div class="achievement-modal-achievement-title">Тестовое достижение</div>
+                                    <div class="achievement-modal-achievement-level">Уровень 1 достигнут!</div>
+                                    <div class="achievement-modal-achievement-description">Это тест видимости модального окна</div>
+                                </div>
+                            </div>
+                            <div class="achievement-modal-footer">
+                                <button class="btn btn-primary" onclick="hideTestAchievementModal()">
+                                    Отлично! 🎉
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modalContent);
+                console.log('🏆 Тестовое модальное окно добавлено в DOM');
+                
+                // Добавляем класс show
+                safeSetTimeout(() => {
+                    const modal = document.getElementById('testAchievementModal');
+                    if (modal) {
+                        modal.classList.add('show');
+                        console.log('🏆 Класс show добавлен к модальному окну');
+                        
+                        // Проверяем computed styles
+                        const computedStyle = window.getComputedStyle(modal);
+                        console.log('🏆 Computed styles:', {
+                            position: computedStyle.position,
+                            zIndex: computedStyle.zIndex,
+                            opacity: computedStyle.opacity,
+                            visibility: computedStyle.visibility,
+                            display: computedStyle.display
+                        });
+                    } else {
+                        console.log('🏆 ОШИБКА: Модальное окно не найдено!');
+                    }
+                }, 100);
+            }
+
+            // Function to hide test achievement modal
+            function hideTestAchievementModal() {
+                const modal = document.getElementById('testAchievementModal');
+                if (modal) {
+                    modal.classList.remove('show');
+                    safeSetTimeout(() => {
+                        modal.remove();
+                        console.log('🏆 Тестовое модальное окно удалено');
+                    }, 300);
+                }
+            }
+
+            // Function to fix achievements HTML
+            function fixAchievementsHTML() {
+                console.log('🏆 Исправляем HTML достижений...');
+                
+                const container = document.getElementById('achievementsBankContent');
+                if (!container) {
+                    console.log('❌ Container not found!');
+                    return;
+                }
+                
+                // Clear container completely
+                container.innerHTML = '';
+                
+                // Re-render achievements
+                updateAchievementsBank();
+                
+                console.log('🏆 HTML достижений исправлен');
+            }
+
+            // Function to force open rewards panel
+            function forceOpenRewardsPanel() {
+                console.log('🎁 Принудительно открываем панель наград...');
+                
+                const content = document.getElementById('rewardsBankPanelContent');
+                const toggle = document.getElementById('rewardsBankToggle');
+                
+                if (content && toggle) {
+                    content.style.display = 'block';
+                    toggle.classList.add('expanded');
+                    rewardsBankExpanded = true;
+                    
+                    // Update content
+                    updateRewardsBank();
+                    
+                    console.log('🎁 Панель наград принудительно открыта');
+                } else {
+                    console.log('❌ Элементы панели наград не найдены');
+                }
+            }
+
+            // Test function to check achievements HTML generation
+            function testAchievementsHTML() {
+                console.log('🏆 ТЕСТ ГЕНЕРАЦИИ HTML ДОСТИЖЕНИЙ');
+                console.log('==================================');
+                
+                const container = document.getElementById('achievementsBankContent');
+                if (!container) {
+                    console.log('❌ Container not found!');
+                    return;
+                }
+                
+                // Test HTML generation
+                const testAchievement = {
+                    level: 1,
+                    title: '🌱 Первые шаги',
+                    description: 'Новичок в изучении английского языка.',
+                    icon: '🌱'
+                };
+                
+                const testHTML = `
+                    <div class="achievement-bank-item achieved">
+                        <div class="achievement-bank-icon">${testAchievement.icon}</div>
+                        <div class="achievement-bank-content">
+                            <div class="achievement-bank-title">${testAchievement.title}</div>
+                            <div class="achievement-bank-level">Уровень ${testAchievement.level}</div>
+                            <div class="achievement-bank-description">${testAchievement.description}</div>
+                        </div>
+                        <div class="achievement-bank-status">
+                            <span class="achievement-bank-status-achieved">✅ Получено</span>
+                        </div>
+                    </div>
+                `;
+                
+                console.log('Test HTML:', testHTML);
+                
+                // Clear container and add test HTML
+                container.innerHTML = testHTML;
+                
+                console.log('Container innerHTML after test:', container.innerHTML);
+                
+                // Check for "flex" text
+                if (container.innerHTML.includes('flex')) {
+                    console.log('❌ Found "flex" text in HTML!');
+                } else {
+                    console.log('✅ No "flex" text found in HTML');
+                }
+            }
+
+            // Test function to check rewards panel
+            function testRewardsPanel() {
+                console.log('🎁 ТЕСТ ПАНЕЛИ НАГРАД');
+                console.log('====================');
+                
+                const content = document.getElementById('rewardsBankPanelContent');
+                const toggle = document.getElementById('rewardsBankToggle');
+                
+                console.log('Content element:', content);
+                console.log('Toggle element:', toggle);
+                console.log('Current display style:', content ? content.style.display : 'element not found');
+                console.log('Current expanded state:', rewardsBankExpanded);
+                
+                if (content) {
+                    const computedStyle = window.getComputedStyle(content);
+                    console.log('Computed display:', computedStyle.display);
+                    console.log('Computed visibility:', computedStyle.visibility);
+                }
+                
+                // Test toggle
+                console.log('🎁 Тестируем переключение...');
+                toggleRewardsBank();
+                
+                safeSetTimeout(() => {
+                    console.log('After toggle - display style:', content.style.display);
+                    console.log('After toggle - expanded state:', rewardsBankExpanded);
+                }, 100);
+            }
+
+            // Test function to check notification visibility
+            function testNotificationVisibility() {
+                console.log('🔍 ТЕСТ ВИДИМОСТИ УВЕДОМЛЕНИЙ');
+                console.log('================================');
+                
+                // 1. Проверяем CSS стили
+                const testDiv = document.createElement('div');
+                testDiv.style.cssText = `
+                    position: fixed !important;
+                    top: 50% !important;
+                    left: 50% !important;
+                    transform: translate(-50%, -50%) !important;
+                    z-index: 99999 !important;
+                    background: red !important;
+                    color: white !important;
+                    padding: 20px !important;
+                    border-radius: 10px !important;
+                    font-size: 18px !important;
+                    font-weight: bold !important;
+                    pointer-events: auto !important;
+                `;
+                testDiv.textContent = 'ТЕСТ ВИДИМОСТИ - ВИДИТЕ ЛИ ВЫ ЭТО?';
+                testDiv.id = 'visibilityTest';
+                
+                document.body.appendChild(testDiv);
+                console.log('🔍 Тестовый элемент добавлен в DOM');
+                
+                // Проверяем computed styles
+                const computedStyle = window.getComputedStyle(testDiv);
+                console.log('🔍 Computed styles:', {
+                    position: computedStyle.position,
+                    zIndex: computedStyle.zIndex,
+                    opacity: computedStyle.opacity,
+                    transform: computedStyle.transform,
+                    pointerEvents: computedStyle.pointerEvents
+                });
+                
+                // Удаляем через 5 секунд
+                safeSetTimeout(() => {
+                    if (testDiv.parentNode) {
+                        testDiv.parentNode.removeChild(testDiv);
+                        console.log('🔍 Тестовый элемент удален');
+                    }
+                }, 5000);
+            }
+
+            // Test function to verify star system across all weeks
+            function testStarSystemComprehensive() {
+                console.log('⭐ ТЕСТ СИСТЕМЫ ЗВЕЗД - ПОЛНАЯ ПРОВЕРКА');
+                console.log('=====================================');
+                
+                // 1. Проверяем текущее состояние
+                console.log('📊 Текущее состояние:');
+                console.log('- Общий XP:', appState.progress.totalXP);
+                console.log('- Текущий уровень:', appState.progress.level);
+                console.log('- Недельный XP:', appState.progress.weeklyXP);
+                console.log('- Звезды за неделю:', appState.progress.weeklyStars);
+                console.log('- Банк звезд:', appState.progress.starBank);
+                
+                // 2. Проверяем данные по неделям
+                console.log('📅 Данные по неделям:');
+                if (appState.weeklyData) {
+                    for (const [weekKey, weekData] of Object.entries(appState.weeklyData)) {
+                        const stars = calculateWeeklyStars(weekData.xp);
+                        console.log(`- ${weekKey}: ${weekData.xp} XP, ${stars} звезд`);
+                    }
+                } else {
+                    console.log('- Нет данных по неделям');
+                }
+                
+                // 3. Проверяем активность
+                console.log('📝 Активность:');
+                const dates = Object.keys(appState.activityData).sort();
+                console.log('- Всего дней с активностью:', dates.length);
+                for (const date of dates.slice(0, 5)) { // Показываем первые 5 дней
+                    const logs = appState.activityData[date];
+                    const dayXP = logs.reduce((sum, log) => sum + (log.xpEarned || 0), 0);
+                    const weekKey = getWeekStartKey(new Date(date));
+                    console.log(`  ${date}: ${dayXP} XP (неделя: ${weekKey})`);
+                }
+                
+                // 4. Проверяем награды
+                console.log('🎁 Награды:');
+                console.log('- Всего наград:', appState.rewards.length);
+                const totalStarsSpent = appState.rewards.reduce((sum, reward) => sum + (reward.starsUsed || 0), 0);
+                console.log('- Звезд потрачено:', totalStarsSpent);
+                
+                // 5. Пересчитываем все
+                console.log('🔄 Выполняем полный пересчет...');
+                recalculateAllProgress();
+                
+                // 6. Проверяем результат
+                console.log('✅ Результат пересчета:');
+                console.log('- Общий XP:', appState.progress.totalXP);
+                console.log('- Текущий уровень:', appState.progress.level);
+                console.log('- Недельный XP:', appState.progress.weeklyXP);
+                console.log('- Звезды за неделю:', appState.progress.weeklyStars);
+                console.log('- Банк звезд:', appState.progress.starBank);
+                
+                console.log('=====================================');
+                console.log('⭐ ТЕСТ ЗАВЕРШЕН');
+            }
+
+
+
+            // Function to delete a reward (admin only)
+            function deleteReward(rewardId) {
+                // Check if user is admin
+                if (appState.role !== 'admin') {
+                    showNotification('Только администратор может удалять награды', 'error');
+                    return;
+                }
+                
+                // Find the reward
+                const rewardIndex = appState.rewards.findIndex(r => r.id === rewardId);
+                if (rewardIndex === -1) {
+                    showNotification('Награда не найдена', 'error');
+                    return;
+                }
+                
+                const reward = appState.rewards[rewardIndex];
+                
+                // Show confirmation dialog
+                const confirmMessage = `Удалить награду "${reward.description}"?\n\nЭто действие нельзя отменить.`;
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+                
+                // Store stars that will be returned
+                const starsReturned = reward.starsUsed || 0;
+                
+                // Remove reward from array
+                appState.rewards.splice(rewardIndex, 1);
+                
+                console.log('🗑️ Награда удалена:', reward);
+                console.log('⭐ Звезд возвращено в банк:', starsReturned);
+                
+                // Recalculate all progress
+                recalculateAllProgress();
+                
+                // Update all displays
+                updateProgressDisplay();
+                updateBestWeekDisplay();
+                updateRedeemControls();
+                updateProgressWeekSection();
+                updateMonthlyProgressSection();
+                updateWeeklyStars();
+                updateLearningTimeDisplay();
+                
+                // Update rewards bank
+                updateRewardsBank();
+                
+                // Update achievements bank
+                updateAchievementsBank();
+                
+                // Show success notification
+                showNotification(`Награда "${reward.description}" удалена! ${starsReturned} ⭐ возвращено в банк. Все показатели пересчитаны.`, 'success');
+                
+                // Auto-save to Firebase
+                safeSetTimeout(() => {
+                    saveDataToFirebaseSilent();
+                }, 1000);
+            }
+
+            function updateRewardsBank() {
+                console.log('🎁 updateRewardsBank called');
+                const container = document.getElementById('rewardsBankContent');
+                const state = getEffectiveState();
+                const rewards = state.rewards || [];
+                
+                console.log('Container element:', container);
+                console.log('Rewards count:', rewards.length);
+                console.log('Sample reward:', rewards[0]);
+                
+                if (container) {
+                    console.log('Container computed styles:', {
+                        maxHeight: window.getComputedStyle(container).maxHeight,
+                        height: window.getComputedStyle(container).height,
+                        overflowY: window.getComputedStyle(container).overflowY,
+                        scrollHeight: container.scrollHeight,
+                        clientHeight: container.clientHeight
+                    });
+                }
+                
+                if (!container) {
+                    console.log('❌ Rewards container not found!');
+                    return;
+                }
+                
+                // Calculate statistics
+                const rewardsCount = rewards.length;
+                const totalStarsSpent = rewards.reduce((sum, reward) => sum + (reward.starsUsed || 0), 0);
+                const lastRewardDate = rewards.length > 0 ? 
+                    (() => {
+                        const date = new Date(rewards[rewards.length - 1].redeemedAt);
+                        return isNaN(date.getTime()) ? '—' : 
+                            date.toLocaleDateString('ru-RU', {
+                                day: '2-digit',
+                                month: '2-digit'
+                            });
+                    })() : '—';
+                
+                // Update summary
+                document.getElementById('rewardsReceived').textContent = rewardsCount;
+                document.getElementById('totalStarsSpent').textContent = totalStarsSpent;
+                document.getElementById('lastRewardDate').textContent = lastRewardDate;
+                
+                // Render rewards
+                if (rewards.length === 0) {
+                    container.innerHTML = `
+                        <div class="rewards-bank-empty">
+                            <div class="rewards-bank-empty-icon">🎁</div>
+                            <div class="rewards-bank-empty-title">Пока нет полученных наград</div>
+                            <div class="rewards-bank-empty-description">
+                                Придумайте награду и получите её, накопив достаточно звёзд!
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Sort rewards by date (newest first)
+                const sortedRewards = rewards.sort((a, b) => new Date(b.redeemedAt) - new Date(a.redeemedAt));
+                
+                container.innerHTML = sortedRewards.map(reward => {
+                    const date = new Date(reward.redeemedAt);
+                    const formattedDate = isNaN(date.getTime()) ? 'Дата неизвестна' : 
+                        date.toLocaleDateString('ru-RU', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        });
+                    
+                    return `
+                        <div class="reward-bank-item">
+                            <div class="reward-bank-icon">${reward.icon || '🎁'}</div>
+                            <div class="reward-bank-content">
+                                <div class="reward-bank-title">${reward.description}</div>
+                                <div class="reward-bank-description">Награда получена</div>
+                                <div class="reward-bank-meta">
+                                    <div class="reward-bank-date">${formattedDate}</div>
+                                    <div class="reward-bank-stars">${reward.starsUsed} ⭐</div>
+                                </div>
+                            </div>
+                            ${appState.role === 'admin' ? `
+                                <div class="reward-bank-actions">
+                                    <button class="reward-delete-btn" onclick="deleteReward(${reward.id})" title="Удалить награду">
+                                        🗑️
+                                    </button>
+                                </div>
+                            ` : ''}
                         </div>
                     `;
                 }).join('');
                 
-                container.innerHTML = `
-                    <div style="display: flex; align-items: end; gap: 4px; height: 100%; padding: 16px;">
-                        ${bars}
-                    </div>
-                `;
+                // Отладочная информация после рендеринга
+                console.log('After rendering rewards:', {
+                    rewardsCount: sortedRewards.length,
+                    containerScrollHeight: container.scrollHeight,
+                    containerClientHeight: container.clientHeight,
+                    containerMaxHeight: window.getComputedStyle(container).maxHeight,
+                    shouldShowScroll: container.scrollHeight > container.clientHeight
+                });
             }
 
-            function renderAchievementCharts() {
-                updateMilestones();
-                updateRecords();
-                renderComparisonChart();
+            function changeAchievementLevel(direction) {
+                const newLevel = currentSelectedLevel + direction;
+                if (newLevel >= 1 && newLevel <= 100) {
+                    updateAchievementLevel(newLevel);
+                }
             }
 
-            function updatePerformanceStats() {
-                const analytics = computeAnalyticsData();
-
-
-            }
-
-            function updatePredictions() {
-                const analytics = computeAnalyticsData();
-                document.getElementById('timeToMax').textContent = typeof analytics.weeksToMax === 'number' ? `${analytics.weeksToMax} недель` : analytics.weeksToMax;
-                document.getElementById('nextStarTime').textContent = analytics.nextStarXP;
-                const monthlyXP = analytics.avgXpPerDay * 30;
-                const monthlyProgress = Math.min(100, (monthlyXP / 1000) * 100);
-                document.getElementById('monthlyGoal').textContent = `${monthlyProgress.toFixed(0)}%`;
+            function updateAchievementLevel(level) {
+                currentSelectedLevel = parseInt(level);
+                
+                // Update level display
+                document.getElementById('selectedLevelNumber').textContent = currentSelectedLevel;
+                document.getElementById('levelRangeSlider').value = currentSelectedLevel;
+                
+                // Update navigation buttons
+                document.getElementById('prevLevelBtn').disabled = currentSelectedLevel <= 1;
+                document.getElementById('nextLevelBtn').disabled = currentSelectedLevel >= 100;
+                
+                // Get achievement for this level
+                const achievement = getAchievementForLevel(currentSelectedLevel);
+                const state = getEffectiveState();
+                const currentLevel = state.progress.level;
+                
+                // Update achievement display
+                const displayContainer = document.getElementById('achievementDisplay');
+                const progressInfo = document.getElementById('achievementProgressInfo');
+                
+                if (achievement) {
+                    const isAchieved = currentLevel >= currentSelectedLevel;
+                    
+                    displayContainer.innerHTML = `
+                        <div class="achievement-display-icon">${achievement.icon}</div>
+                        <div class="achievement-display-title">${achievement.title}</div>
+                        <div class="achievement-display-description">${achievement.description}</div>
+                    `;
+                    
+                    // Update progress info
+                    if (isAchieved) {
+                        progressInfo.innerHTML = `
+                            <h5>✅ Достижение получено!</h5>
+                            <p>Вы достигли ${currentSelectedLevel} уровня и получили это достижение.</p>
+                        `;
+                    } else {
+                        const xpNeeded = (currentSelectedLevel - 1) * 810;
+                        const currentXP = state.progress.totalXP;
+                        const xpRemaining = Math.max(0, xpNeeded - currentXP);
+                        
+                        progressInfo.innerHTML = `
+                            <h5>🔒 Достижение заблокировано</h5>
+                            <p>Для получения этого достижения нужно достичь ${currentSelectedLevel} уровня.</p>
+                            <p>Осталось набрать: <strong>${xpRemaining} XP</strong></p>
+                        `;
+                    }
+                } else {
+                    displayContainer.innerHTML = `
+                        <div class="achievement-display-icon">❓</div>
+                        <div class="achievement-display-title">Достижение не найдено</div>
+                        <div class="achievement-display-description">Для этого уровня пока нет специального достижения.</div>
+                    `;
+                    
+                    progressInfo.innerHTML = `
+                        <h5>📈 Обычный уровень</h5>
+                        <p>Этот уровень не имеет специального достижения, но является важной частью вашего прогресса.</p>
+                    `;
+                }
             }
 
             function updateMilestones() {
                 const container = document.getElementById('milestonesContent');
                 const state = getEffectiveState();
-                const milestones = [
-                    { level: 10, achieved: state.progress.level >= 10, title: 'Первые 10 уровней' },
-                    { level: 25, achieved: state.progress.level >= 25, title: 'Четверть пути' },
-                    { level: 50, achieved: state.progress.level >= 50, title: 'Половина пути' },
-                    { level: 75, achieved: state.progress.level >= 75, title: 'Три четверти' },
-                    { level: 100, achieved: state.progress.level >= 100, title: 'Максимальный уровень' }
+                const currentLevel = state.progress.level;
+                
+                // Создаем массив достижений на основе уровней изучения английского языка
+                const achievements = [
+                    // Уровни 1-5 (каждый уровень)
+                    { level: 1, achieved: currentLevel >= 1, title: '🌱 Первые шаги', description: 'Новичок в изучении английского языка. Начало увлекательного путешествия!' },
+                    { level: 2, achieved: currentLevel >= 2, title: '📚 Ученик', description: 'Осваиваете основы английского языка. Каждый день приносит новые знания!' },
+                    { level: 3, achieved: currentLevel >= 3, title: '🎯 Целеустремленный', description: 'Показываете стабильный прогресс в изучении языка. Продолжайте в том же духе!' },
+                    { level: 4, achieved: currentLevel >= 4, title: '💪 Упорный', description: 'Демонстрируете настойчивость в изучении английского. Результат не заставит себя ждать!' },
+                    { level: 5, achieved: currentLevel >= 5, title: '⭐ Уверенный новичок', description: 'Преодолели первые трудности! Теперь вы уверенно чувствуете себя в основах языка.' },
+                    
+                    // Уровни каждые 5 (10, 15, 20, 25...)
+                    { level: 10, achieved: currentLevel >= 10, title: '🚀 Активный изучающий', description: 'Достигли 10 уровня! Ваш английский становится все более уверенным.' },
+                    { level: 15, achieved: currentLevel >= 15, title: '🎓 Уверенный пользователь', description: '15 уровень покорен! Вы можете уверенно общаться на базовые темы.' },
+                    { level: 20, achieved: currentLevel >= 20, title: '🌟 Продвинутый ученик', description: '20 уровень! Ваши знания английского языка становятся глубокими и прочными.' },
+                    { level: 25, achieved: currentLevel >= 25, title: '💎 Опытный знаток', description: 'Четверть пути пройдена! Вы владеете английским на хорошем уровне.' },
+                    { level: 30, achieved: currentLevel >= 30, title: '🏆 Мастер слова', description: '30 уровень! Ваш английский позволяет свободно выражать мысли.' },
+                    { level: 35, achieved: currentLevel >= 35, title: '🎭 Лингвистический артист', description: '35 уровень! Вы владеете языком с художественной точностью.' },
+                    { level: 40, achieved: currentLevel >= 40, title: '🧠 Языковой гений', description: '40 уровень! Ваше понимание английского языка поражает глубиной.' },
+                    { level: 45, achieved: currentLevel >= 45, title: '👑 Король английского', description: '45 уровень! Вы достигли высот в изучении языка.' },
+                    { level: 50, achieved: currentLevel >= 50, title: '🎪 Половина пути к совершенству', description: '50 уровень! Половина пути пройдена. Вы на правильном пути к мастерству!' },
+                    { level: 55, achieved: currentLevel >= 55, title: '🌟 Звезда лингвистики', description: '55 уровень! Ваши знания английского сияют ярко.' },
+                    { level: 60, achieved: currentLevel >= 60, title: '🎯 Снайпер языка', description: '60 уровень! Вы попадаете в цель каждым словом.' },
+                    { level: 65, achieved: currentLevel >= 65, title: '⚡ Молния в изучении', description: '65 уровень! Ваш прогресс молниеносен и впечатляющ.' },
+                    { level: 70, achieved: currentLevel >= 70, title: '🔥 Огненный мастер', description: '70 уровень! Ваше владение языком пылает страстью и мастерством.' },
+                    { level: 75, achieved: currentLevel >= 75, title: '🎨 Художник слова', description: '75 уровень! Вы создаете шедевры из английских слов.' },
+                    { level: 80, achieved: currentLevel >= 80, title: '🏅 Чемпион английского', description: '80 уровень! Вы чемпион в изучении английского языка.' },
+                    { level: 85, achieved: currentLevel >= 85, title: '🎪 Виртуоз языка', description: '85 уровень! Ваше владение английским виртуозно.' },
+                    { level: 90, achieved: currentLevel >= 90, title: '👑 Император лингвистики', description: '90 уровень! Вы правите миром английского языка.' },
+                    { level: 95, achieved: currentLevel >= 95, title: '🌟 Божественный оратор', description: '95 уровень! Ваша речь божественно красива и точна.' },
+                    { level: 100, achieved: currentLevel >= 100, title: '🏆 Богоподобный уровень', description: '100 уровень! Вы достигли богоподобного мастерства в английском языке!' }
                 ];
                 
-                container.innerHTML = milestones.map(m => `
-                    <div class="stat-row">
-                        <span class="stat-label">${m.title}</span>
-                        <span class="stat-value" style="color: ${m.achieved ? '#059669' : '#94a3b8'};">
-                            ${m.achieved ? '✓ Получено' : `Уровень ${m.level}`}
-                        </span>
+                // Фильтруем достижения, которые нужно показать (достигнутые + следующие 2)
+                const achievedCount = achievements.filter(a => a.achieved).length;
+                const visibleAchievements = achievements.slice(0, Math.max(achievedCount + 2, 3));
+                
+                container.innerHTML = visibleAchievements.map(achievement => `
+                    <div class="achievement-item ${achievement.achieved ? 'achieved' : 'locked'}">
+                        <div class="achievement-icon">${achievement.achieved ? '✅' : '🔒'}</div>
+                        <div class="achievement-content">
+                            <div class="achievement-title">${achievement.title}</div>
+                            <div class="achievement-level">Уровень ${achievement.level}</div>
+                            <div class="achievement-description">${achievement.description}</div>
+                        </div>
+                        <div class="achievement-status">
+                            ${achievement.achieved ? 
+                                '<span class="status-achieved">Получено</span>' : 
+                                `<span class="status-locked">${currentLevel}/${achievement.level}</span>`
+                            }
+                        </div>
                     </div>
                 `).join('');
             }
 
             function updateRecords() {
-                const analytics = computeAnalyticsData();
+
 
 
             }
 
             // Stub functions for charts that would need more complex implementation
-            function renderMonthlyChart() {
-                const container = document.getElementById('monthlyXpChart');
-                if (!container) return;
-                const state = getEffectiveState();
-                const activity = state.activityData || {};
-                const byMonth = {};
-                Object.keys(activity).forEach(d => {
-                    const [y,m] = d.split('-');
-                    const key = `${y}-${m}`;
-                    const sum = activity[d].reduce((s,l)=>s+(l.xpEarned||0),0);
-                    byMonth[key] = (byMonth[key]||0)+sum;
-                });
-                const keys = Object.keys(byMonth).sort().slice(-12);
-                const maxXP = Math.max(100, ...keys.map(k => byMonth[k]));
-                const bars = keys.map(k => {
-                    const xp = byMonth[k];
-                    const h = Math.max(4, Math.round((xp/maxXP)*100));
-                    const label = k.split('-')[1]+'.'+k.split('-')[0].slice(2);
-                    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;">
-                        <div style="font-size:0.75rem;color:#64748b;margin-bottom:4px;">${xp}</div>
-                        <div style="width:20px;background:linear-gradient(to top,#8b5cf6,#a78bfa);height:${h}%;border-radius:2px;"></div>
-                        <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">${label}</div>
-                    </div>`;
-                }).join('');
-                container.innerHTML = `<div style="display:flex;align-items:end;gap:8px;height:100%;padding:16px;">${bars}</div>`;
-            }
-            function renderTaskDistribution() {
-                const container = document.getElementById('taskDistributionChart');
-                if (!container) return;
-                const state = getEffectiveState();
-                const activity = state.activityData || {};
-                const counts = {};
-                Object.keys(activity).forEach(d => {
-                    (activity[d]||[]).forEach(l => {
-                        const cat = l.category || inferCategoryFromTaskName(l.taskName) || 'other';
-                        counts[cat] = (counts[cat]||0) + 1;
-                    });
-                });
-                const total = Object.values(counts).reduce((a,b)=>a+b,0) || 1;
-                const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
-                const colors = ['#ec4899','#f59e0b','#10b981','#3b82f6','#8b5cf6'];
-                const rows = entries.map(([cat, n], idx) => {
-                    const pct = Math.round((n/total)*100);
-                    return `<div style="width:100%;margin:6px 0;">
-                        <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#64748b;">
-                            <span>${mapCategoryTitle(cat)}</span><span>${pct}%</span>
-                        </div>
-                        <div style="height:10px;background:#e5e7eb;border-radius:6px;overflow:hidden;">
-                            <div style="width:${pct}%;height:100%;background:${colors[idx%colors.length]};"></div>
-                        </div>
-                    </div>`;
-                }).join('');
-                container.innerHTML = `<div style="padding:8px 4px;">${rows || '<div style=\"color:#94a3b8;text-align:center\">Нет данных</div>'}</div>`;
-            }
-            function inferCategoryFromTaskName(name) {
-                const n = (name||'').toLowerCase();
-                if (n.includes('слов')) return 'vocabulary';
-                if (n.includes('граммат')) return 'grammar';
-                if (n.includes('аудир')) return 'listening';
-                if (n.includes('чтен')) return 'reading';
-                if (n.includes('разговор')) return 'speaking';
-                return null;
-            }
-            function mapCategoryTitle(cat) {
-                const map = { vocabulary: 'Слова', grammar: 'Грамматика', listening: 'Аудирование', reading: 'Чтение', speaking: 'Разговор', other: 'Другое' };
-                return map[cat] || cat;
-            }
-            function renderLevelTimeline() {
-                const container = document.getElementById('levelTimelineChart');
-                if (!container) return;
-                const state = getEffectiveState();
-                // approximate weekly levels over last 12 weeks
-                const analytics = computeAnalyticsData();
-                const weeks = Object.keys(analytics.weeklyData).sort().slice(-12);
-                let cumulative = Math.max(1, state.progress.level - weeks.length);
-                const items = weeks.map((w,i)=>{
-                    const inc = Math.max(0, Math.floor(analytics.weeklyData[w].xp / 810));
-                    cumulative = Math.min(100, cumulative + inc);
-                    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;">
-                        <div style="font-size:0.75rem;color:#64748b;margin-bottom:4px;">Lv.${cumulative}</div>
-                        <div style="width:24px;height:24px;background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:6px;"></div>
-                        <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">Н${i+1}</div>
-                    </div>`;
-                }).join('');
-                container.innerHTML = `<div style="display:flex;align-items:end;gap:8px;height:100%;padding:16px;">${items}</div>`;
-            }
-            function renderSessionsChart() {
-                const container = document.getElementById('sessionsChart');
-                if (!container) return;
-                const state = getEffectiveState();
-                const today = new Date();
-                const days = [];
-                for (let i=29;i>=0;i--) {
-                    const d = new Date(today); d.setDate(d.getDate()-i);
-                    const key = formatDate(d);
-                    const sessions = (state.activityData[key]||[]).length;
-                    days.push({ key, sessions });
-                }
-                const max = Math.max(1, ...days.map(d=>d.sessions));
-                const bars = days.map(d=>{
-                    const h = Math.round((d.sessions/max)*100);
-                    return `<div title="${d.key}: ${d.sessions}" style="width:10px;background:linear-gradient(to top,#059669,#10b981);height:${Math.max(4,h)}%;border-radius:2px;"></div>`;
-                }).join('');
-                container.innerHTML = `<div style="display:flex;align-items:end;gap:2px;height:100%;padding:8px 12px;">${bars}</div>`;
-            }
-            function renderComparisonChart() {
-                const container = document.getElementById('comparisonChart');
-                if (!container) return;
-                const analytics = computeAnalyticsData();
-                const weeks = Object.keys(analytics.weeklyData).sort();
-                const last8 = weeks.slice(-8);
-                const prev4 = last8.slice(0,4);
-                const last4 = last8.slice(4);
-                const maxXP = Math.max(100, ...last8.map(w=>analytics.weeklyData[w].xp));
-                const makeBars = (arr, color) => arr.map(w=>{
-                    const xp = analytics.weeklyData[w].xp;
-                    const h = Math.round((xp/maxXP)*100);
-                    return `<div style="width:18px;background:${color};height:${Math.max(4,h)}%;border-radius:2px;" title="${w}: ${xp}"></div>`;
-                }).join('');
-                container.innerHTML = `
-                    <div style="display:flex;align-items:end;gap:16px;height:100%;padding:12px 16px;">
-                        <div style="display:flex;align-items:end;gap:6px;">${makeBars(prev4,'#94a3b8')}</div>
-                        <div style="display:flex;align-items:end;gap:6px;">${makeBars(last4,'#1e40af')}</div>
-                    </div>
-                `;
-            }
 
-            // Demo toggle UI
-            function toggleDemoAnalytics() {
-                appState.demoAnalytics = appState.demoAnalytics || { enabled: false };
-                appState.demoAnalytics.enabled = !appState.demoAnalytics.enabled;
-                if (appState.demoAnalytics.enabled) {
-                    demoStateCache = buildDemoState();
-                } else {
-                    demoStateCache = null;
-                }
-                // Update UI controls
-                const badge = document.getElementById('demoBadge');
-                const btn = document.getElementById('toggleDemoBtn');
-                if (badge) badge.style.display = appState.demoAnalytics.enabled ? 'inline-flex' : 'none';
-                if (btn) btn.textContent = appState.demoAnalytics.enabled ? 'Выключить демо' : 'Демо';
-                // Re-render current analytics tab
-                calculateAnalytics();
-                renderProgressCharts();
-                renderPatternCharts();
-                renderAchievementCharts();
-            }
 
-            // Initialize app when page loads
-            document.addEventListener("DOMContentLoaded", initApp);
+
+
+
+
+
+
+
+
+            // Initialize app when page loads (removed duplicate)
 
             // Network status handlers
             window.addEventListener('online', () => {
@@ -4113,7 +5099,7 @@
                 showNotification(appState.userName === 'Михаил' ? 'Режим Михаила' : 'Режим администратора', 'info');
                 
                 // Автоматически сохраняем в Firebase после смены учетной записи
-                setTimeout(() => {
+                safeSetTimeout(() => {
                     saveDataToFirebaseSilent();
                 }, 1000);
             }
@@ -4542,7 +5528,7 @@
                         showNotification('Вход выполнен успешно! Все показатели пересчитаны.', 'success');
                         
                         // Автоматически сохраняем в Firebase после успешного входа
-                        setTimeout(() => {
+                        safeSetTimeout(() => {
                             saveDataToFirebaseSilent();
                         }, 1000);
                         
@@ -4615,7 +5601,7 @@
                     applyRolePermissions();
                     
                     // Автоматически сохраняем в Firebase после установки PIN-кода
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveDataToFirebaseSilent();
                     }, 1000);
                     
@@ -5034,7 +6020,7 @@
                         saveBtn.classList.add('success');
                         
                         // Reset to normal state after 2 seconds
-                        setTimeout(() => {
+                        safeSetTimeout(() => {
                             saveBtn.classList.remove('success');
                         }, 2000);
                         
@@ -5045,7 +6031,7 @@
                         saveBtn.classList.add('error');
                         
                         // Reset to normal state after 3 seconds
-                        setTimeout(() => {
+                        safeSetTimeout(() => {
                             saveBtn.classList.remove('error');
                         }, 3000);
                         
@@ -5057,7 +6043,7 @@
                     saveBtn.classList.add('error');
                     
                     // Reset to normal state after 3 seconds
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         saveBtn.classList.remove('error');
                     }, 3000);
                     
@@ -5127,6 +6113,19 @@
                         resetDate: appState.resetDate ? appState.resetDate.toISOString() : null,
                         currentMonth: appState.currentMonth ? appState.currentMonth.toISOString() : null,
                         selectedDate: appState.selectedDate ? appState.selectedDate.toISOString() : null,
+                        
+                        // Настройки бэкапов (ВАЖНО!)
+                        backupSettings: appState.backupSettings || {
+                            autoBackup: true,
+                            backupFrequency: 'daily',
+                            maxBackups: 7,
+                            lastBackup: null,
+                            nextBackup: null,
+                            backupTypes: {
+                                scheduled: true,
+                                manual: true
+                            }
+                        },
                         
                         // Метаданные
                         lastUpdated: new Date().toISOString(),
@@ -5235,25 +6234,43 @@
                 console.log('🔧 Восстанавливаем типы данных...');
                 
                 // Функция для безопасного создания Date объекта
-                function safeStringToDate(dateString) {
-                    if (!dateString) return null;
+                function safeStringToDate(dateValue) {
+                    if (!dateValue) return null;
                     
                     try {
-                        const date = new Date(dateString);
-                        if (!isNaN(date.getTime())) {
+                        // Если это Firebase Timestamp объект
+                        if (dateValue && typeof dateValue.toDate === 'function') {
+                            const date = dateValue.toDate();
+                            console.log('🔄 Firebase Timestamp преобразован в Date:', date);
                             return date;
-                        } else {
-                            console.warn('⚠️ Некорректная строка даты:', dateString);
-                            return null;
                         }
+                        
+                        // Если это строка
+                        if (typeof dateValue === 'string') {
+                            const date = new Date(dateValue);
+                            if (!isNaN(date.getTime())) {
+                                return date;
+                            } else {
+                                console.warn('⚠️ Некорректная строка даты:', dateValue);
+                                return null;
+                            }
+                        }
+                        
+                        // Если это уже Date объект
+                        if (dateValue instanceof Date) {
+                            return dateValue;
+                        }
+                        
+                        console.warn('⚠️ Неизвестный тип даты:', typeof dateValue, dateValue);
+                        return null;
                     } catch (error) {
-                        console.warn('⚠️ Ошибка при создании Date из строки:', dateString, error);
+                        console.warn('⚠️ Ошибка при создании Date:', dateValue, error);
                         return null;
                     }
                 }
                 
                 // Restore Date objects
-                if (restored.currentMonth && typeof restored.currentMonth === 'string') {
+                if (restored.currentMonth) {
                     const date = safeStringToDate(restored.currentMonth);
                     if (date) {
                         restored.currentMonth = date;
@@ -5264,7 +6281,7 @@
                     }
                 }
                 
-                if (restored.selectedDate && typeof restored.selectedDate === 'string') {
+                if (restored.selectedDate) {
                     const date = safeStringToDate(restored.selectedDate);
                     if (date) {
                         restored.selectedDate = date;
@@ -5275,7 +6292,7 @@
                     }
                 }
                 
-                if (restored.resetDate && typeof restored.resetDate === 'string') {
+                if (restored.resetDate) {
                     const date = safeStringToDate(restored.resetDate);
                     if (date) {
                         restored.resetDate = date;
@@ -5292,7 +6309,7 @@
                     Object.keys(restored.activityData).forEach(dateStr => {
                         if (restored.activityData[dateStr] && Array.isArray(restored.activityData[dateStr])) {
                             restored.activityData[dateStr].forEach(activity => {
-                                if (activity.completedAt && typeof activity.completedAt === 'string') {
+                                if (activity.completedAt) {
                                     const date = safeStringToDate(activity.completedAt);
                                     if (date) {
                                         activity.completedAt = date;
@@ -5481,6 +6498,12 @@
                             pinCodes: appState.pinCodes // Сохраняем PIN-коды локально
                         };
                         
+                        // Сохраняем настройки бэкапов, если они есть в загруженных данных
+                        if (restoredData.backupSettings) {
+                            console.log('🔄 Загружаем настройки бэкапов из Firebase:', restoredData.backupSettings);
+                            localSettings.backupSettings = restoredData.backupSettings;
+                        }
+                        
                         // Обновляем локальное состояние
                         appState = { ...appState, ...restoredData, ...localSettings };
                         
@@ -5509,6 +6532,7 @@
                         updateProgressWeekSection();
                         updateMonthlyProgressSection();
                         updateWeeklyStars();
+                        updateAchievementsBank();
                         
                         // 3. Проверяем, что все показатели обновлены
                         console.log('✅ Данные успешно загружены из Firebase, все показатели пересчитаны');
@@ -5566,7 +6590,7 @@
                         // Экспоненциальная задержка между попытками
                         const waitTime = delay * Math.pow(2, attempt - 1);
                         console.log(`⏳ Ожидание ${waitTime}ms перед следующей попыткой...`);
-                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                        await new Promise(resolve => safeSetTimeout(resolve, waitTime));
                     }
                 }
             }
@@ -5722,7 +6746,6 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <h3>📥 Общие данные загружены из Firebase</h3>
-                            <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
                         </div>
                         <div class="modal-body">
                             <div class="load-details">
@@ -5752,8 +6775,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-primary" onclick="this.closest('.modal').remove()">OK</button>
+                        <div class="modal-footer centered">
+                            <button class="btn btn-primary" onclick="this.closest('.modal').remove()">ОК</button>
                         </div>
                     </div>
                 `;
@@ -5874,7 +6897,6 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <h3>🔄 Синхронизация завершена</h3>
-                            <button class="modal-close" onclick="this.closest('.modal').remove()">×</button>
                         </div>
                         <div class="modal-body">
                             <div class="sync-summary">
@@ -5904,8 +6926,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-primary" onclick="this.closest('.modal').remove()">OK</button>
+                        <div class="modal-footer centered">
+                            <button class="btn btn-primary" onclick="this.closest('.modal').remove()">Продолжить</button>
                         </div>
                     </div>
                 `;
@@ -5958,7 +6980,7 @@
                 
                 // Автоматически скрываем через 3 секунды для успешных статусов
                 if (status === 'success') {
-                    setTimeout(() => {
+                    safeSetTimeout(() => {
                         if (indicator.parentNode) {
                             indicator.remove();
                         }
@@ -6173,7 +7195,7 @@
                                 <p>Теперь вы можете работать с последними сохраненными данными.</p>
                             </div>
                         </div>
-                        <div class="modal-footer">
+                        <div class="modal-footer centered">
                             <button class="btn btn-primary" onclick="closeFirstTimeSyncModal()">Продолжить</button>
                         </div>
                     </div>
@@ -6569,4 +7591,1068 @@
             
             // Глобальные функции для верификации
             window.showVerificationAfterSync = showVerificationAfterSync;
+
+            // ===== NOTIFICATION SYSTEM =====
+            
+            // Notification queue management
+            let notificationQueue = [];
+            let isProcessingQueue = false;
+
+            // Create and show popup notification
+            function showPopupNotification(type, title, message, icon, onClose) {
+                console.log('🔔 showPopupNotification called:', { type, title, message, icon });
+                
+                const notificationId = Date.now() + Math.random();
+                const notification = {
+                    id: notificationId,
+                    type: type, // 'star' or 'achievement'
+                    title: title,
+                    message: message,
+                    icon: icon,
+                    onClose: onClose || (() => {}),
+                    element: null
+                };
+
+                console.log('🔔 Adding notification to queue:', notification);
+                
+                // Add to queue
+                notificationQueue.push(notification);
+                console.log('🔔 Queue length after adding:', notificationQueue.length);
+
+                // Process queue if not already processing
+                if (!isProcessingQueue) {
+                    console.log('🔔 Processing queue...');
+                    processNotificationQueue();
+                } else {
+                    console.log('🔔 Queue already processing, waiting...');
+                }
+
+                return notificationId;
+            }
+
+            // Process notification queue
+            function processNotificationQueue() {
+                console.log('🔔 processNotificationQueue called, queue length:', notificationQueue.length);
+                
+                if (notificationQueue.length === 0) {
+                    console.log('🔔 Queue is empty, stopping processing');
+                    isProcessingQueue = false;
+                    return;
+                }
+
+                isProcessingQueue = true;
+                const notification = notificationQueue.shift();
+                console.log('🔔 Processing notification:', notification);
+                createNotificationElement(notification);
+            }
+
+            // Create notification DOM element
+            function createNotificationElement(notification) {
+                console.log('🔔 createNotificationElement called for:', notification);
+                
+                // Create notification element directly in body (bypass container issues)
+                const notificationEl = document.createElement('div');
+                notificationEl.className = `popup-notification ${notification.type}-notification`;
+                notificationEl.setAttribute('data-notification-id', notification.id);
+                
+                // Set all styles inline to ensure they work - centered modal style
+                notificationEl.style.cssText = `
+                    position: fixed !important;
+                    top: 50% !important;
+                    left: 50% !important;
+                    transform: translate(-50%, -50%) scale(0.8) !important;
+                    z-index: 99999 !important;
+                    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%) !important;
+                    border: 3px solid #3b82f6 !important;
+                    border-radius: 20px !important;
+                    padding: 40px !important;
+                    box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.1) !important;
+                    pointer-events: auto !important;
+                    max-width: 600px !important;
+                    min-width: 500px !important;
+                    opacity: 0 !important;
+                    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                `;
+
+                // Create notification content
+                notificationEl.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                        <div style="font-size: 3rem;">${notification.icon}</div>
+                        <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; color: #1e40af;">${notification.title}</h3>
+                    </div>
+                    <div style="margin-bottom: 24px;">
+                        <p style="margin: 0; color: #374151; line-height: 1.6; white-space: pre-line; font-size: 1.1rem;">${notification.message}</p>
+                    </div>
+                    <div style="display: flex; justify-content: center;">
+                        <button onclick="closeNotification(${notification.id})" style="
+                            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            padding: 12px 24px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                        " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 16px rgba(59, 130, 246, 0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.3)'">
+                            Отлично!
+                        </button>
+                    </div>
+                `;
+
+                // Add to body directly (no backdrop)
+                document.body.appendChild(notificationEl);
+                notification.element = notificationEl;
+                console.log('🔔 Notification element added to body:', notificationEl);
+
+                // Show animation
+                safeSetTimeout(() => {
+                    notificationEl.style.transform = 'translate(-50%, -50%) scale(1)';
+                    notificationEl.style.opacity = '1';
+                    console.log('🔔 Notification shown:', notification.id);
+                }, 100);
+            }
+
+            // Close notification
+            function closeNotification(notificationId) {
+                const notificationEl = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                if (!notificationEl) {
+                    console.warn(`⚠️ Уведомление с ID ${notificationId} не найдено`);
+                    return;
+                }
+
+                // Find notification object
+                const notification = notificationQueue.find(n => n.id === notificationId) || 
+                                   { id: notificationId, onClose: () => {} };
+
+                // Hide animation
+                notificationEl.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                notificationEl.style.opacity = '0';
+
+                // Remove from DOM after animation
+                safeSetTimeout(() => {
+                    if (notificationEl.parentNode) {
+                        notificationEl.parentNode.removeChild(notificationEl);
+                    }
+                    
+                    // Call onClose callback
+                    if (notification.onClose) {
+                        notification.onClose();
+                    }
+
+                    // Process next notification in queue
+                    safeSetTimeout(() => {
+                        processNotificationQueue();
+                    }, 100);
+                }, 400);
+            }
+
+            // Star notification function removed
+
+            // Achievement notification function removed
+
+            // Show task completion notification
+            function showTaskCompletionNotification(task, xpEarned) {
+                showPopupNotification(
+                    'task',
+                    '✅ Задание выполнено!',
+                    `${task.name}\n\nПолучено: ${xpEarned} XP`,
+                    task.icon,
+                    () => {
+                        console.log('✅ Task completion notification closed');
+                    }
+                );
+            }
+
+            // Show reward notification
+            function showRewardNotification(rewardDescription, starsUsed) {
+                showPopupNotification(
+                    'reward',
+                    '🎁 Награда получена!',
+                    `${rewardDescription}\n\nПотрачено: ${starsUsed} ⭐`,
+                    '🎁',
+                    () => {
+                        console.log('🎁 Reward notification closed');
+                    }
+                );
+            }
+
+            // Global function to close notification
+            window.closeNotification = closeNotification;
+
+            // Test functions for star and achievement notifications removed
+
+
+
+            // Test task completion notification
+            window.testTaskNotification = function() {
+                const testTask = {
+                    name: 'Тестовое задание',
+                    icon: '📚'
+                };
+                showTaskCompletionNotification(testTask, 50);
+            };
+
+            // Test reward notification
+            window.testRewardNotification = function() {
+                showRewardNotification('Тестовая награда', 3);
+            };
+
+            // Debug function to check current state
+            window.debugNotificationState = function() {
+                console.log('🔍 Текущее состояние для уведомлений:');
+                console.log('📊 Progress:', {
+                    level: appState.progress.level,
+                    totalXP: appState.progress.totalXP,
+                    weeklyXP: appState.progress.weeklyXP,
+                    weeklyStars: appState.progress.weeklyStars,
+                    starBank: appState.progress.starBank,
+                    lastCheckedLevel: appState.progress.lastCheckedLevel
+                });
+                console.log('⭐ calculateWeeklyStars result:', calculateWeeklyStars(appState.progress.weeklyXP));
+                console.log('🏆 checkForNewAchievements result:', appState.progress.level > (appState.progress.lastCheckedLevel || 0));
+            };
+            
+            // Test function for weekly progress logic
+            window.testWeeklyProgress = function() {
+                console.log('🧪 Тестирование логики недельного прогресса:');
+                
+                // Test current week
+                const today = new Date();
+                const currentWeekStart = getWeekStartForDate(today);
+                const currentWeekXP = computeWeekXP(currentWeekStart);
+                
+                console.log('📅 Текущая неделя:', {
+                    today: today.toISOString().split('T')[0],
+                    weekStart: currentWeekStart.toISOString().split('T')[0],
+                    weekXP: currentWeekXP,
+                    progressPercent: getWeeklyProgressPercent(currentWeekXP)
+                });
+                
+                // Test different dates
+                const testDates = [
+                    new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000), // 1 week ago
+                    new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000), // 2 weeks ago
+                    new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)  // 1 month ago
+                ];
+                
+                testDates.forEach((date, index) => {
+                    const weekStart = getWeekStartForDate(date);
+                    const weekXP = computeWeekXP(weekStart);
+                    console.log(`📅 Неделя ${index + 1} назад:`, {
+                        date: date.toISOString().split('T')[0],
+                        weekStart: weekStart.toISOString().split('T')[0],
+                        weekXP: weekXP,
+                        progressPercent: getWeeklyProgressPercent(weekXP)
+                    });
+                });
+                
+                // Test progress view offset
+                const currentOffset = appState.progressView?.weekOffset || 0;
+                const viewWeekStart = getWeekStartFromOffset(currentOffset);
+                const viewWeekXP = computeWeekXP(viewWeekStart);
+                
+                console.log('👁️ Текущий просмотр недели:', {
+                    offset: currentOffset,
+                    weekStart: viewWeekStart.toISOString().split('T')[0],
+                    weekXP: viewWeekXP,
+                    progressPercent: getWeeklyProgressPercent(viewWeekXP)
+                });
+            };
+            
+            // Test function for modal progress preview
+            window.testModalProgress = function() {
+                console.log('🧪 Тестирование предварительного просмотра в модальном окне:');
+                
+                // Create a test task
+                const testTask = {
+                    id: 999999,
+                    name: 'Тестовое задание',
+                    description: 'Для проверки предварительного просмотра',
+                    xpReward: 100,
+                    duration: 30,
+                    icon: '🧪'
+                };
+                
+                // Show modal
+                showTaskCompletionModal(testTask);
+                
+                console.log('📊 Модальное окно открыто с тестовым заданием (100 XP)');
+                console.log('💡 Проверьте в модальном окне:');
+                console.log('   - Полоска прогресса должна показывать текущий XP + 100');
+                console.log('   - При изменении XP в поле ввода полоска должна обновляться');
+                console.log('   - При изменении даты полоска должна пересчитываться для новой недели');
+            };
+
+            // Force trigger functions for star and achievement notifications removed
+
+            // Force gain a star for testing
+            window.forceGainStar = function() {
+                console.log('🧪 Принудительно получаем звезду для тестирования');
+                const oldWeeklyXP = appState.progress.weeklyXP;
+                const oldWeeklyStars = appState.progress.weeklyStars;
+                
+                // Add enough XP to get next star
+                if (oldWeeklyStars === 0) {
+                    appState.progress.weeklyXP = 500; // First star
+                } else if (oldWeeklyStars === 1) {
+                    appState.progress.weeklyXP = 750; // Second star
+                } else {
+                    appState.progress.weeklyXP = oldWeeklyXP + 250; // Add more XP
+                }
+                
+                console.log('🧪 Изменили weeklyXP с', oldWeeklyXP, 'на', appState.progress.weeklyXP);
+                updateWeeklyStars();
+            };
+
+            // Test notification directly
+            window.testNotification = function() {
+                console.log('🧪 Тестируем уведомление напрямую');
+                showPopupNotification('star', '⭐ Тест уведомления!', 'Это тестовое уведомление для проверки видимости', '⭐', () => {
+                    console.log('✅ Тестовое уведомление закрыто');
+                });
+            };
+
+            // ==================== СИСТЕМА БЭКАПОВ ====================
+
+            // Подготовка данных для бэкапа
+            function prepareBackupData(type = 'manual', reason = '') {
+                const backupData = {
+                    // Основные данные приложения
+                    progress: appState.progress,
+                    tasks: appState.tasks,
+                    rewards: appState.rewards,
+                    activityData: appState.activityData,
+                    rewardPlan: appState.rewardPlan,
+                    resetDate: appState.resetDate,
+                    
+                    // Информация о пользователе
+                    user: appState.user,
+                    userName: appState.userName,
+                    role: appState.role,
+                    isVerified: appState.isVerified,
+                    pinCodes: appState.pinCodes,
+                    
+                    // Настройки интерфейса
+                    currentMonth: appState.currentMonth,
+                    selectedDate: appState.selectedDate,
+                    progressView: appState.progressView,
+                    
+                    // Настройки бэкапов
+                    backupSettings: appState.backupSettings,
+                    
+                    // Метаданные бэкапа
+                    backupInfo: {
+                        type: type,
+                        reason: reason,
+                        timestamp: new Date().toISOString(),
+                        version: '1.1',
+                        exportedBy: appState.userName,
+                        exportRole: appState.role,
+                        totalTasks: appState.tasks.length,
+                        totalRewards: appState.rewards.length,
+                        totalActivityDays: Object.keys(appState.activityData).length,
+                        currentLevel: appState.progress.level,
+                        totalXP: appState.progress.totalXP,
+                        starBank: appState.progress.starBank,
+                        checksum: calculateChecksum(appState)
+                    }
+                };
+                
+                return backupData;
+            }
+
+            // Генерация ID бэкапа
+            function generateBackupId(type, timestamp = null) {
+                const ts = timestamp || new Date();
+                const dateStr = ts.toISOString().split('T')[0];
+                const timeStr = ts.toISOString().split('T')[1].split('.')[0].replace(/:/g, '-');
+                return `backup-${type}-${dateStr}-${timeStr}`;
+            }
+
+            // Расчет контрольной суммы
+            function calculateChecksum(data) {
+                const str = JSON.stringify(data);
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash; // Convert to 32bit integer
+                }
+                return hash.toString(16);
+            }
+
+            // Сохранение бэкапа в Firebase
+            async function saveBackupToFirebase(backupId, backupData) {
+                if (!isFirebaseAvailable()) {
+                    throw new Error('Firebase недоступен');
+                }
+
+                try {
+                    const backupRef = doc(db, 'backups', backupId);
+                    await setDoc(backupRef, backupData);
+                    
+                    console.log('✅ Бэкап сохранен в Firebase:', backupId);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Ошибка сохранения бэкапа:', error);
+                    throw error;
+                }
+            }
+
+            // Создание ручного бэкапа
+            async function createManualBackup() {
+                if (appState.role === 'viewer' || appState.userName === 'Михаил') {
+                    showNotification('Доступ к управлению бэкапами ограничен', 'warning');
+                    return;
+                }
+
+                try {
+                    showNotification('Создание бэкапа...', 'info');
+                    
+                    const backupData = prepareBackupData('manual', 'Ручное создание');
+                    const backupId = generateBackupId('manual');
+                    
+                    await saveBackupToFirebase(backupId, backupData);
+                    
+                    // Обновляем настройки
+                    appState.backupSettings.lastBackup = new Date().toISOString();
+                    updateNextBackupTime();
+                    
+                    // Сохраняем обновленные настройки
+                    try {
+                        localStorage.setItem('englishLearningData', JSON.stringify(appState));
+                        if (isFirebaseAvailable()) {
+                            await saveDataToFirebase();
+                        }
+                    } catch (error) {
+                        console.error('❌ Ошибка сохранения настроек после создания бэкапа:', error);
+                    }
+                    
+                    showNotification('Бэкап создан успешно!', 'success');
+                    toggleSettingsMenu();
+                } catch (error) {
+                    showNotification('Ошибка создания бэкапа: ' + error.message, 'error');
+                }
+            }
+
+            // Создание автоматического бэкапа
+            async function createScheduledBackup() {
+                if (!appState.backupSettings.autoBackup) {
+                    return;
+                }
+
+                try {
+                    console.log('🔄 Создание автоматического бэкапа...');
+                    
+                    const backupData = prepareBackupData('scheduled', 'Автоматический бэкап');
+                    const backupId = generateBackupId('scheduled');
+                    
+                    await saveBackupToFirebase(backupId, backupData);
+                    
+                    // Обновляем настройки
+                    appState.backupSettings.lastBackup = new Date().toISOString();
+                    updateNextBackupTime();
+                    
+                    // Сохраняем обновленные настройки
+                    try {
+                        localStorage.setItem('englishLearningData', JSON.stringify(appState));
+                        if (isFirebaseAvailable()) {
+                            await saveDataToFirebase();
+                        }
+                    } catch (error) {
+                        console.error('❌ Ошибка сохранения настроек после автоматического бэкапа:', error);
+                    }
+                    
+                    console.log('✅ Автоматический бэкап создан:', backupId);
+                    
+                    // Очищаем старые бэкапы
+                    await cleanupOldBackups();
+                } catch (error) {
+                    console.error('❌ Ошибка создания автоматического бэкапа:', error);
+                }
+            }
+
+            // Обновление времени следующего бэкапа
+            function updateNextBackupTime() {
+                if (!appState.backupSettings.autoBackup) return;
+                
+                const now = new Date();
+                const frequency = appState.backupSettings.backupFrequency;
+                
+                let nextBackup = new Date(now);
+                
+                switch (frequency) {
+                    case 'daily':
+                        nextBackup.setDate(now.getDate() + 1);
+                        nextBackup.setHours(2, 0, 0, 0); // 2:00 утра
+                        break;
+                    case 'weekly':
+                        nextBackup.setDate(now.getDate() + 7);
+                        nextBackup.setHours(2, 0, 0, 0);
+                        break;
+                    case 'monthly':
+                        nextBackup.setMonth(now.getMonth() + 1);
+                        nextBackup.setHours(2, 0, 0, 0);
+                        break;
+                }
+                
+                appState.backupSettings.nextBackup = nextBackup.toISOString();
+                console.log('📅 Следующий бэкап запланирован на:', nextBackup.toLocaleString());
+            }
+
+            // Проверка необходимости создания бэкапа
+            function shouldCreateScheduledBackup() {
+                if (!appState.backupSettings.autoBackup) return false;
+                if (!appState.backupSettings.nextBackup) return true;
+                
+                const now = new Date();
+                const nextBackup = new Date(appState.backupSettings.nextBackup);
+                
+                return now >= nextBackup;
+            }
+
+            // Очистка старых бэкапов
+            async function cleanupOldBackups() {
+                if (!isFirebaseAvailable()) return;
+                
+                try {
+                    const backupsRef = collection(db, 'backups');
+                    const snapshot = await getDocs(backupsRef);
+                    
+                    const backups = [];
+                    snapshot.forEach(doc => {
+                        backups.push({
+                            id: doc.id,
+                            timestamp: doc.data().backupInfo?.timestamp || doc.id
+                        });
+                    });
+                    
+                    // Сортируем по времени (новые первыми)
+                    backups.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    
+                    // Удаляем старые бэкапы
+                    const maxBackups = appState.backupSettings.maxBackups;
+                    if (backups.length > maxBackups) {
+                        const toDelete = backups.slice(maxBackups);
+                        
+                        for (const backup of toDelete) {
+                            await deleteDoc(doc(db, 'backups', backup.id));
+                            console.log('🗑️ Удален старый бэкап:', backup.id);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка очистки старых бэкапов:', error);
+                }
+            }
+
+            // Запуск проверки автоматических бэкапов
+            function startBackupScheduler() {
+                // Проверяем каждые 30 минут
+                setInterval(async () => {
+                    if (shouldCreateScheduledBackup()) {
+                        await createScheduledBackup();
+                    }
+                }, 30 * 60 * 1000);
+                
+                console.log('⏰ Планировщик бэкапов запущен');
+            }
+
+            // Инициализация системы бэкапов
+            function initializeBackupSystem() {
+                // Убеждаемся, что настройки бэкапов инициализированы
+                if (!appState.backupSettings) {
+                    appState.backupSettings = {
+                        autoBackup: true,
+                        backupFrequency: 'daily',
+                        maxBackups: 7,
+                        lastBackup: null,
+                        nextBackup: null,
+                        backupTypes: {
+                            scheduled: true,
+                            manual: true
+                        }
+                    };
+                }
+                
+                // Устанавливаем время следующего бэкапа если его нет
+                if (!appState.backupSettings.nextBackup) {
+                    updateNextBackupTime();
+                }
+                
+                // Запускаем планировщик
+                startBackupScheduler();
+                
+                console.log('🔄 Система бэкапов инициализирована');
+                console.log('📊 Текущие настройки бэкапов:', appState.backupSettings);
+            }
+
+            // Запускаем систему бэкапов после загрузки
+            safeSetTimeout(initializeBackupSystem, 2000);
+
+            // ==================== ТЕСТИРОВАНИЕ СИСТЕМЫ БЭКАПОВ ====================
+
+            // Тест сохранения настроек бэкапов
+            window.testBackupSettings = function() {
+                console.log('🧪 Тестируем систему настроек бэкапов...');
+                
+                // Проверяем текущие настройки
+                console.log('📊 Текущие настройки бэкапов:', appState.backupSettings);
+                
+                // Изменяем настройки
+                const originalSettings = { ...appState.backupSettings };
+                appState.backupSettings.autoBackup = false;
+                appState.backupSettings.backupFrequency = 'weekly';
+                appState.backupSettings.maxBackups = 10;
+                
+                console.log('🔄 Измененные настройки:', appState.backupSettings);
+                
+                // Сохраняем в localStorage
+                try {
+                    localStorage.setItem('englishLearningData', JSON.stringify(appState));
+                    console.log('✅ Настройки сохранены в localStorage');
+                } catch (error) {
+                    console.error('❌ Ошибка сохранения в localStorage:', error);
+                }
+                
+                // Загружаем обратно
+                try {
+                    const loadedData = JSON.parse(localStorage.getItem('englishLearningData'));
+                    console.log('📥 Загруженные настройки бэкапов:', loadedData.backupSettings);
+                    
+                    if (loadedData.backupSettings.autoBackup === false && 
+                        loadedData.backupSettings.backupFrequency === 'weekly' && 
+                        loadedData.backupSettings.maxBackups === 10) {
+                        console.log('✅ Тест localStorage прошел успешно!');
+                    } else {
+                        console.error('❌ Тест localStorage не прошел!');
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка загрузки из localStorage:', error);
+                }
+                
+                // Восстанавливаем оригинальные настройки
+                appState.backupSettings = originalSettings;
+                localStorage.setItem('englishLearningData', JSON.stringify(appState));
+                console.log('🔄 Оригинальные настройки восстановлены');
+            };
+
+            // Тест планировщика бэкапов
+            window.testBackupScheduler = function() {
+                console.log('🧪 Тестируем планировщик бэкапов...');
+                
+                const now = new Date();
+                console.log('🕐 Текущее время:', now.toLocaleString());
+                console.log('📅 Следующий бэкап:', appState.backupSettings.nextBackup ? new Date(appState.backupSettings.nextBackup).toLocaleString() : 'Не установлен');
+                console.log('⏰ Нужен ли бэкап сейчас:', shouldCreateScheduledBackup());
+                
+                // Тестируем разные частоты
+                const frequencies = ['daily', 'weekly', 'monthly'];
+                frequencies.forEach(freq => {
+                    const testSettings = { ...appState.backupSettings, backupFrequency: freq };
+                    const nextTime = calculateNextBackupTime(testSettings);
+                    console.log(`📊 ${freq}: следующий бэкап будет ${nextTime.toLocaleString()}`);
+                });
+            };
+
+            // Вспомогательная функция для расчета времени следующего бэкапа
+            function calculateNextBackupTime(settings) {
+                const now = new Date();
+                let nextBackup = new Date(now);
+                
+                switch (settings.backupFrequency) {
+                    case 'daily':
+                        nextBackup.setDate(now.getDate() + 1);
+                        nextBackup.setHours(2, 0, 0, 0);
+                        break;
+                    case 'weekly':
+                        nextBackup.setDate(now.getDate() + 7);
+                        nextBackup.setHours(2, 0, 0, 0);
+                        break;
+                    case 'monthly':
+                        nextBackup.setMonth(now.getMonth() + 1);
+                        nextBackup.setHours(2, 0, 0, 0);
+                        break;
+                }
+                
+                return nextBackup;
+            }
+
+            // ==================== UI УПРАВЛЕНИЯ БЭКАПАМИ ====================
+
+            // Показать менеджер бэкапов
+            async function showBackupManager() {
+                if (appState.role === 'viewer' || appState.userName === 'Михаил') {
+                    showNotification('Доступ к управлению бэкапами ограничен', 'warning');
+                    return;
+                }
+
+                try {
+                    showNotification('Загрузка списка бэкапов...', 'info');
+                    
+                    const backups = await listAllBackups();
+                    
+                    const modal = document.createElement('div');
+                    modal.className = 'modal show';
+                    modal.innerHTML = `
+                        <div class="modal-content backup-manager-modal">
+                            <div class="modal-header">
+                                <h3>🔄 Менеджер бэкапов</h3>
+                            </div>
+                            <div class="modal-body">
+                                <div class="backup-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Всего бэкапов:</span>
+                                        <span class="stat-value">${backups.length}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Последний бэкап:</span>
+                                        <span class="stat-value">${appState.backupSettings.lastBackup ? new Date(appState.backupSettings.lastBackup).toLocaleString() : 'Никогда'}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Следующий бэкап:</span>
+                                        <span class="stat-value">${appState.backupSettings.nextBackup ? new Date(appState.backupSettings.nextBackup).toLocaleString() : 'Не запланирован'}</span>
+                                    </div>
+                                </div>
+                                <div class="backup-list">
+                                    <h4>Список бэкапов:</h4>
+                                    <div class="backup-items">
+                                        ${backups.map(backup => `
+                                            <div class="backup-item">
+                                                <div class="backup-info">
+                                                    <div class="backup-type">${getBackupTypeIcon(backup.type)} ${backup.type}</div>
+                                                    <div class="backup-date">${new Date(backup.timestamp).toLocaleString()}</div>
+                                                    <div class="backup-details">
+                                                        Уровень: ${backup.level} | XP: ${backup.totalXP} | Заданий: ${backup.totalTasks}
+                                                    </div>
+                                                </div>
+                                                <div class="backup-actions">
+                                                    <button class="btn btn-sm btn-primary" onclick="restoreFromSpecificBackup('${backup.id}')">
+                                                        Восстановить
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" onclick="deleteBackup('${backup.id}')">
+                                                        Удалить
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer centered">
+                                <button class="btn btn-primary" onclick="createManualBackup(); this.closest('.modal').remove();">
+                                    Создать новый бэкап
+                                </button>
+                                <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                                    Закрыть
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(modal);
+                } catch (error) {
+                    showNotification('Ошибка загрузки бэкапов: ' + error.message, 'error');
+                }
+            }
+
+            // Получить список всех бэкапов
+            async function listAllBackups() {
+                if (!isFirebaseAvailable()) {
+                    throw new Error('Firebase недоступен');
+                }
+
+                const backupsRef = collection(db, 'backups');
+                const snapshot = await getDocs(backupsRef);
+                
+                const backups = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const backupInfo = data.backupInfo || {};
+                    
+                    backups.push({
+                        id: doc.id,
+                        type: backupInfo.type || 'unknown',
+                        timestamp: backupInfo.timestamp || doc.id,
+                        level: backupInfo.currentLevel || 0,
+                        totalXP: backupInfo.totalXP || 0,
+                        totalTasks: backupInfo.totalTasks || 0,
+                        exportedBy: backupInfo.exportedBy || 'Unknown'
+                    });
+                });
+                
+                // Сортируем по времени (новые первыми)
+                backups.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                return backups;
+            }
+
+            // Получить иконку типа бэкапа
+            function getBackupTypeIcon(type) {
+                switch (type) {
+                    case 'manual': return '👤';
+                    case 'scheduled': return '⏰';
+                    default: return '📁';
+                }
+            }
+
+            // Показать настройки бэкапов
+            function showBackupSettings() {
+                if (appState.role === 'viewer' || appState.userName === 'Михаил') {
+                    showNotification('Доступ к настройкам бэкапов ограничен', 'warning');
+                    return;
+                }
+
+                console.log('🔧 Текущие настройки бэкапов:', appState.backupSettings);
+
+                const modal = document.createElement('div');
+                modal.className = 'modal show';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>⚙️ Настройки бэкапов</h3>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <input type="checkbox" id="autoBackupEnabled" ${appState.backupSettings.autoBackup ? 'checked' : ''}>
+                                    Автоматические бэкапы
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Частота бэкапов:</label>
+                                <select id="backupFrequency" class="form-input">
+                                    <option value="daily" ${appState.backupSettings.backupFrequency === 'daily' ? 'selected' : ''}>Ежедневно</option>
+                                    <option value="weekly" ${appState.backupSettings.backupFrequency === 'weekly' ? 'selected' : ''}>Еженедельно</option>
+                                    <option value="monthly" ${appState.backupSettings.backupFrequency === 'monthly' ? 'selected' : ''}>Ежемесячно</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Максимум бэкапов:</label>
+                                <input type="number" id="maxBackups" class="form-input" value="${appState.backupSettings.maxBackups || 7}" min="1" max="30">
+                            </div>
+                            <div class="backup-info">
+                                <h4>Информация о бэкапах:</h4>
+                                <p><strong>Последний бэкап:</strong> ${appState.backupSettings.lastBackup ? new Date(appState.backupSettings.lastBackup).toLocaleString() : 'Никогда'}</p>
+                                <p><strong>Следующий бэкап:</strong> ${appState.backupSettings.nextBackup ? new Date(appState.backupSettings.nextBackup).toLocaleString() : 'Не запланирован'}</p>
+                                <p><strong>Текущая частота:</strong> ${getFrequencyText(appState.backupSettings.backupFrequency)}</p>
+                                <p><strong>Автоматические бэкапы:</strong> ${appState.backupSettings.autoBackup ? 'Включены' : 'Выключены'}</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer centered">
+                            <button class="btn btn-primary" onclick="saveBackupSettings(); this.closest('.modal').remove();">
+                                Сохранить
+                            </button>
+                            <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                                Отмена
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            }
+
+            // Получить текст частоты бэкапов
+            function getFrequencyText(frequency) {
+                switch (frequency) {
+                    case 'daily': return 'Ежедневно';
+                    case 'weekly': return 'Еженедельно';
+                    case 'monthly': return 'Ежемесячно';
+                    default: return 'Не установлено';
+                }
+            }
+
+            // Сохранить настройки бэкапов
+            async function saveBackupSettings() {
+                const autoBackup = document.getElementById('autoBackupEnabled').checked;
+                const frequency = document.getElementById('backupFrequency').value;
+                const maxBackups = parseInt(document.getElementById('maxBackups').value);
+                
+                console.log('💾 Сохраняем настройки бэкапов:', { autoBackup, frequency, maxBackups });
+                
+                // Обновляем настройки в appState
+                appState.backupSettings.autoBackup = autoBackup;
+                appState.backupSettings.backupFrequency = frequency;
+                appState.backupSettings.maxBackups = maxBackups;
+                
+                // Обновляем время следующего бэкапа
+                updateNextBackupTime();
+                
+                console.log('📊 Обновленные настройки бэкапов:', appState.backupSettings);
+                
+                // Сохраняем в localStorage
+                try {
+                    localStorage.setItem('englishLearningData', JSON.stringify(appState));
+                    console.log('✅ Настройки бэкапов сохранены в localStorage');
+                } catch (error) {
+                    console.error('❌ Ошибка сохранения в localStorage:', error);
+                    showNotification('Ошибка сохранения в localStorage', 'error');
+                    return;
+                }
+                
+                // Синхронизируем с Firebase
+                try {
+                    if (isFirebaseAvailable()) {
+                        await saveDataToFirebase();
+                        console.log('✅ Настройки бэкапов синхронизированы с Firebase');
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка синхронизации с Firebase:', error);
+                    showNotification('Настройки сохранены локально, но не синхронизированы с Firebase', 'warning');
+                    return;
+                }
+                
+                showNotification('Настройки бэкапов сохранены!', 'success');
+            }
+
+            // Восстановить из бэкапа (общий)
+            async function restoreFromBackup() {
+                if (appState.role === 'viewer' || appState.userName === 'Михаил') {
+                    showNotification('Доступ к восстановлению из бэкапов ограничен', 'warning');
+                    return;
+                }
+
+                try {
+                    const backups = await listAllBackups();
+                    
+                    if (backups.length === 0) {
+                        showNotification('Бэкапы не найдены', 'warning');
+                        return;
+                    }
+                    
+                    // Показываем список бэкапов для выбора
+                    showBackupManager();
+                } catch (error) {
+                    showNotification('Ошибка загрузки бэкапов: ' + error.message, 'error');
+                }
+            }
+
+            // Восстановить из конкретного бэкапа
+            async function restoreFromSpecificBackup(backupId) {
+                if (appState.role === 'viewer' || appState.userName === 'Михаил') {
+                    showNotification('Доступ к восстановлению из бэкапов ограничен', 'warning');
+                    return;
+                }
+
+                if (!confirm('Вы уверены, что хотите восстановить данные из этого бэкапа? Текущие данные будут заменены.')) {
+                    return;
+                }
+
+                try {
+                    showNotification('Восстановление из бэкапа...', 'info');
+                    
+                    const backupRef = doc(db, 'backups', backupId);
+                    const backupDoc = await getDoc(backupRef);
+                    
+                    if (!backupDoc.exists()) {
+                        throw new Error('Бэкап не найден');
+                    }
+                    
+                    const backupData = backupDoc.data();
+                    
+                    // ВАЖНО: Восстанавливаем типы данных из бэкапа
+                    console.log('🔧 Восстанавливаем типы данных из бэкапа...');
+                    const restoredData = restoreDataTypes(backupData);
+                    
+                    // Восстанавливаем данные с правильными типами
+                    appState.progress = restoredData.progress || backupData.progress;
+                    appState.tasks = restoredData.tasks || backupData.tasks;
+                    appState.rewards = restoredData.rewards || backupData.rewards;
+                    appState.activityData = restoredData.activityData || backupData.activityData;
+                    appState.rewardPlan = restoredData.rewardPlan || backupData.rewardPlan;
+                    appState.resetDate = restoredData.resetDate || backupData.resetDate;
+                    appState.user = restoredData.user || backupData.user;
+                    appState.userName = restoredData.userName || backupData.userName;
+                    appState.role = restoredData.role || backupData.role;
+                    appState.isVerified = restoredData.isVerified || backupData.isVerified;
+                    appState.pinCodes = restoredData.pinCodes || backupData.pinCodes;
+                    appState.currentMonth = restoredData.currentMonth || backupData.currentMonth;
+                    appState.selectedDate = restoredData.selectedDate || backupData.selectedDate;
+                    appState.progressView = restoredData.progressView || backupData.progressView;
+                    
+                    // ВАЖНО: Сбрасываем флаг инициализации для разрешения сохранения
+                    appState.isInitializing = false;
+                    console.log('🔄 Флаг инициализации сброшен после восстановления из бэкапа');
+                    
+                    // ВАЖНО: Очищаем кэш DOM элементов для корректного обновления
+                    Object.keys(DOM_CACHE).forEach(key => {
+                        DOM_CACHE[key] = null;
+                    });
+                    console.log('🔄 Кэш DOM элементов очищен после восстановления из бэкапа');
+                    
+                    // Обновляем UI
+                    updateProgressDisplay();
+                    renderTasks();
+                    renderRewards();
+                    generateCalendar();
+                    updateDayActivity();
+                    renderWeeklyChart();
+                    updateBestWeekDisplay();
+                    updateRedeemControls();
+                    updateProgressWeekSection();
+                    updateMonthlyProgressSection();
+                    updateWeeklyStars();
+                    updateAchievementsBank();
+                    updateLearningTimeDisplay();
+                    
+                    // ВАЖНО: Сохраняем восстановленные данные локально и в Firebase
+                    console.log('💾 Сохраняем восстановленные данные локально...');
+                    const localSaveResult = saveState();
+                    
+                    console.log('💾 Сохраняем восстановленные данные в Firebase...');
+                    const firebaseSaveResult = await saveDataToFirebaseSilent();
+                    
+                    if (localSaveResult && firebaseSaveResult) {
+                        console.log('✅ Восстановленные данные успешно сохранены локально и в Firebase');
+                        showNotification('Данные восстановлены из бэкапа и сохранены!', 'success');
+                    } else if (localSaveResult) {
+                        console.log('✅ Восстановленные данные сохранены локально, Firebase недоступен');
+                        showNotification('Данные восстановлены из бэкапа и сохранены локально', 'success');
+                    } else if (firebaseSaveResult) {
+                        console.log('✅ Восстановленные данные сохранены в Firebase, localStorage недоступен');
+                        showNotification('Данные восстановлены из бэкапа и сохранены в Firebase', 'success');
+                    } else {
+                        console.warn('⚠️ Не удалось сохранить восстановленные данные');
+                        showNotification('Данные восстановлены из бэкапа, но не сохранены', 'warning');
+                    }
+                    
+                    // Закрываем модальное окно менеджера
+                    const modal = document.querySelector('.backup-manager-modal');
+                    if (modal) {
+                        modal.closest('.modal').remove();
+                    }
+                } catch (error) {
+                    showNotification('Ошибка восстановления: ' + error.message, 'error');
+                }
+            }
+
+            // Удалить бэкап
+            async function deleteBackup(backupId) {
+                if (appState.role === 'viewer' || appState.userName === 'Михаил') {
+                    showNotification('Доступ к удалению бэкапов ограничен', 'warning');
+                    return;
+                }
+
+                if (!confirm('Вы уверены, что хотите удалить этот бэкап?')) {
+                    return;
+                }
+
+                try {
+                    await deleteDoc(doc(db, 'backups', backupId));
+                    showNotification('Бэкап удален!', 'success');
+                    
+                    // Обновляем список бэкапов
+                    const modal = document.querySelector('.backup-manager-modal');
+                    if (modal) {
+                        modal.closest('.modal').remove();
+                        showBackupManager();
+                    }
+                } catch (error) {
+                    showNotification('Ошибка удаления бэкапа: ' + error.message, 'error');
+                }
+            }
+        
         

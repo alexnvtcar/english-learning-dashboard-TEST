@@ -7,8 +7,24 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="msapplication-tap-highlight" content="no" />
+        
+        <!-- PWA Meta Tags -->
+        <meta name="theme-color" content="#1e40af" />
+        <meta name="apple-mobile-web-app-title" content="English Learning" />
+        <meta name="application-name" content="English Learning" />
+        <meta name="msapplication-TileColor" content="#1e40af" />
+        <meta name="msapplication-config" content="browserconfig.xml" />
+        
+        <!-- PWA Manifest -->
+        <link rel="manifest" href="manifest.json" />
+        
+        <!-- Apple Touch Icons -->
+        <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192x192.svg" />
+        <link rel="icon" type="image/svg+xml" sizes="32x32" href="icons/icon-192x192.svg" />
+        <link rel="icon" type="image/svg+xml" sizes="16x16" href="icons/icon-192x192.svg" />
+        <link rel="shortcut icon" href="icons/icon-192x192.svg" />
+        
         <title>Геймификация изучения английского языка</title>
-        <!-- Offline mode: removed external icon/font links -->
         <link rel="stylesheet" href="styles.css">
     </head>
     <body>
@@ -28,16 +44,21 @@
                     ✕
                 </div>
                 <!-- Основные настройки -->
-                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Основные настройки</div>
-                <div class="settings-block-content">
+                <div class="settings-block">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Основные настройки</div>
+                    <div class="settings-block-content">
                     <div class="settings-item" onclick="showChangeAccountModal()">
                         👤
                         Сменить учетную запись
                     </div>
+                    </div>
                 </div>
+                
+                <hr class="settings-divider">
                 <!-- Блок управления PIN-кодами -->
-                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Управление PIN-кодами</div>
-                <div class="settings-block-content">
+                <div class="settings-block">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Управление PIN-кодами</div>
+                    <div class="settings-block-content">
                     <div class="settings-item" onclick="showChangePinModal()">
                         🔐
                         Сменить PIN-код
@@ -49,6 +70,7 @@
                     <div class="settings-item" onclick="forceRestorePinCodes().then(success => { if(success) showNotification('PIN-коды восстановлены из Firebase', 'success'); else showNotification('PIN-коды не найдены в Firebase', 'warning'); }).catch(error => { showNotification('Ошибка восстановления', 'error'); })">
                         🔐
                         Восстановить PIN-коды из Firebase
+                    </div>
                     </div>
                 </div>
                 
@@ -94,8 +116,9 @@
                 <hr class="settings-divider">
                 
                 <!-- Блок управления данными -->
-                <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Управление данными</div>
-                <div class="settings-block-content">
+                <div class="settings-block">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Управление данными</div>
+                    <div class="settings-block-content">
                     <div class="settings-item" onclick="exportData()">
                         💾
                         Экспорт данных
@@ -104,11 +127,37 @@
                         📤
                         Импорт данных
                     </div>
+                    </div>
                 </div>
                  
                  <hr class="settings-divider" id="dividerBeforeDanger">
                  
-                                 <!-- Блок опасных операций -->
+                <hr class="settings-divider" id="dividerBeforeBackups">
+                <!-- Блок управления бэкапами -->
+                <div class="settings-block" id="backupManagementBlock">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Управление бэкапами</div>
+                    <div class="settings-block-content">
+                        <div class="settings-item" onclick="showBackupManager()">
+                            🔄
+                            Менеджер бэкапов
+                        </div>
+                        <div class="settings-item" onclick="createManualBackup()">
+                            💾
+                            Создать бэкап
+                        </div>
+                        <div class="settings-item" onclick="showBackupSettings()">
+                            ⚙️
+                            Настройки бэкапов
+                        </div>
+                        <div class="settings-item" onclick="restoreFromBackup()">
+                            🔄
+                            Восстановить из бэкапа
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="settings-divider" id="dividerBeforeDangerous">
+                <!-- Блок опасных операций -->
                 <div class="settings-block" id="dangerousOperationsBlock">
                     <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Опасные операции</div>
                     <div class="settings-block-content">
@@ -147,23 +196,25 @@
             <!-- Stats Overview -->
             <div class="grid grid-cols-3">
                 <div class="card stat-card">
-                                    <div class="stat-icon">
-                    🏆
-                </div>
-                    <div class="stat-label">Текущий уровень</div>
-                    <div class="stat-value" id="currentLevel">15</div>
-                    <div style="font-size: 0.875rem; color: #64748b">
-                        Продвинутый
+                    <div class="stat-header">
+                        <div class="stat-icon">🏆</div>
+                        <div class="stat-label">Текущий уровень</div>
+                    </div>
+                    <div class="stat-value-with-label">
+                        <div class="stat-value" id="currentLevel">1</div>
+                        <div class="stat-unit">уровень</div>
                     </div>
                 </div>
 
                 <div class="card stat-card">
-                                    <div class="stat-icon">
-                    ⭐
-                </div>
-                    <div class="stat-label">Общий опыт</div>
-                    <div class="stat-value" id="totalXP">4250</div>
-                    <div style="font-size: 0.875rem; color: #64748b">XP</div>
+                    <div class="stat-header">
+                        <div class="stat-icon">⭐</div>
+                        <div class="stat-label">Общий опыт</div>
+                    </div>
+                    <div class="stat-value-with-label">
+                        <div class="stat-value" id="totalXP">4250</div>
+                        <div class="stat-unit">XP</div>
+                    </div>
                 </div>
 
 
@@ -171,7 +222,7 @@
 
             <div class="grid grid-cols-2">
                 <!-- Progress Section -->
-                <div class="card">
+                <div class="card gradient-header">
                     <div class="card-header">
                         <h2 class="card-title">
                             📊
@@ -260,16 +311,19 @@
                         <div id="weeklyChart" class="weekly-chart" aria-label="XP за дни недели"></div>
 
                         <div style="margin-top: 24px;">
-                            <h3
-                                style="
-                                    font-size: 1rem;
-                                    font-weight: 600;
-                                    color: #1e293b;
-                                    margin-bottom: 12px;
-                                "
-                            >
-                                Прогресс за месяц
-                            </h3>
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <button class="calendar-nav" id="monthPrevBtn" onclick="changeMonthProgress(-1)" title="Предыдущий месяц">
+                                        ◀️
+                                    </button>
+                                    <div class="month-title" id="monthProgressLabel" style="text-align:left; min-width: 220px;">
+                                        Текущий месяц
+                                    </div>
+                                    <button class="calendar-nav" id="monthNextBtn" onclick="changeMonthProgress(1)" title="Следующий месяц">
+                                        ▶️
+                                    </button>
+                                </div>
+                            </div>
                             <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 8px;">
                                 <span>Месячный прогресс</span>
                                 <span id="monthlyProgressText" style="font-weight:600; color:#1e40af;">—</span>
@@ -283,7 +337,7 @@
                 </div>
 
                 <!-- Tasks Section -->
-                <div class="card">
+                <div class="card gradient-header">
                     <div
                         class="card-header"
                         style="
@@ -315,7 +369,7 @@
 
             <div class="grid grid-cols-2">
                 <!-- Achievements and Rewards -->
-                <div class="card">
+                <div class="card gradient-header">
                     <div class="card-header">
                         <h2 class="card-title">
                             🏅
@@ -323,72 +377,125 @@
                         </h2>
                     </div>
 
-                    <div>
-                        <h3
-                            style="
-                                font-size: 0.875rem;
-                                font-weight: 600;
-                                color: #64748b;
-                                text-transform: uppercase;
-                                letter-spacing: 0.05em;
-                                margin-bottom: 12px;
-                            "
-                        >
-                            Полученные достижения
-                        </h3>
-                        <div class="achievements">
-                            <div class="achievement-badge">
-                                🔥
-                                Огненная серия
+                    <!-- Achievements Summary -->
+                    <div class="achievements-summary">
+                        <div class="achievements-summary-item">
+                            <div class="achievements-summary-icon">🎯</div>
+                            <div class="achievements-summary-content">
+                                <div class="achievements-summary-value" id="achievementsUnlocked">0</div>
+                                <div class="achievements-summary-label">Достижений получено</div>
                             </div>
-                            <div class="achievement-badge">
-                                ⭐
-                                Первые шаги
+                        </div>
+                        
+                        <div class="achievements-summary-item">
+                            <div class="achievements-summary-icon">📈</div>
+                            <div class="achievements-summary-content">
+                                <div class="achievements-summary-value" id="achievementsProgress">0%</div>
+                                <div class="achievements-summary-label">Прогресс до 100 уровня</div>
+                            </div>
+                        </div>
+                        
+                        <div class="achievements-summary-item">
+                            <div class="achievements-summary-icon">⭐</div>
+                            <div class="achievements-summary-content">
+                                <div class="achievements-summary-value" id="currentAchievementLevel">Новичок</div>
+                                <div class="achievements-summary-label">Текущий статус</div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Achievements Bank Panel -->
+                    <div class="achievements-bank-panel" id="achievementsBankPanel">
+                        <div class="bank-panel-header" onclick="toggleAchievementsBank()">
+                            <div class="bank-panel-title">
+                                <span class="bank-panel-icon">🏆</span>
+                                <span class="bank-panel-text">Банк достижений</span>
+                            </div>
+                            <div class="bank-panel-toggle" id="achievementsBankToggle">
+                                ▼
+                            </div>
+                        </div>
+                        <div class="bank-panel-content" id="achievementsBankPanelContent" style="display: none;">
+                            <!-- Achievements List -->
+                            <div class="achievements-bank-content" id="achievementsBankContent">
+                                <!-- Достижения будут загружены динамически -->
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Rewards Actions -->
                     <div style="margin-top: 32px">
-                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                            <h3 style="font-size: 0.875rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
-                                Последние награды
-                            </h3>
-                            <div style="display:flex; gap: 8px; flex-wrap: wrap;">
-                                <div class="redeem-stars-container" aria-label="Банк звезд" title="Ваши накопленные звезды для награды">
-                                    <span class="redeem-star" id="bankStar1">⭐</span>
-                                    <span class="redeem-star" id="bankStar2">⭐</span>
-                                    <span class="redeem-star" id="bankStar3">⭐</span>
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+                            <div class="redeem-stars-container" aria-label="Банк звезд" title="Ваши накопленные звезды для награды">
+                                <span class="redeem-star" id="bankStar1">⭐</span>
+                                <span class="redeem-star" id="bankStar2">⭐</span>
+                                <span class="redeem-star" id="bankStar3">⭐</span>
+                            </div>
+                            <div style="min-width: 70px; text-align: center; font-weight:600; color:#1e40af;" id="bankStarsText">0 ⭐</div>
+                            <button class="btn btn-secondary" id="ideaBtn" onclick="showIdeaModal()" title="Придумать и сохранить награду">
+                                💡
+                                Придумать награду
+                            </button>
+                            <button class="btn btn-primary" onclick="showRewardModal()" id="redeemBtn">
+                                🎁
+                                Получить
+                            </button>
+                        </div>
+                        <div id="plannedRewardCard" class="planned-reward-card">
+                            <div class="planned-reward-content">
+                                <div class="planned-reward-header">
+                                    <span class="planned-reward-icon">✏️</span>
+                                    <span class="planned-reward-label">Запланированная награда:</span>
                                 </div>
-                                <div style="min-width: 70px; text-align: right; font-weight:600; color:#1e40af;" id="bankStarsText">0 ⭐</div>
-                                <button class="btn btn-secondary" id="ideaBtn" onclick="showIdeaModal()" title="Придумать и сохранить награду">
-                                    💡
-                                    Придумать награду
-                                </button>
-                                <button class="btn btn-primary" onclick="showRewardModal()" id="redeemBtn">
-                                    🎁
-                                    Получить
-                                </button>
+                                <div class="planned-reward-text" id="plannedRewardText">—</div>
                             </div>
                         </div>
-                        <div id="plannedRewardCard" style="display:none; background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:12px; border-radius:10px; margin-bottom:12px;">
-                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                                <div style="display:flex; align-items:center; gap:8px; font-weight:600;">
-                                    ✏️
-                                    Запланированная награда:
-                                </div>
-                                <div style="font-size:0.9rem; color:#78350f;" id="plannedRewardText">—</div>
+                    </div>
+
+                    <!-- Rewards Summary -->
+                    <div class="rewards-summary">
+                        <div class="rewards-summary-item">
+                            <div class="rewards-summary-icon">🎁</div>
+                            <div class="rewards-summary-content">
+                                <div class="rewards-summary-value" id="rewardsReceived">0</div>
+                                <div class="rewards-summary-label">Наград получено</div>
                             </div>
                         </div>
-                        <div id="rewardsList">
-                            <div
-                                style="
-                                    text-align: center;
-                                    padding: 20px;
-                                    color: #64748b;
-                                    font-size: 0.875rem;
-                                "
-                            >
-                                Пока нет полученных наград
+                        
+                        <div class="rewards-summary-item">
+                            <div class="rewards-summary-icon">⭐</div>
+                            <div class="rewards-summary-content">
+                                <div class="rewards-summary-value" id="totalStarsSpent">0</div>
+                                <div class="rewards-summary-label">Звёзд потрачено</div>
+                            </div>
+                        </div>
+                        
+                        <div class="rewards-summary-item">
+                            <div class="rewards-summary-icon">📅</div>
+                            <div class="rewards-summary-content">
+                                <div class="rewards-summary-value" id="lastRewardDate">—</div>
+                                <div class="rewards-summary-label">Последняя награда</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rewards Bank Panel -->
+                    <div class="rewards-bank-panel" id="rewardsBankPanel">
+                        <div class="bank-panel-header" onclick="toggleRewardsBank()">
+                            <div class="bank-panel-title">
+                                <span class="bank-panel-icon">🎁</span>
+                                <span class="bank-panel-text">Банк наград</span>
+                            </div>
+                            <div class="bank-panel-toggle" id="rewardsBankToggle">
+                                ▼
+                            </div>
+                        </div>
+                        <div class="bank-panel-content" id="rewardsBankPanelContent" style="display: none;">
+                            <!-- Rewards List -->
+                            <div class="rewards-bank-content" id="rewardsBankContent">
+                                <!-- Награды будут загружены динамически -->
                             </div>
                         </div>
                     </div>
@@ -409,7 +516,7 @@
                             <div class="time-stat-card total-time">
                                 <div class="time-stat-icon">🕐</div>
                                 <div class="time-stat-content">
-                                    <div class="time-stat-value" id="totalLearningTime">00:00</div>
+                                    <div class="time-stat-value" id="totalLearningTime">0 ч 0 мин</div>
                                     <div class="time-stat-label">Всего времени</div>
                                 </div>
                                 <div class="time-stat-sparkle">✨</div>
@@ -418,8 +525,8 @@
                             <div class="time-stat-card weekly-avg">
                                 <div class="time-stat-icon">📅</div>
                                 <div class="time-stat-content">
-                                    <div class="time-stat-value" id="weeklyAvgTime">00:00</div>
-                                    <div class="time-stat-label">В среднем в неделю</div>
+                                    <div class="time-stat-value" id="weeklyAvgTime">0 ч 0 мин</div>
+                                    <div class="time-stat-label">В неделю</div>
                                 </div>
                                 <div class="time-stat-pulse"></div>
                             </div>
@@ -427,7 +534,7 @@
                             <div class="time-stat-card daily-avg">
                                 <div class="time-stat-icon">📊</div>
                                 <div class="time-stat-content">
-                                    <div class="time-stat-value" id="dailyAvgTime">00:00</div>
+                                    <div class="time-stat-value" id="dailyAvgTime">0 ч 0 мин</div>
                                     <div class="time-stat-label">В среднем в день</div>
                                 </div>
                                 <div class="time-stat-pulse"></div>
@@ -440,7 +547,7 @@
                             <div class="time-chart-container">
                                 <div class="time-chart" id="weeklyTimeChart">
                                     <div class="time-chart-center">
-                                        <div class="time-chart-total">0ч</div>
+                                        <div class="time-chart-total">0 ч</div>
                                         <div class="time-chart-label">в неделю</div>
                                     </div>
                                 </div>
@@ -457,7 +564,7 @@
                 </div>
 
                 <!-- Calendar -->
-                <div class="card">
+                <div class="card gradient-header">
                     <div class="card-header">
                         <h2 class="card-title">
                             📅
@@ -619,7 +726,7 @@
                                 id="taskXP"
                                 name="taskXP"
                                 value="50"
-                                min="10"
+                                min="1"
                                 max="500"
                                 autocomplete="off"
                             />
@@ -633,8 +740,8 @@
                                 id="taskDuration"
                                 name="taskDuration"
                                 value="15"
-                                min="5"
-                                max="120"
+                                min="1"
+                                max="500"
                                 autocomplete="off"
                             />
                         </div>
@@ -729,7 +836,7 @@
                                 id="editTaskXP"
                                 name="editTaskXP"
                                 value="50"
-                                min="10"
+                                min="1"
                                 max="500"
                                 autocomplete="off"
                             />
@@ -743,8 +850,8 @@
                                 id="editTaskDuration"
                                 name="editTaskDuration"
                                 value="15"
-                                min="5"
-                                max="120"
+                                min="1"
+                                max="500"
                                 autocomplete="off"
                             />
                         </div>
@@ -787,7 +894,7 @@
                 <form id="rewardForm" onsubmit="addReward(event)">
                     <div class="form-group">
                         <label class="form-label">Запланированная награда</label>
-                 <div id="plannedRewardDisplay" style="padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; color: #1e293b;">
+                 <div id="plannedRewardDisplay" class="planned-reward-display">
                             —
                         </div>
                     </div>
@@ -845,6 +952,9 @@
             ✅
             <span id="notificationMessage"></span>
         </div>
+
+        <!-- Notification Queue Container -->
+        <div class="notification-queue" id="notificationQueue"></div>
 
         <!-- Account Modal -->
         <div class="modal" id="accountModal">
@@ -966,184 +1076,6 @@
 
 
 
-                <!-- Overview Tab -->
-                <div class="tab-content active" id="overview-tab">
-                    <div class="analytics-grid">
-
-
-
-
-
-
-
-
-
-                    </div>
-                </div>
-
-                <!-- Progress Tab -->
-                <div class="tab-content" id="progress-tab">
-                    <div class="analytics-grid">
-                        <!-- Activity Heatmap -->
-                        <div class="analytics-card" style="grid-column: span 2;">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
-                                        📅
-                                    </div>
-                                    Карта активности (последний год)
-                                </div>
-                            </div>
-                            <div id="activityHeatmap" class="heatmap"></div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 0.85rem; color: #64748b;">
-                                <span>Меньше</span>
-                                <div style="display: flex; gap: 3px;">
-                                    <div class="heatmap-cell"></div>
-                                    <div class="heatmap-cell" data-level="1"></div>
-                                    <div class="heatmap-cell" data-level="2"></div>
-                                    <div class="heatmap-cell" data-level="3"></div>
-                                    <div class="heatmap-cell" data-level="4"></div>
-                                    <div class="heatmap-cell" data-level="5"></div>
-                                </div>
-                                <span>Больше</span>
-                            </div>
-                        </div>
-
-                        <!-- Monthly Progress -->
-                        <div class="analytics-card">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);">
-                                        📊
-                                    </div>
-                                    XP по месяцам
-                                </div>
-                            </div>
-                            <div class="chart-container" id="monthlyXpChart"></div>
-                        </div>
-
-                        <!-- Task Distribution -->
-                        <div class="analytics-card">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #ec4899, #f472b6);">
-                                        🥧
-                                    </div>
-                                    Типы заданий
-                                </div>
-                            </div>
-                            <div class="chart-container chart-small" id="taskDistributionChart"></div>
-                        </div>
-
-                        <!-- Level Timeline -->
-                        <div class="analytics-card" style="grid-column: span 2;">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #1e40af, #3b82f6);">
-                                        📈
-                                    </div>
-                                    Хронология уровней
-                                </div>
-                            </div>
-                            <div class="chart-container" id="levelTimelineChart"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Patterns Tab -->
-                <div class="tab-content" id="patterns-tab">
-                    <div class="analytics-grid">
-                        <!-- Daily Pattern -->
-                        <div class="analytics-card">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8);">
-                                        ⏰
-                                    </div>
-                                    Дни недели
-                                </div>
-                            </div>
-                            <div class="chart-container" id="weekdayPatternChart"></div>
-                        </div>
-
-
-
-                        <!-- Study Sessions -->
-                        <div class="analytics-card" style="grid-column: span 2;">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #059669, #10b981);">
-                                        📚
-                                    </div>
-                                    История сессий обучения
-                                </div>
-                            </div>
-                            <div class="chart-container" id="sessionsChart"></div>
-                        </div>
-
-                        <!-- Prediction -->
-                        <div class="analytics-card">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">
-                                        🔮
-                                    </div>
-                                    Прогнозы
-                                </div>
-                            </div>
-                            <div id="predictionContent">
-                                <div class="stat-row">
-                                    <span class="stat-label">До 100 уровня</span>
-                                    <span class="stat-value" id="timeToMax">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Следующая звезда через</span>
-                                    <span class="stat-value" id="nextStarTime">-</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Месячная цель (1000 XP)</span>
-                                    <span class="stat-value" id="monthlyGoal">-</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Achievements Tab -->
-                <div class="tab-content" id="achievements-tab">
-                    <div class="analytics-grid">
-                        <!-- Milestones -->
-                        <div class="analytics-card" style="grid-column: span 2;">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
-                                        🏅
-                                    </div>
-                                    Ключевые достижения
-                                </div>
-                            </div>
-                            <div id="milestonesContent"></div>
-                        </div>
-
-
-
-                        <!-- Progress Comparison -->
-                        <div class="analytics-card" style="grid-column: span 2;">
-                            <div class="analytics-card-header">
-                                <div class="analytics-card-title">
-                                    <div class="analytics-card-icon" style="background: linear-gradient(135deg, #1e40af, #3b82f6);">
-                                        📊
-                                    </div>
-                                    Сравнение периодов
-                                </div>
-                            </div>
-                            <div class="chart-container" id="comparisonChart"><canvas id="comparisonChartCanvas" class="chart-large" aria-label="Сравнение периодов"></canvas></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Welcome Modal -->
         <div class="modal" id="welcomeModal">
             <div class="modal-content" style="position: relative; max-width: 640px;" role="dialog" aria-modal="true" aria-labelledby="welcomeModalTitle">
@@ -1164,20 +1096,22 @@
 
         
 
-        <!-- Firebase SDK (v9 with compat mode) -->
+        <!-- Firebase SDK (v12.2.1) -->
         <script type="module">
             // Import the functions you need from the SDKs you need
-            import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-            import { getFirestore, doc, setDoc, getDoc, collection, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+            import { getFirestore, doc, setDoc, getDoc, collection, updateDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
             
             // Your web app's Firebase configuration
             const firebaseConfig = {
-                apiKey: "AIzaSyBDVhjiXaw26HhD8TBULTc4dHRDTSb-fI4",
-                authDomain: "alexnvtcar-c443c.firebaseapp.com",
-                projectId: "alexnvtcar-c443c",
-                storageBucket: "alexnvtcar-c443c.firebasestorage.app",
-                messagingSenderId: "972197392704",
-                appId: "1:972197392704:web:85c308f2c4482890fb8aa5"
+                apiKey: "AIzaSyB-i-9ToVcqiqTGovCB---SKYadh53ysRU",
+                authDomain: "english-learning-6dd75.firebaseapp.com",
+                projectId: "english-learning-6dd75",
+                storageBucket: "english-learning-6dd75.firebasestorage.app",
+                messagingSenderId: "695373353831",
+                appId: "1:695373353831:web:74192c1f632282931155c2",
+                measurementId: "G-VD971DCJJJ"
             };
             
             // Initialize Firebase
@@ -1186,23 +1120,29 @@
             // Initialize Firestore
             const db = getFirestore(app);
             
+
+            
             // Make available globally
             window.db = db;
             window.doc = doc;
             window.setDoc = setDoc;
             window.getDoc = getDoc;
+            window.getDocs = getDocs;
             window.collection = collection;
             window.updateDoc = updateDoc;
+            window.deleteDoc = deleteDoc;
+
             
             // Debug logging
-            console.log('🔥 Firebase initialized successfully!');
+            console.log('🔥 Firebase v12.2.1 initialized successfully!');
             console.log('📱 App ID:', firebaseConfig.appId);
             console.log('🌐 Project ID:', firebaseConfig.projectId);
             console.log('💾 Firestore DB:', db);
-            console.log('🔧 Available functions:', { doc, setDoc, getDoc, collection, updateDoc });
+
+            console.log('🔧 Available functions:', { doc, setDoc, getDoc, getDocs, collection, updateDoc, deleteDoc });
             
             // Check if Firebase is available globally
-            if (window.db && window.doc && window.setDoc && window.getDoc && window.updateDoc) {
+            if (window.db && window.doc && window.setDoc && window.getDoc && window.getDocs && window.updateDoc && window.deleteDoc) {
                 console.log('✅ Firebase functions are globally available');
                 window.firebaseReady = true;
             } else {
@@ -1211,7 +1151,116 @@
             }
         </script>
         
+
+
         <!-- App Script -->
         <script src="app.js"></script>
+        
+        <!-- PWA Service Worker Registration -->
+        <script>
+            // Регистрация Service Worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', async () => {
+                    try {
+                        const registration = await navigator.serviceWorker.register('/sw.js');
+                        console.log('✅ Service Worker зарегистрирован:', registration);
+                        
+                        // Проверка обновлений
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Новое обновление доступно
+                                    if (confirm('Доступно обновление приложения. Перезагрузить?')) {
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                        
+                    } catch (error) {
+                        console.error('❌ Ошибка регистрации Service Worker:', error);
+                    }
+                });
+            }
+            
+            // Обработка установки PWA
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                console.log('📱 PWA: Готов к установке');
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                // Показать кнопку установки
+                showInstallButton();
+            });
+            
+            // Обработка успешной установки
+            window.addEventListener('appinstalled', () => {
+                console.log('🎉 PWA установлено!');
+                hideInstallButton();
+                deferredPrompt = null;
+            });
+            
+            // Функция показа кнопки установки
+            function showInstallButton() {
+                const installBtn = document.createElement('button');
+                installBtn.id = 'install-pwa-btn';
+                installBtn.className = 'install-pwa-btn';
+                installBtn.innerHTML = '📱 Установить приложение';
+                installBtn.onclick = installPWA;
+                
+                // Добавляем стили
+                installBtn.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: linear-gradient(135deg, #1e40af, #3b82f6);
+                    color: white;
+                    border: none;
+                    border-radius: 12px;
+                    padding: 12px 20px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+                    cursor: pointer;
+                    z-index: 1000;
+                    transition: all 0.3s ease;
+                `;
+                
+                document.body.appendChild(installBtn);
+            }
+            
+            // Функция скрытия кнопки установки
+            function hideInstallButton() {
+                const installBtn = document.getElementById('install-pwa-btn');
+                if (installBtn) {
+                    installBtn.remove();
+                }
+            }
+            
+            // Функция установки PWA
+            async function installPWA() {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log('📱 PWA установка:', outcome);
+                    deferredPrompt = null;
+                }
+            }
+            
+            // Проверка режима PWA
+            function isPWA() {
+                return window.matchMedia('(display-mode: standalone)').matches ||
+                       window.navigator.standalone === true;
+            }
+            
+            // Добавление PWA-специфичных стилей
+            if (isPWA()) {
+                document.body.classList.add('pwa-mode');
+                console.log('📱 PWA режим активен');
+            }
+        </script>
     </body>
 </html>
