@@ -7,6 +7,8 @@ const DYNAMIC_CACHE = 'dynamic-v1.0.0';
 const STATIC_FILES = [
   './',
   './index.html',
+  './test.html',
+  './iphone-test.html',
   './app.js',
   './styles.css',
   './animations-fix.css',
