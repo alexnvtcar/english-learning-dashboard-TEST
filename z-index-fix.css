@@ -1,0 +1,69 @@
+/* Исправленная система z-index */
+:root {
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 1000;
+  --z-modal: 1100;
+  --z-modal-close: 1200;
+  --z-tooltip: 1300;
+  --z-notification: 1400;
+  --z-popup: 1500;
+  --z-debug: 9999;
+}
+
+/* Модальные окна */
+.modal-overlay {
+  z-index: var(--z-modal-backdrop);
+}
+
+.modal {
+  z-index: var(--z-modal);
+}
+
+.close-btn {
+  z-index: var(--z-modal-close);
+}
+
+/* Уведомления */
+.notification {
+  z-index: var(--z-notification);
+}
+
+.notification-queue {
+  z-index: var(--z-notification);
+}
+
+/* Попапы */
+.popup-notification {
+  z-index: var(--z-popup);
+}
+
+/* Специальные модальные окна */
+.description-modal-overlay {
+  z-index: var(--z-modal);
+}
+
+.completion-modal-overlay {
+  z-index: var(--z-modal);
+}
+
+.achievement-modal-overlay {
+  z-index: var(--z-modal);
+}
+
+/* Настройки */
+.settings-panel {
+  z-index: var(--z-fixed);
+}
+
+.settings-menu {
+  z-index: var(--z-dropdown);
+}
+
+/* Автокомплит */
+.autocomplete-list {
+  z-index: var(--z-dropdown);
+}
+
