@@ -16,13 +16,13 @@
         <meta name="msapplication-config" content="browserconfig.xml" />
         
         <!-- PWA Manifest -->
-        <link rel="manifest" href="manifest.json" />
+        <link rel="manifest" href="./manifest.json" />
         
         <!-- Apple Touch Icons -->
-        <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192x192.svg" />
-        <link rel="icon" type="image/svg+xml" sizes="32x32" href="icons/icon-192x192.svg" />
-        <link rel="icon" type="image/svg+xml" sizes="16x16" href="icons/icon-192x192.svg" />
-        <link rel="shortcut icon" href="icons/icon-192x192.svg" />
+        <link rel="apple-touch-icon" sizes="180x180" href="./icons/icon-192x192.svg" />
+        <link rel="icon" type="image/svg+xml" sizes="32x32" href="./icons/icon-192x192.svg" />
+        <link rel="icon" type="image/svg+xml" sizes="16x16" href="./icons/icon-192x192.svg" />
+        <link rel="shortcut icon" href="./icons/icon-192x192.svg" />
         
         <title>Геймификация изучения английского языка</title>
         <link rel="stylesheet" href="styles.css">
@@ -1162,7 +1162,7 @@
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', async () => {
                     try {
-                        const registration = await navigator.serviceWorker.register('/sw.js');
+                        const registration = await navigator.serviceWorker.register('./sw.js');
                         console.log('✅ Service Worker зарегистрирован:', registration);
                         
                         // Проверка обновлений

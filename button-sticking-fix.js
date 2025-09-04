@@ -77,3 +77,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('✅ Функции исправления залипания кнопок загружены');
+

@@ -5,17 +5,17 @@ const DYNAMIC_CACHE = 'dynamic-v1.0.0';
 
 // Файлы для кэширования
 const STATIC_FILES = [
-  '/',
-  '/index.html',
-  '/app.js',
-  '/styles.css',
-  '/animations-fix.css',
-  '/z-index-fix.css',
-  '/dom-optimization.js',
-  '/event-handlers-fix.js',
-  '/button-sticking-fix.js',
-  '/settings.json',
-  '/manifest.json',
+  './',
+  './index.html',
+  './app.js',
+  './styles.css',
+  './animations-fix.css',
+  './z-index-fix.css',
+  './dom-optimization.js',
+  './event-handlers-fix.js',
+  './button-sticking-fix.js',
+  './settings.json',
+  './manifest.json',
   // Firebase SDK
   'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js',
   'https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js'
@@ -155,8 +155,8 @@ self.addEventListener('push', (event) => {
   
   const options = {
     body: event.data ? event.data.text() : 'Новое уведомление',
-    icon: '/icons/icon-192x192.svg',
-    badge: '/icons/icon-72x72.svg',
+    icon: './icons/icon-192x192.svg',
+    badge: './icons/icon-72x72.svg',
     vibrate: [200, 100, 200],
     data: {
       dateOfArrival: Date.now(),
@@ -166,12 +166,12 @@ self.addEventListener('push', (event) => {
               {
           action: 'explore',
           title: 'Открыть приложение',
-          icon: '/icons/icon-96x96.svg'
+          icon: './icons/icon-96x96.svg'
         },
         {
           action: 'close',
           title: 'Закрыть',
-          icon: '/icons/icon-96x96.svg'
+          icon: './icons/icon-96x96.svg'
         }
     ]
   };
