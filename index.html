@@ -1181,11 +1181,19 @@
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // Новое обновление доступно
-                                    if (confirm('Доступно обновление приложения. Перезагрузить?')) {
+                                if (newWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        // Новый Service Worker доступен, но старый еще активен
+                                        console.log('🔄 Доступно обновление Service Worker');
+                                        // Автоматически активируем новый Service Worker без подтверждения
                                         newWorker.postMessage({ type: 'SKIP_WAITING' });
-                                        window.location.reload();
+                                        // Перезагружаем страницу только если это не первый запуск
+                                        if (performance.navigation.type !== 1) {
+                                            window.location.reload();
+                                        }
+                                    } else {
+                                        // Первый запуск - Service Worker установлен
+                                        console.log('✅ Service Worker установлен впервые');
                                     }
                                 }
                             });

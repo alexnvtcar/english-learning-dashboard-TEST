@@ -1,7 +1,7 @@
 // Service Worker для PWA
-const CACHE_NAME = 'english-learning-v1.0.0';
-const STATIC_CACHE = 'static-v1.0.0';
-const DYNAMIC_CACHE = 'dynamic-v1.0.0';
+const CACHE_NAME = 'english-learning-v1.1.0';
+const STATIC_CACHE = 'static-v1.1.0';
+const DYNAMIC_CACHE = 'dynamic-v1.1.0';
 
 // Файлы для кэширования
 const STATIC_FILES = [
@@ -30,6 +30,7 @@ self.addEventListener('install', (event) => {
       })
       .then(() => {
         console.log('✅ Service Worker: Установка завершена');
+        // Принудительно активируем новый Service Worker
         return self.skipWaiting();
       })
       .catch((error) => {
@@ -47,6 +48,7 @@ self.addEventListener('activate', (event) => {
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
+            // Удаляем старые кэши
             if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
               console.log('🗑️ Service Worker: Удаление старого кэша:', cacheName);
               return caches.delete(cacheName);
@@ -56,10 +58,15 @@ self.addEventListener('activate', (event) => {
       })
       .then(() => {
         console.log('✅ Service Worker: Активация завершена');
+        // Принудительно берем контроль над всеми клиентами
         return self.clients.claim();
+      })
+      .catch((error) => {
+        console.error('❌ Service Worker: Ошибка активации:', error);
       })
   );
 });
+
 
 // Перехват запросов
 self.addEventListener('fetch', (event) => {
