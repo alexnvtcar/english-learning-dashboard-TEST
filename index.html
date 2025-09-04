@@ -45,6 +45,11 @@
             <button class="settings-btn" onclick="toggleSettingsMenu()" aria-label="Открыть настройки" aria-haspopup="true" aria-expanded="false">
                 ⚙️
             </button>
+            
+            <!-- PWA Install Button -->
+            <button id="install-pwa-btn" class="install-pwa-btn" style="display: none;" aria-label="Установить приложение">
+                📱 Установить
+            </button>
 
             <button class="save-btn" onclick="saveDataToFirebase()" aria-label="Сохранить данные" title="Сохранить в Firebase">
                 <span class="save-icon">💾</span>
@@ -1177,27 +1182,51 @@
                         const registration = await navigator.serviceWorker.register('./sw.js');
                         console.log('✅ Service Worker зарегистрирован:', registration);
                         
-                        // Проверка обновлений
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed') {
-                                    if (navigator.serviceWorker.controller) {
-                                        // Новый Service Worker доступен, но старый еще активен
-                                        console.log('🔄 Доступно обновление Service Worker');
-                                        // Автоматически активируем новый Service Worker без подтверждения
-                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
-                                        // Перезагружаем страницу только если это не первый запуск
-                                        if (performance.navigation.type !== 1) {
-                                            window.location.reload();
-                                        }
-                                    } else {
-                                        // Первый запуск - Service Worker установлен
-                                        console.log('✅ Service Worker установлен впервые');
+                        // Проверка обновлений - отключена для iPhone
+                        // registration.addEventListener('updatefound', () => {
+                        //     // Обновления обрабатываются автоматически в Service Worker
+                        // });
+                        
+                        // PWA Installation для iPhone
+                        let deferredPrompt;
+                        const installButton = document.getElementById('install-pwa-btn');
+                        
+                        // Слушаем событие beforeinstallprompt
+                        window.addEventListener('beforeinstallprompt', (e) => {
+                            console.log('📱 PWA: beforeinstallprompt сработал');
+                            e.preventDefault();
+                            deferredPrompt = e;
+                            
+                            // Показываем кнопку установки
+                            if (installButton) {
+                                installButton.style.display = 'block';
+                                installButton.addEventListener('click', async () => {
+                                    if (deferredPrompt) {
+                                        deferredPrompt.prompt();
+                                        const { outcome } = await deferredPrompt.userChoice;
+                                        console.log('📱 PWA: Результат установки:', outcome);
+                                        deferredPrompt = null;
+                                        installButton.style.display = 'none';
                                     }
-                                }
-                            });
+                                });
+                            }
                         });
+                        
+                        // Слушаем событие appinstalled
+                        window.addEventListener('appinstalled', () => {
+                            console.log('✅ PWA: Приложение установлено');
+                            if (installButton) {
+                                installButton.style.display = 'none';
+                            }
+                        });
+                        
+                        // Проверяем, установлено ли уже приложение
+                        if (window.matchMedia('(display-mode: standalone)').matches) {
+                            console.log('✅ PWA: Приложение уже установлено');
+                            if (installButton) {
+                                installButton.style.display = 'none';
+                            }
+                        }
                         
                     } catch (error) {
                         console.error('❌ Ошибка регистрации Service Worker:', error);

@@ -1,7 +1,7 @@
-// Service Worker для PWA
-const CACHE_NAME = 'english-learning-v1.1.0';
-const STATIC_CACHE = 'static-v1.1.0';
-const DYNAMIC_CACHE = 'dynamic-v1.1.0';
+// Service Worker для PWA - версия без диалогов обновления
+const CACHE_NAME = 'english-learning-v1.2.0';
+const STATIC_CACHE = 'static-v1.2.0';
+const DYNAMIC_CACHE = 'dynamic-v1.2.0';
 
 // Файлы для кэширования
 const STATIC_FILES = [
@@ -9,18 +9,18 @@ const STATIC_FILES = [
   './index.html',
   './test.html',
   './iphone-test.html',
+  './iphone-pwa-test.html',
   './app.js',
   './styles.css',
   './animations-fix.css',
   './z-index-fix.css',
   './settings.json',
   './manifest.json'
-  // Дополнительные файлы кэшируются динамически
 ];
 
-// Установка Service Worker
+// Установка Service Worker - БЕЗ диалогов обновления
 self.addEventListener('install', (event) => {
-  console.log('🔧 Service Worker: Установка...');
+  console.log('🔧 Service Worker: Установка v1.2.0...');
   
   event.waitUntil(
     caches.open(STATIC_CACHE)
@@ -30,7 +30,7 @@ self.addEventListener('install', (event) => {
       })
       .then(() => {
         console.log('✅ Service Worker: Установка завершена');
-        // Принудительно активируем новый Service Worker
+        // Принудительно активируем новый Service Worker БЕЗ диалогов
         return self.skipWaiting();
       })
       .catch((error) => {
@@ -39,16 +39,16 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Активация Service Worker
+// Активация Service Worker - БЕЗ диалогов обновления
 self.addEventListener('activate', (event) => {
-  console.log('🚀 Service Worker: Активация...');
+  console.log('🚀 Service Worker: Активация v1.2.0...');
   
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            // Удаляем старые кэши
+            // Удаляем ВСЕ старые кэши
             if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
               console.log('🗑️ Service Worker: Удаление старого кэша:', cacheName);
               return caches.delete(cacheName);
@@ -58,7 +58,7 @@ self.addEventListener('activate', (event) => {
       })
       .then(() => {
         console.log('✅ Service Worker: Активация завершена');
-        // Принудительно берем контроль над всеми клиентами
+        // Принудительно берем контроль над всеми клиентами БЕЗ диалогов
         return self.clients.claim();
       })
       .catch((error) => {
@@ -66,7 +66,6 @@ self.addEventListener('activate', (event) => {
       })
   );
 });
-
 
 // Перехват запросов
 self.addEventListener('fetch', (event) => {
@@ -167,16 +166,16 @@ self.addEventListener('push', (event) => {
       primaryKey: 1
     },
     actions: [
-              {
-          action: 'explore',
-          title: 'Открыть приложение',
-          icon: './icons/icon-96x96.svg'
-        },
-        {
-          action: 'close',
-          title: 'Закрыть',
-          icon: './icons/icon-96x96.svg'
-        }
+      {
+        action: 'explore',
+        title: 'Открыть приложение',
+        icon: './icons/icon-96x96.svg'
+      },
+      {
+        action: 'close',
+        title: 'Закрыть',
+        icon: './icons/icon-96x96.svg'
+      }
     ]
   };
   
@@ -193,7 +192,7 @@ self.addEventListener('notificationclick', (event) => {
   
   if (event.action === 'explore') {
     event.waitUntil(
-      clients.openWindow('/')
+      clients.openWindow('./')
     );
   }
 });
@@ -209,7 +208,6 @@ self.addEventListener('sync', (event) => {
 
 async function doBackgroundSync() {
   try {
-    // Здесь можно добавить логику синхронизации данных
     console.log('🔄 Выполняется фоновая синхронизация...');
   } catch (error) {
     console.error('❌ Ошибка фоновой синхронизации:', error);
@@ -227,4 +225,4 @@ self.addEventListener('message', (event) => {
   }
 });
 
-console.log('✅ Service Worker загружен');
+console.log('✅ Service Worker v1.2.0 загружен - БЕЗ диалогов обновления');

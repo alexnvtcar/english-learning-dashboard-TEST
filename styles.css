@@ -3577,7 +3577,7 @@
                     left: 18px;
                 }
                 
-                .settings-btn, .save-btn {
+                .settings-btn, .save-btn, .install-pwa-btn {
                     width: 45px;
                     height: 45px;
                     font-size: 1.1rem;
@@ -3590,7 +3590,7 @@
                     left: 15px;
                 }
                 
-                .settings-btn, .save-btn {
+                .settings-btn, .save-btn, .install-pwa-btn {
                     width: 42px;
                     height: 42px;
                     font-size: 1rem;
@@ -3603,7 +3603,7 @@
                     left: 10px;
                 }
                 
-                .settings-btn, .save-btn {
+                .settings-btn, .save-btn, .install-pwa-btn {
                     width: 40px;
                     height: 40px;
                     font-size: 0.9rem;
@@ -3616,14 +3616,14 @@
                     left: 8px;
                 }
                 
-                .settings-btn, .save-btn {
+                .settings-btn, .save-btn, .install-pwa-btn {
                     width: 36px;
                     height: 36px;
                     font-size: 0.8rem;
                 }
             }
 
-            .settings-btn, .save-btn {
+            .settings-btn, .save-btn, .install-pwa-btn {
                 width: 50px;
                 height: 50px;
                 border: none;
@@ -3648,6 +3648,19 @@
                 background: #1d4ed8;
                 transform: translateY(-2px);
                 box-shadow: 0 6px 16px rgba(30, 64, 175, 0.4);
+            }
+
+            /* PWA Install Button */
+            .install-pwa-btn {
+                background: linear-gradient(135deg, #10b981, #059669);
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                margin-left: 10px;
+            }
+
+            .install-pwa-btn:hover {
+                background: linear-gradient(135deg, #059669, #047857);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
             }
 
 
