@@ -11,7 +11,6 @@
                 --z-tooltip: 1300;
                 --z-notification: 1400;
                 --z-popup: 1500;
-                --z-debug: 9999;
             }
 
             /* Fallback для браузеров без поддержки CSS переменных */
@@ -1688,6 +1687,9 @@
                 animation: timeChartCenterFloat 4s ease-in-out infinite;
                 position: relative;
                 z-index: 2;
+                overflow: hidden;
+                padding: 8px;
+                box-sizing: border-box;
             }
 
             .time-chart-center::before {
@@ -1727,6 +1729,10 @@
                 color: #1e40af;
                 animation: timeChartTextPulse 2s ease-in-out infinite;
                 text-shadow: 0 2px 4px rgba(30, 64, 175, 0.2);
+                line-height: 1.1;
+                text-align: center;
+                word-wrap: break-word;
+                max-width: 100%;
             }
 
             .time-chart-label {
@@ -2911,6 +2917,7 @@
                 .time-chart-center {
                     width: 110px;
                     height: 110px;
+                    padding: 6px;
                 }
                 
                 .time-chart-total {
@@ -4526,6 +4533,9 @@
                 max-height: 400px;
                 overflow-y: auto;
                 padding-right: 8px;
+                -webkit-overflow-scrolling: touch;
+                position: relative;
+                z-index: 1;
             }
 
             .achievements-bank-content::-webkit-scrollbar {
@@ -5008,6 +5018,9 @@
                 max-height: 400px;
                 overflow-y: auto;
                 padding-right: 8px;
+                -webkit-overflow-scrolling: touch;
+                position: relative;
+                z-index: 1;
             }
 
             .rewards-bank-content::-webkit-scrollbar {
@@ -6097,6 +6110,7 @@
                 .time-chart-center {
                     width: 95px;
                     height: 95px;
+                    padding: 5px;
                 }
 
                 .time-chart-total {
@@ -6569,6 +6583,7 @@
                 .time-chart-center {
                     width: 75px;
                     height: 75px;
+                    padding: 4px;
                 }
 
                 .time-chart-total {
@@ -7138,9 +7153,27 @@
             
             /* Исправление для iOS скролла */
             .pwa-mode .task-list,
-            .pwa-mode .rewards-bank-content {
+            .pwa-mode .rewards-bank-content,
+            .pwa-mode .achievements-bank-content {
                 -webkit-overflow-scrolling: touch;
                 overflow-y: auto;
+                position: relative;
+                z-index: 1;
+            }
+            
+            /* Исправление для кнопок после выполнения задания на iOS */
+            .pwa-mode .achievement-bank-item,
+            .pwa-mode .reward-bank-item {
+                position: relative;
+                z-index: 1;
+                pointer-events: auto;
+            }
+            
+            .pwa-mode .achievement-bank-item button,
+            .pwa-mode .reward-bank-item button {
+                position: relative;
+                z-index: 2;
+                pointer-events: auto;
             }
         }
         
@@ -7160,6 +7193,22 @@
             .pwa-mode .modal-content {
                 max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
                 overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Исправление для модальных окон Банка достижений и наград на iOS */
+            .pwa-mode .achievements-bank-modal,
+            .pwa-mode .rewards-bank-modal {
+                -webkit-transform: translateZ(0);
+                transform: translateZ(0);
+            }
+            
+            .pwa-mode .achievements-bank-modal .modal-content,
+            .pwa-mode .rewards-bank-modal .modal-content {
+                -webkit-overflow-scrolling: touch;
+                overflow-y: auto;
+                position: relative;
+                z-index: 1;
             }
         }
 
