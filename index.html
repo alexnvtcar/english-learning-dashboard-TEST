@@ -1,0 +1,1335 @@
+﻿<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="English Learning" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        
+        <!-- PWA Meta Tags -->
+        <meta name="theme-color" content="#1e40af" />
+        <meta name="application-name" content="English Learning" />
+        <meta name="msapplication-TileColor" content="#1e40af" />
+        <meta name="msapplication-config" content="browserconfig.xml" />
+        
+        <!-- PWA Manifest -->
+        <link rel="manifest" href="./manifest.json" />
+        
+        <!-- Apple Touch Icons для iOS -->
+        <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon-180x180.svg" />
+        <link rel="apple-touch-icon" sizes="152x152" href="./icons/apple-touch-icon-ipad-152x152.svg" />
+        <link rel="apple-touch-icon" sizes="120x120" href="./icons/apple-touch-icon-iphone-120x120.svg" />
+        <link rel="apple-touch-icon" href="./icons/apple-touch-icon-180x180.svg" />
+        
+        <!-- iOS Splash Screens -->
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-startup-image" href="./icons/apple-touch-icon-180x180.svg" />
+        
+        <!-- Стандартные иконки -->
+        <link rel="icon" type="image/svg+xml" sizes="32x32" href="./icons/icon-192x192.svg" />
+        <link rel="icon" type="image/svg+xml" sizes="16x16" href="./icons/icon-192x192.svg" />
+        <link rel="shortcut icon" href="./icons/icon-192x192.svg" />
+        
+        <title>Геймификация изучения английского языка</title>
+        <link rel="stylesheet" href="styles.css">
+        <link rel="stylesheet" href="animations-fix.css">
+        <link rel="stylesheet" href="z-index-fix.css">
+    </head>
+    <body>
+        <!-- Settings Panel -->
+        <div class="settings-panel">
+            <button class="settings-btn" onclick="toggleSettingsMenu()" aria-label="Открыть настройки" aria-haspopup="true" aria-expanded="false">
+                ⚙️
+            </button>
+            
+            <!-- PWA Install Button -->
+            <button id="install-pwa-btn" class="install-pwa-btn" style="display: none;" aria-label="Установить приложение">
+                📱 Установить
+            </button>
+
+            <button class="save-btn" onclick="saveDataToFirebase()" aria-label="Сохранить данные" title="Сохранить в Firebase">
+                <span class="save-icon">💾</span>
+                <span class="save-text">Сохранить</span>
+            </button>
+            <div class="settings-menu" id="settingsMenu">
+                <!-- Кнопка закрытия -->
+                <div class="settings-close-btn" onclick="closeSettingsMenu()" aria-label="Закрыть настройки">
+                    ✕
+                </div>
+                <!-- Основные настройки -->
+                <div class="settings-block">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Основные настройки</div>
+                    <div class="settings-block-content">
+                    <div class="settings-item" onclick="showChangeAccountModal()">
+                        👤
+                        Сменить учетную запись
+                    </div>
+                    </div>
+                </div>
+                
+                <hr class="settings-divider">
+                <!-- Блок управления PIN-кодами -->
+                <div class="settings-block">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Управление PIN-кодами</div>
+                    <div class="settings-block-content">
+                    <div class="settings-item" onclick="showChangePinModal()">
+                        🔐
+                        Сменить PIN-код
+                    </div>
+                    <div class="settings-item" onclick="forceSyncPinCodes().then(success => { if(success) showNotification('PIN-коды синхронизированы', 'success'); else showNotification('Ошибка синхронизации PIN-кодов', 'error'); }).catch(error => { showNotification('Ошибка синхронизации', 'error'); })">
+                        🔄
+                        Синхронизировать PIN-коды
+                    </div>
+                    <div class="settings-item" onclick="forceRestorePinCodes().then(success => { if(success) showNotification('PIN-коды восстановлены из Firebase', 'success'); else showNotification('PIN-коды не найдены в Firebase', 'warning'); }).catch(error => { showNotification('Ошибка восстановления', 'error'); })">
+                        🔐
+                        Восстановить PIN-коды из Firebase
+                    </div>
+                    </div>
+                </div>
+                
+                <hr class="settings-divider" id="dividerBeforeTech">
+                <!-- Блок технической диагностики -->
+                <div class="settings-block" id="techDiagnosticsBlock">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Техническая диагностика</div>
+                    <div class="settings-block-content">
+                        <div class="settings-item" onclick="forceShowVerification(); showNotification('Верификация принудительно показана', 'info');">
+                            🔐
+                            Показать верификацию
+                        </div>
+                        <div class="settings-item" onclick="testFirebaseConnection()">
+                            🧪
+                            Тест Firebase
+                        </div>
+                        <div class="settings-item" onclick="showFirebaseDiagnostics()">
+                            🔍
+                            Диагностика Firebase
+                        </div>
+                        <div class="settings-item" onclick="checkDeviceCapabilities()">
+                            📱
+                            Диагностика устройства
+                        </div>
+                    </div>
+                </div>
+                                <hr class="settings-divider" id="dividerBeforeFirebase">
+                <!-- Блок Firebase операций -->
+                <div class="settings-block" id="firebaseOperationsBlock">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Firebase операции</div>
+                    <div class="settings-block-content">
+                        <div class="settings-item" onclick="saveDataToFirebase()">
+                            💾
+                            Сохранить в Firebase
+                        </div>
+                        <div class="settings-item" onclick="syncWithFirestore()">
+                            🔄
+                            Синхронизировать
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="settings-divider">
+                
+                <!-- Блок управления данными -->
+                <div class="settings-block">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Управление данными</div>
+                    <div class="settings-block-content">
+                    <div class="settings-item" onclick="exportData()">
+                        💾
+                        Экспорт данных
+                    </div>
+                    <div class="settings-item" onclick="document.getElementById('importFile').click()">
+                        📤
+                        Импорт данных
+                    </div>
+                    </div>
+                </div>
+                 
+                 <hr class="settings-divider" id="dividerBeforeDanger">
+                 
+                <hr class="settings-divider" id="dividerBeforeBackups">
+                <!-- Блок управления бэкапами -->
+                <div class="settings-block" id="backupManagementBlock">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Управление бэкапами</div>
+                    <div class="settings-block-content">
+                        <div class="settings-item" onclick="showBackupManager()">
+                            🔄
+                            Менеджер бэкапов
+                        </div>
+                        <div class="settings-item" onclick="createManualBackup()">
+                            💾
+                            Создать бэкап
+                        </div>
+                        <div class="settings-item" onclick="showBackupSettings()">
+                            ⚙️
+                            Настройки бэкапов
+                        </div>
+                        <div class="settings-item" onclick="restoreFromBackup()">
+                            🔄
+                            Восстановить из бэкапа
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="settings-divider" id="dividerBeforeDangerous">
+                <!-- Блок опасных операций -->
+                <div class="settings-block" id="dangerousOperationsBlock">
+                    <div class="settings-block-title" onclick="toggleSettingsBlock(this)">Опасные операции</div>
+                    <div class="settings-block-content">
+                        <div class="settings-item danger" onclick="clearTasks()">
+                            🗑️
+                            Очистить задания
+                        </div>
+                        <div class="settings-item danger" onclick="clearRewards()">
+                            🎁
+                            Очистить награды
+                        </div>
+                        <div class="settings-item danger" onclick="resetProgress()">
+                            🔄
+                            Сбросить прогресс
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <input type="file" id="importFile" class="file-input" accept="application/json,.json" onchange="importData(event)">
+        </div>
+
+        
+
+
+
+        <!-- Modal Overlay for background dimming -->
+        <div class="modal-overlay" id="modalOverlay"></div>
+
+        <div class="container">
+            <!-- Main Header -->
+            <div class="card main-header">
+                <h1>Авторская программа изучения английского языка</h1>
+                <p>Изучение английского языка</p>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-3">
+                <div class="card stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">🏆</div>
+                        <div class="stat-label">Текущий уровень</div>
+                    </div>
+                    <div class="stat-value-with-label">
+                        <div class="stat-value" id="currentLevel">1</div>
+                        <div class="stat-unit">уровень</div>
+                    </div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">⭐</div>
+                        <div class="stat-label">Общий опыт</div>
+                    </div>
+                    <div class="stat-value-with-label">
+                        <div class="stat-value" id="totalXP">4250</div>
+                        <div class="stat-unit">XP</div>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <div class="grid grid-cols-2">
+                <!-- Progress Section -->
+                <div class="card gradient-header">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            📊
+                            Прогресс обучения
+                        </h2>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <button class="calendar-nav" id="weekPrevBtn" onclick="changeWeek(-1)" title="Предыдущая неделя">
+                                    ◀️
+                                </button>
+                                <div class="month-title" id="weekRangeLabel" style="text-align:left; min-width: 220px;">
+                                    Текущая неделя
+                                </div>
+                                <button class="calendar-nav" id="weekNextBtn" onclick="changeWeek(1)" title="Следующая неделя">
+                                    ▶️
+                                </button>
+                            </div>
+                        </div>
+                        <div
+                            style="
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                margin-bottom: 12px;
+                            "
+                        >
+                            <span style="font-weight: 600; color: #1e293b"
+                                >До следующего уровня</span
+                            >
+                            <span
+                                style="font-weight: 600; color: #1e40af"
+                                id="xpProgress"
+                                >—</span
+                            >
+                        </div>
+                        <div class="progress-container">
+                            <div
+                                class="progress-bar"
+                                id="levelProgress"
+                                style="width: 0%"
+                            ></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 32px">
+                        <h3
+                            style="
+                                font-size: 1rem;
+                                font-weight: 600;
+                                color: #1e293b;
+                                margin-bottom: 16px;
+                            "
+                        >
+                            Еженедельные цели
+                        </h3>
+                        <div
+                            style="
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                margin-bottom: 12px;
+                            "
+                        >
+                            <span>Недельный прогресс</span>
+                            <span
+                                style="font-weight: 600; color: #1e40af"
+                                id="weeklyProgress"
+                                >—</span
+                            >
+                        </div>
+                        <div class="progress-container" id="weeklyProgressContainer">
+                            <div class="progress-marker" id="marker500" style="left: calc(500/750 * 100%);">
+                                <div class="progress-label">500 XP</div>
+                            </div>
+                            <div class="progress-marker right" id="marker750" style="left: 100%;">
+                                <div class="progress-label">750 XP</div>
+                            </div>
+                            <div class="progress-bar" id="weeklyBar" style="width: 0%"></div>
+                        </div>
+
+                        
+
+                        <div id="weeklyChart" class="weekly-chart" aria-label="XP за дни недели"></div>
+
+                        <div style="margin-top: 24px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <button class="calendar-nav" id="monthPrevBtn" onclick="changeMonthProgress(-1)" title="Предыдущий месяц">
+                                        ◀️
+                                    </button>
+                                    <div class="month-title" id="monthProgressLabel" style="text-align:left; min-width: 220px;">
+                                        Текущий месяц
+                                    </div>
+                                    <button class="calendar-nav" id="monthNextBtn" onclick="changeMonthProgress(1)" title="Следующий месяц">
+                                        ▶️
+                                    </button>
+                                </div>
+                            </div>
+                            <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 8px;">
+                                <span>Месячный прогресс</span>
+                                <span id="monthlyProgressText" style="font-weight:600; color:#1e40af;">—</span>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar" id="monthlyBar" style="width: 0%"></div>
+                            </div>
+                            <div id="monthlyInlineChart" class="weekly-chart" aria-label="XP по дням месяца" style="grid-template-columns: repeat( auto-fit, minmax(16px, 1fr) );"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks Section -->
+                <div class="card gradient-header">
+                    <div
+                        class="card-header"
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                        "
+                    >
+                        <h2 class="card-title">
+                            📋
+                            Задания
+                        </h2>
+                        <button
+                            class="btn btn-primary"
+                            onclick="showTaskModal()"
+                            id="addTaskBtn"
+                            style="display: none;"
+                        >
+                            ➕
+                            Добавить
+                        </button>
+                    </div>
+
+                    <div class="task-list" id="taskList">
+                        <!-- Tasks will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2">
+                <!-- Achievements and Rewards -->
+                <div class="card gradient-header">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            🏅
+                            Достижения и награды
+                        </h2>
+                    </div>
+
+                    <!-- Achievements Summary -->
+                    <div class="achievements-summary">
+                        <div class="achievements-summary-item">
+                            <div class="achievements-summary-icon">🎯</div>
+                            <div class="achievements-summary-content">
+                                <div class="achievements-summary-value" id="achievementsUnlocked">0</div>
+                                <div class="achievements-summary-label">Достижений получено</div>
+                            </div>
+                        </div>
+                        
+                        <div class="achievements-summary-item">
+                            <div class="achievements-summary-icon">📈</div>
+                            <div class="achievements-summary-content">
+                                <div class="achievements-summary-value" id="achievementsProgress">0%</div>
+                                <div class="achievements-summary-label">Прогресс до 100 уровня</div>
+                            </div>
+                        </div>
+                        
+                        <div class="achievements-summary-item">
+                            <div class="achievements-summary-icon">⭐</div>
+                            <div class="achievements-summary-content">
+                                <div class="achievements-summary-value" id="currentAchievementLevel">Новичок</div>
+                                <div class="achievements-summary-label">Текущий статус</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Achievements Bank Panel -->
+                    <div class="achievements-bank-panel" id="achievementsBankPanel">
+                        <div class="bank-panel-header" onclick="toggleAchievementsBank()">
+                            <div class="bank-panel-title">
+                                <span class="bank-panel-icon">🏆</span>
+                                <span class="bank-panel-text">Банк достижений</span>
+                            </div>
+                            <div class="bank-panel-toggle" id="achievementsBankToggle">
+                                ▼
+                            </div>
+                        </div>
+                        <div class="bank-panel-content" id="achievementsBankPanelContent" style="display: none;">
+                            <!-- Achievements List -->
+                            <div class="achievements-bank-content" id="achievementsBankContent">
+                                <!-- Достижения будут загружены динамически -->
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Rewards Actions -->
+                    <div style="margin-top: 32px">
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+                            <div class="redeem-stars-container" aria-label="Банк звезд" title="Ваши накопленные звезды для награды">
+                                <span class="redeem-star" id="bankStar1">⭐</span>
+                                <span class="redeem-star" id="bankStar2">⭐</span>
+                                <span class="redeem-star" id="bankStar3">⭐</span>
+                            </div>
+                            <div style="min-width: 70px; text-align: center; font-weight:600; color:#1e40af;" id="bankStarsText">0 ⭐</div>
+                            <button class="btn btn-secondary" id="ideaBtn" onclick="showIdeaModal()" title="Придумать и сохранить награду">
+                                💡
+                                Придумать награду
+                            </button>
+                            <button class="btn btn-primary" onclick="showRewardModal()" id="redeemBtn">
+                                🎁
+                                Получить
+                            </button>
+                        </div>
+                        <div id="plannedRewardCard" class="planned-reward-card">
+                            <div class="planned-reward-content">
+                                <div class="planned-reward-header">
+                                    <span class="planned-reward-icon">✏️</span>
+                                    <span class="planned-reward-label">Запланированная награда:</span>
+                                </div>
+                                <div class="planned-reward-text" id="plannedRewardText">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rewards Summary -->
+                    <div class="rewards-summary">
+                        <div class="rewards-summary-item">
+                            <div class="rewards-summary-icon">🎁</div>
+                            <div class="rewards-summary-content">
+                                <div class="rewards-summary-value" id="rewardsReceived">0</div>
+                                <div class="rewards-summary-label">Наград получено</div>
+                            </div>
+                        </div>
+                        
+                        <div class="rewards-summary-item">
+                            <div class="rewards-summary-icon">⭐</div>
+                            <div class="rewards-summary-content">
+                                <div class="rewards-summary-value" id="totalStarsSpent">0</div>
+                                <div class="rewards-summary-label">Звёзд потрачено</div>
+                            </div>
+                        </div>
+                        
+                        <div class="rewards-summary-item">
+                            <div class="rewards-summary-icon">📅</div>
+                            <div class="rewards-summary-content">
+                                <div class="rewards-summary-value" id="lastRewardDate">—</div>
+                                <div class="rewards-summary-label">Последняя награда</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rewards Bank Panel -->
+                    <div class="rewards-bank-panel" id="rewardsBankPanel">
+                        <div class="bank-panel-header" onclick="toggleRewardsBank()">
+                            <div class="bank-panel-title">
+                                <span class="bank-panel-icon">🎁</span>
+                                <span class="bank-panel-text">Банк наград</span>
+                            </div>
+                            <div class="bank-panel-toggle" id="rewardsBankToggle">
+                                ▼
+                            </div>
+                        </div>
+                        <div class="bank-panel-content" id="rewardsBankPanelContent" style="display: none;">
+                            <!-- Rewards List -->
+                            <div class="rewards-bank-content" id="rewardsBankContent">
+                                <!-- Награды будут загружены динамически -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Learning Time -->
+                <div class="card learning-time-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            ⏱️
+                            Время обучения
+                        </h2>
+                    </div>
+
+                    <div class="learning-time-content">
+                        <!-- Основная статистика времени -->
+                        <div class="time-stats-grid">
+                            <div class="time-stat-card total-time">
+                                <div class="time-stat-icon">🕐</div>
+                                <div class="time-stat-content">
+                                    <div class="time-stat-value" id="totalLearningTime">0 ч 0 мин</div>
+                                    <div class="time-stat-label">Всего времени</div>
+                                </div>
+                                <div class="time-stat-sparkle">✨</div>
+                            </div>
+                            
+                            <div class="time-stat-card weekly-avg">
+                                <div class="time-stat-icon">📅</div>
+                                <div class="time-stat-content">
+                                    <div class="time-stat-value" id="weeklyAvgTime">0 ч 0 мин</div>
+                                    <div class="time-stat-label">В неделю</div>
+                                </div>
+                                <div class="time-stat-pulse"></div>
+                            </div>
+                            
+                            <div class="time-stat-card daily-avg">
+                                <div class="time-stat-icon">📊</div>
+                                <div class="time-stat-content">
+                                    <div class="time-stat-value" id="dailyAvgTime">0 ч 0 мин</div>
+                                    <div class="time-stat-label">В среднем в день</div>
+                                </div>
+                                <div class="time-stat-pulse"></div>
+                            </div>
+                        </div>
+
+                        <!-- Круговая диаграмма времени по дням недели -->
+                        <div class="time-chart-section">
+                            <h3 class="time-section-title">Время по дням недели</h3>
+                            <div class="time-chart-container">
+                                <div class="time-chart" id="weeklyTimeChart">
+                                    <div class="time-chart-center">
+                                        <div class="time-chart-total">0 ч</div>
+                                        <div class="time-chart-label">в неделю</div>
+                                    </div>
+                                </div>
+                                <div class="time-chart-legend" id="weeklyTimeLegend">
+                                    <!-- Легенда будет генерироваться динамически -->
+                                </div>
+                            </div>
+                        </div>
+
+
+
+
+                    </div>
+                </div>
+
+                <!-- Calendar -->
+                <div class="card gradient-header">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            📅
+                            Календарь активности
+                        </h2>
+                    </div>
+
+                    <div class="calendar-header">
+                        <button class="calendar-nav" onclick="changeMonth(-1)">
+                            ◀️
+                        </button>
+                        <div class="month-title" id="monthTitle">
+                            Январь 2025
+                        </div>
+                        <button class="calendar-nav" onclick="changeMonth(1)">
+                            ▶️
+                        </button>
+                    </div>
+
+                    <!-- Легенда календаря -->
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <div class="legend-color activity-low"></div>
+                            <span>Меньше 30 мин</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color activity-medium"></div>
+                            <span>30-59 мин</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color activity-high"></div>
+                            <span>1-2 часа</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color activity-very-high"></div>
+                            <span>Больше 2 часов</span>
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            display: grid;
+                            grid-template-columns: repeat(7, 1fr);
+                            gap: 8px;
+                            margin-bottom: 8px;
+                            font-size: 0.75rem;
+                            font-weight: 600;
+                            color: #64748b;
+                            text-align: center;
+                        "
+                    >
+                        <div>ПН</div>
+                        <div>ВТ</div>
+                        <div>СР</div>
+                        <div>ЧТ</div>
+                        <div>ПТ</div>
+                        <div>СБ</div>
+                        <div>ВС</div>
+                    </div>
+
+                    <div class="calendar" id="calendar">
+                        <!-- Calendar days will be generated here -->
+                    </div>
+
+                    <div
+                        style="
+                            margin-top: 20px;
+                            padding-top: 16px;
+                            border-top: 1px solid #e2e8f0;
+                        "
+                    >
+                        <h4
+                            style="
+                                font-weight: 600;
+                                color: #1e293b;
+                                margin-bottom: 12px;
+                            "
+                            id="selectedDateTitle"
+                        >
+                            Активность за сегодня
+                        </h4>
+                        <div
+                            id="dayActivity"
+                            style="font-size: 0.875rem; color: #64748b"
+                        >
+                            Пока нет активности за выбранный день
+                        </div>
+                    </div>
+                </div>
+                
+
+            </div>
+        </div>
+
+
+
+        <!-- Task Modal -->
+        <div class="modal" id="taskModal">
+            <div class="modal-content" style="position: relative" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle">
+                <button class="close-btn" onclick="hideTaskModal()">
+                    &times;
+                </button>
+                <div class="modal-header">
+                    <h3 class="modal-title" id="taskModalTitle">Добавить новое задание</h3>
+                </div>
+
+                <form id="taskForm" onsubmit="addTask(event)" autocomplete="off">
+                    <div class="form-group">
+                        <label class="form-label">Название задания</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="taskName"
+                            name="taskName"
+                            placeholder="Например: Изучение новых слов"
+                            autocomplete="off"
+                            autocapitalize="off"
+                            autocorrect="off"
+                            spellcheck="false"
+                            inputmode="text"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Описание</label>
+                        <textarea
+                            class="form-input"
+                            id="taskDescription"
+                            name="taskDescription"
+                            rows="3"
+                            placeholder="Краткое описание задания"
+                            autocomplete="off"
+                            autocapitalize="off"
+                            autocorrect="off"
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Иконка задания</label>
+                        <div class="icon-selector" id="iconSelector">
+                            <!-- Icons will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 16px;
+                        "
+                    >
+                        <div class="form-group">
+                            <label class="form-label">Награда (XP)</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="taskXP"
+                                name="taskXP"
+                                value="50"
+                                min="1"
+                                max="500"
+                                autocomplete="off"
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Длительность (мин)</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="taskDuration"
+                                name="taskDuration"
+                                value="15"
+                                min="1"
+                                max="500"
+                                autocomplete="off"
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            display: flex;
+                            gap: 12px;
+                            justify-content: flex-end;
+                            margin-top: 24px;
+                        "
+                    >
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            onclick="hideTaskModal()"
+                        >
+                            Отмена
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Добавить задание                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Task Modal -->
+        <div class="modal" id="editTaskModal">
+            <div class="modal-content" style="position: relative" role="dialog" aria-modal="true" aria-labelledby="editTaskModalTitle">
+                <button class="close-btn" onclick="hideEditTaskModal()">
+                    &times;
+                </button>
+                <div class="modal-header">
+                    <h3 class="modal-title" id="editTaskModalTitle">Редактировать задание</h3>
+                </div>
+
+                <form id="editTaskForm" onsubmit="updateTask(event)">
+                    <input type="hidden" id="editTaskId" />
+                    <div class="form-group">
+                        <label class="form-label">Название задания</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            id="editTaskName"
+                            name="editTaskName"
+                            placeholder="Например: Изучение новых слов"
+                            autocomplete="off"
+                            autocapitalize="off"
+                            autocorrect="off"
+                            spellcheck="false"
+                            inputmode="text"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Описание</label>
+                        <textarea
+                            class="form-input"
+                            id="editTaskDescription"
+                            name="editTaskDescription"
+                            rows="3"
+                            placeholder="Краткое описание задания"
+                            autocomplete="off"
+                            autocapitalize="off"
+                            autocorrect="off"
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Иконка задания</label>
+                        <div class="icon-selector" id="editIconSelector">
+                            <!-- Icons will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 16px;
+                        "
+                    >
+                        <div class="form-group">
+                            <label class="form-label">Награда (XP)</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="editTaskXP"
+                                name="editTaskXP"
+                                value="50"
+                                min="1"
+                                max="500"
+                                autocomplete="off"
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Длительность (мин)</label>
+                            <input
+                                type="number"
+                                class="form-input"
+                                id="editTaskDuration"
+                                name="editTaskDuration"
+                                value="15"
+                                min="1"
+                                max="500"
+                                autocomplete="off"
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            display: flex;
+                            gap: 12px;
+                            justify-content: flex-end;
+                            margin-top: 24px;
+                        "
+                    >
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            onclick="hideEditTaskModal()"
+                        >
+                            Отмена
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            ✏️
+                            Сохранить изменения
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Reward Modal -->
+        <div class="modal" id="rewardModal">
+            <div class="modal-content" style="position: relative" role="dialog" aria-modal="true" aria-labelledby="rewardModalTitle">
+                <button class="close-btn" onclick="hideRewardModal()">
+                    &times;
+                </button>
+                <div class="modal-header">
+                    <h3 class="modal-title" id="rewardModalTitle">Получить награду</h3>
+                </div>
+
+                <form id="rewardForm" onsubmit="addReward(event)">
+                    <div class="form-group">
+                        <label class="form-label">Запланированная награда</label>
+                 <div id="plannedRewardDisplay" class="planned-reward-display">
+                            —
+                        </div>
+                    </div>
+
+                    <div style="padding: 16px; background: #f0f9ff; border-radius: 8px; margin: 16px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Доступно звезд:</span>
+                            <span style="font-weight: 600; color: #1e40af" id="availableStars">0 ⭐</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                            <span>Требуется для награды:</span>
+                            <span style="font-weight: 600; color: #1e293b">3 ⭐</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                        <button type="button" class="btn btn-secondary" onclick="hideRewardModal()">❌ Отмена</button>
+                        <button type="submit" class="btn btn-primary" id="confirmRedeemBtn">
+                            🎁
+                            Получить награду
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Idea Modal -->
+        <div class="modal" id="ideaModal">
+            <div class="modal-content" style="position: relative" role="dialog" aria-modal="true" aria-labelledby="ideaModalTitle">
+                <button class="close-btn" onclick="hideIdeaModal()">&times;</button>
+                <div class="modal-header">
+                    <h3 class="modal-title" id="ideaModalTitle">Придумать награду</h3>
+                </div>
+                <form id="ideaForm" onsubmit="saveRewardIdea(event)">
+                    <div class="form-group">
+                        <label class="form-label">Название награды</label>
+                        <div class="autocomplete-wrap">
+                            <input type="text" class="form-input" id="ideaDescription" placeholder="Например: Поход в кино" required autocomplete="off" />
+                            <div class="autocomplete-list" id="ideaAutocomplete"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                        <button type="button" class="btn btn-secondary" onclick="hideIdeaModal()">❌ Отмена</button>
+                                                    <button type="submit" class="btn btn-primary">
+                                ✅
+                                Сохранить
+                            </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Notification -->
+        <div class="notification" id="notification" role="status" aria-live="polite" aria-atomic="true">
+            ✅
+            <span id="notificationMessage"></span>
+        </div>
+
+        <!-- Notification Queue Container -->
+        <div class="notification-queue" id="notificationQueue"></div>
+
+        <!-- Account Modal -->
+        <div class="modal" id="accountModal">
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle" style="max-width:520px; position:relative;">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="accountModalTitle">Выберите учетную запись</h3>
+                </div>
+                <div style="display:flex; gap:12px; flex-direction:column;">
+                                        <button class="btn btn-primary" onclick="selectAccount('viewer')" style="justify-content:center;">
+                        👤 Михаил (только просмотр)
+                    </button>
+                                        <button class="btn btn-secondary" onclick="selectAccount('admin')" style="justify-content:center; background: #fbbf24; color: #92400e; border-color: #f59e0b;">
+                         👑 Admin (полные права)
+                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verification Modal -->
+        <div class="modal" id="verificationModal">
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="verificationModalTitle" style="max-width:400px; position:relative;">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="verificationModalTitle">🔐 Верификация</h3>
+                </div>
+                <div style="text-align: center; padding: 20px 0;">
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">Введите PIN-код для входа в профиль</div>
+                        <div style="font-size: 16px; font-weight: 600; color: #1f2937;" id="verificationUserInfo">Михаил</div>
+                    </div>
+                    
+                    <!-- PIN Input Display -->
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
+                            <div class="pin-dot" id="pinDot1"></div>
+                            <div class="pin-dot" id="pinDot2"></div>
+                            <div class="pin-dot" id="pinDot3"></div>
+                            <div class="pin-dot" id="pinDot4"></div>
+                        </div>
+                        <div style="font-size: 12px; color: #6b7280;" id="pinStatus">Введите 4-значный код</div>
+                    </div>
+                    
+                    <!-- Numeric Keypad -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 240px; margin: 0 auto;">
+                        <button class="pin-btn" onclick="addPinDigit('1')">1</button>
+                        <button class="pin-btn" onclick="addPinDigit('2')">2</button>
+                        <button class="pin-btn" onclick="addPinDigit('3')">3</button>
+                        <button class="pin-btn" onclick="addPinDigit('4')">4</button>
+                        <button class="pin-btn" onclick="addPinDigit('5')">5</button>
+                        <button class="pin-btn" onclick="addPinDigit('6')">6</button>
+                        <button class="pin-btn" onclick="addPinDigit('7')">7</button>
+                        <button class="pin-btn" onclick="addPinDigit('8')">8</button>
+                        <button class="pin-btn" onclick="addPinDigit('9')">9</button>
+                        <button class="pin-btn" onclick="addPinDigit('0')" style="grid-column: 2;">0</button>
+                        <button class="pin-btn pin-btn-delete" onclick="deletePinDigit()">⌫</button>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
+                        <button class="btn btn-secondary" onclick="hideVerificationModal()">❌ Отмена</button>
+                        <button class="btn btn-primary" onclick="verifyPin()" id="verifyBtn" disabled>✅ Войти</button>
+                    </div>
+                    
+                    <!-- Setup PIN Button (shown only for new users) -->
+                    <div style="margin-top: 16px; display: none;" id="setupPinSection">
+                        <button class="btn btn-secondary" onclick="setupNewPin()" style="font-size: 14px;">
+                            🔑 Установить PIN-код
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setup PIN Modal -->
+        <div class="modal" id="setupPinModal">
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="setupPinModalTitle" style="max-width:400px; position:relative;">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="setupPinModalTitle">🔑 Установка PIN-кода</h3>
+                </div>
+                <div style="text-align: center; padding: 20px 0;">
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">Придумайте 4-значный PIN-код для профиля</div>
+                        <div style="font-size: 16px; font-weight: 600; color: #1f2937;" id="setupPinUserInfo">Михаил</div>
+                    </div>
+                    
+                    <!-- PIN Input Display -->
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
+                            <div class="pin-dot" id="setupPinDot1"></div>
+                            <div class="pin-dot" id="setupPinDot2"></div>
+                            <div class="pin-dot" id="setupPinDot3"></div>
+                            <div class="pin-dot" id="setupPinDot4"></div>
+                        </div>
+                        <div style="font-size: 12px; color: #6b7280;" id="setupPinStatus">Введите новый PIN-код</div>
+                    </div>
+                    
+                    <!-- Numeric Keypad -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 240px; margin: 0 auto;">
+                        <button class="pin-btn" onclick="addSetupPinDigit('1')">1</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('2')">2</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('3')">3</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('4')">4</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('5')">5</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('6')">6</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('7')">7</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('8')">8</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('9')">9</button>
+                        <button class="pin-btn" onclick="addSetupPinDigit('0')" style="grid-column: 2;">0</button>
+                        <button class="pin-btn pin-btn-delete" onclick="deleteSetupPinDigit()">⌫</button>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
+                        <button class="btn btn-secondary" onclick="hideSetupPinModal()">❌ Отмена</button>
+                        <button class="btn btn-primary" onclick="confirmSetupPin()" id="confirmSetupBtn" disabled>✅ Сохранить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Welcome Modal -->
+        <div class="modal" id="welcomeModal">
+            <div class="modal-content" style="position: relative; max-width: 640px;" role="dialog" aria-modal="true" aria-labelledby="welcomeModalTitle">
+                <button class="close-btn" onclick="hideWelcomeModal()">&times;</button>
+                <div class="welcome-hero">
+                    ✨
+                    <div class="welcome-title" id="welcomeModalTitle">Welcome!</div>
+                </div>
+                <div class="welcome-text" id="welcomeMessage">
+                    Great to see you! You're on a powerful journey to master English—let's make today count.
+                </div>
+                <div class="welcome-actions">
+                    <button class="btn btn-secondary" onclick="hideWelcomeModal()">Close</button>
+                    <button class="btn btn-primary" onclick="hideWelcomeModal()">⚡ Let's go!</button>
+                </div>
+            </div>
+        </div>
+
+        
+
+        <!-- Firebase SDK (v12.2.1) -->
+        <script type="module">
+            // Import the functions you need from the SDKs you need
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+            import { getFirestore, doc, setDoc, getDoc, collection, updateDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+            
+            // Your web app's Firebase configuration
+            const firebaseConfig = {
+                apiKey: "AIzaSyB-i-9ToVcqiqTGovCB---SKYadh53ysRU",
+                authDomain: "english-learning-6dd75.firebaseapp.com",
+                projectId: "english-learning-6dd75",
+                storageBucket: "english-learning-6dd75.firebasestorage.app",
+                messagingSenderId: "695373353831",
+                appId: "1:695373353831:web:74192c1f632282931155c2",
+                measurementId: "G-VD971DCJJJ"
+            };
+            
+            // Initialize Firebase
+            const app = initializeApp(firebaseConfig);
+            
+            // Initialize Firestore
+            const db = getFirestore(app);
+            
+
+            
+            // Make available globally
+            window.db = db;
+            window.doc = doc;
+            window.setDoc = setDoc;
+            window.getDoc = getDoc;
+            window.getDocs = getDocs;
+            window.collection = collection;
+            window.updateDoc = updateDoc;
+            window.deleteDoc = deleteDoc;
+
+            
+            // Debug logging
+            console.log('🔥 Firebase v12.2.1 initialized successfully!');
+            console.log('📱 App ID:', firebaseConfig.appId);
+            console.log('🌐 Project ID:', firebaseConfig.projectId);
+            console.log('💾 Firestore DB:', db);
+
+            console.log('🔧 Available functions:', { doc, setDoc, getDoc, getDocs, collection, updateDoc, deleteDoc });
+            
+            // Check if Firebase is available globally
+            if (window.db && window.doc && window.setDoc && window.getDoc && window.getDocs && window.updateDoc && window.deleteDoc) {
+                console.log('✅ Firebase functions are globally available');
+                window.firebaseReady = true;
+            } else {
+                console.error('❌ Firebase functions are not properly exposed');
+                window.firebaseReady = false;
+            }
+        </script>
+        
+
+
+        <!-- App Script -->
+        <script src="app.js"></script>
+        
+        <!-- PWA Service Worker Registration -->
+        <script>
+            // Регистрация Service Worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', async () => {
+                    try {
+                        const registration = await navigator.serviceWorker.register('./sw.js');
+                        console.log('✅ Service Worker зарегистрирован:', registration);
+                        
+                        // Проверка обновлений - отключена для iPhone
+                        // registration.addEventListener('updatefound', () => {
+                        //     // Обновления обрабатываются автоматически в Service Worker
+                        // });
+                        
+                        // PWA Installation для iPhone
+                        let deferredPrompt;
+                        const installButton = document.getElementById('install-pwa-btn');
+                        
+                        // Слушаем событие beforeinstallprompt
+                        window.addEventListener('beforeinstallprompt', (e) => {
+                            console.log('📱 PWA: beforeinstallprompt сработал');
+                            e.preventDefault();
+                            deferredPrompt = e;
+                            
+                            // Показываем кнопку установки
+                            if (installButton) {
+                                installButton.style.display = 'block';
+                                installButton.addEventListener('click', async () => {
+                                    if (deferredPrompt) {
+                                        deferredPrompt.prompt();
+                                        const { outcome } = await deferredPrompt.userChoice;
+                                        console.log('📱 PWA: Результат установки:', outcome);
+                                        deferredPrompt = null;
+                                        installButton.style.display = 'none';
+                                    }
+                                });
+                            }
+                        });
+                        
+                        // Слушаем событие appinstalled
+                        window.addEventListener('appinstalled', () => {
+                            console.log('✅ PWA: Приложение установлено');
+                            if (installButton) {
+                                installButton.style.display = 'none';
+                            }
+                        });
+                        
+                        // Проверяем, установлено ли уже приложение
+                        if (window.matchMedia('(display-mode: standalone)').matches) {
+                            console.log('✅ PWA: Приложение уже установлено');
+                            if (installButton) {
+                                installButton.style.display = 'none';
+                            }
+                        }
+                        
+                    } catch (error) {
+                        console.error('❌ Ошибка регистрации Service Worker:', error);
+                    }
+                });
+            }
+            
+            // Обработка установки PWA
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                console.log('📱 PWA: Готов к установке');
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                // Показать кнопку установки
+                showInstallButton();
+            });
+            
+            // Обработка успешной установки
+            window.addEventListener('appinstalled', () => {
+                console.log('🎉 PWA установлено!');
+                hideInstallButton();
+                deferredPrompt = null;
+            });
+            
+            // Функция показа кнопки установки
+            function showInstallButton() {
+                const installBtn = document.createElement('button');
+                installBtn.id = 'install-pwa-btn';
+                installBtn.className = 'install-pwa-btn';
+                installBtn.innerHTML = '📱 Установить приложение';
+                installBtn.onclick = installPWA;
+                
+                // Добавляем стили
+                installBtn.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: linear-gradient(135deg, #1e40af, #3b82f6);
+                    color: white;
+                    border: none;
+                    border-radius: 12px;
+                    padding: 12px 20px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+                    cursor: pointer;
+                    z-index: 1000;
+                    transition: all 0.3s ease;
+                `;
+                
+                document.body.appendChild(installBtn);
+            }
+            
+            // Функция скрытия кнопки установки
+            function hideInstallButton() {
+                const installBtn = document.getElementById('install-pwa-btn');
+                if (installBtn) {
+                    installBtn.remove();
+                }
+            }
+            
+            // Функция установки PWA
+            async function installPWA() {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log('📱 PWA установка:', outcome);
+                    deferredPrompt = null;
+                }
+            }
+            
+            // Проверка режима PWA
+            function isPWA() {
+                return window.matchMedia('(display-mode: standalone)').matches ||
+                       window.navigator.standalone === true;
+            }
+            
+            // Проверка iOS
+            function isIOS() {
+                return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            }
+            
+            // Добавление PWA-специфичных стилей
+            if (isPWA()) {
+                document.body.classList.add('pwa-mode');
+                console.log('📱 PWA режим активен');
+                
+                // iOS специфичные настройки
+                if (isIOS()) {
+                    document.body.classList.add('ios-pwa');
+                    console.log('🍎 iOS PWA режим активен');
+                    
+                    // Исправление для iOS viewport
+                    const viewport = document.querySelector('meta[name="viewport"]');
+                    if (viewport) {
+                        viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+                    }
+                    
+                    // Исправление для iOS скролла
+                    document.body.style.webkitOverflowScrolling = 'touch';
+                }
+            }
+        </script>
+    </body>
+</html>
