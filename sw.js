@@ -11,14 +11,9 @@ const STATIC_FILES = [
   './styles.css',
   './animations-fix.css',
   './z-index-fix.css',
-  './dom-optimization.js',
-  './event-handlers-fix.js',
-  './button-sticking-fix.js',
   './settings.json',
-  './manifest.json',
-  // Firebase SDK
-  'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js',
-  'https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js'
+  './manifest.json'
+  // Дополнительные файлы кэшируются динамически
 ];
 
 // Установка Service Worker
