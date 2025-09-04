@@ -4,9 +4,11 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="English Learning" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="msapplication-tap-highlight" content="no" />
+        <meta name="mobile-web-app-capable" content="yes" />
         
         <!-- PWA Meta Tags -->
         <meta name="theme-color" content="#1e40af" />
@@ -18,8 +20,17 @@
         <!-- PWA Manifest -->
         <link rel="manifest" href="./manifest.json" />
         
-        <!-- Apple Touch Icons -->
-        <link rel="apple-touch-icon" sizes="180x180" href="./icons/icon-192x192.svg" />
+        <!-- Apple Touch Icons для iOS -->
+        <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon-180x180.svg" />
+        <link rel="apple-touch-icon" sizes="152x152" href="./icons/apple-touch-icon-ipad-152x152.svg" />
+        <link rel="apple-touch-icon" sizes="120x120" href="./icons/apple-touch-icon-iphone-120x120.svg" />
+        <link rel="apple-touch-icon" href="./icons/apple-touch-icon-180x180.svg" />
+        
+        <!-- iOS Splash Screens -->
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-startup-image" href="./icons/apple-touch-icon-180x180.svg" />
+        
+        <!-- Стандартные иконки -->
         <link rel="icon" type="image/svg+xml" sizes="32x32" href="./icons/icon-192x192.svg" />
         <link rel="icon" type="image/svg+xml" sizes="16x16" href="./icons/icon-192x192.svg" />
         <link rel="shortcut icon" href="./icons/icon-192x192.svg" />
@@ -1256,10 +1267,30 @@
                        window.navigator.standalone === true;
             }
             
+            // Проверка iOS
+            function isIOS() {
+                return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            }
+            
             // Добавление PWA-специфичных стилей
             if (isPWA()) {
                 document.body.classList.add('pwa-mode');
                 console.log('📱 PWA режим активен');
+                
+                // iOS специфичные настройки
+                if (isIOS()) {
+                    document.body.classList.add('ios-pwa');
+                    console.log('🍎 iOS PWA режим активен');
+                    
+                    // Исправление для iOS viewport
+                    const viewport = document.querySelector('meta[name="viewport"]');
+                    if (viewport) {
+                        viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+                    }
+                    
+                    // Исправление для iOS скролла
+                    document.body.style.webkitOverflowScrolling = 'touch';
+                }
             }
         </script>
     </body>

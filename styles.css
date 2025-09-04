@@ -7091,11 +7091,62 @@
             .pwa-mode {
                 /* iOS специфичные стили */
                 -webkit-overflow-scrolling: touch;
+                /* Исправление для iOS viewport */
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+                padding-left: env(safe-area-inset-left);
+                padding-right: env(safe-area-inset-right);
             }
             
             .pwa-mode .modal {
                 /* Исправление для iOS модальных окон */
                 -webkit-transform: translateZ(0);
+                /* Фикс для iOS Safari */
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
+            
+            /* Исправление для iOS кнопок */
+            .pwa-mode button {
+                -webkit-tap-highlight-color: transparent;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+            }
+            
+            /* Исправление для iOS input полей */
+            .pwa-mode input,
+            .pwa-mode textarea {
+                -webkit-appearance: none;
+                border-radius: 0;
+            }
+            
+            /* Исправление для iOS скролла */
+            .pwa-mode .task-list,
+            .pwa-mode .rewards-bank-content {
+                -webkit-overflow-scrolling: touch;
+                overflow-y: auto;
+            }
+        }
+        
+        /* Дополнительные iOS стили */
+        @media screen and (max-width: 768px) {
+            /* Исправление для iOS Safari на мобильных */
+            .pwa-mode .container {
+                padding-top: max(20px, env(safe-area-inset-top));
+                padding-bottom: max(20px, env(safe-area-inset-bottom));
+            }
+            
+            .pwa-mode .settings-panel {
+                top: max(20px, env(safe-area-inset-top));
+            }
+            
+            /* Исправление для iOS клавиатуры */
+            .pwa-mode .modal-content {
+                max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+                overflow-y: auto;
             }
         }
 
