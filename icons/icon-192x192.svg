@@ -1,0 +1,23 @@
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e40af;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="192" height="192" rx="28.799999999999997" fill="url(#bg)"/>
+  
+  <!-- Book -->
+  <rect x="48" y="38.400000000000006" width="96" height="115.19999999999999" rx="5.76" fill="#ffffff"/>
+  
+  <!-- Text lines -->
+  <rect x="57.599999999999994" y="57.599999999999994" width="76.80000000000001" height="3.84" rx="1.92" fill="#1e40af"/>
+  <rect x="57.599999999999994" y="67.19999999999999" width="67.19999999999999" height="3.84" rx="1.92" fill="#64748b"/>
+  <rect x="57.599999999999994" y="76.80000000000001" width="72.96000000000001" height="3.84" rx="1.92" fill="#64748b"/>
+  <rect x="57.599999999999994" y="86.4" width="61.44" height="3.84" rx="1.92" fill="#64748b"/>
+  
+  <!-- Star -->
+  <text x="134.39999999999998" y="67.19999999999999" font-size="28.799999999999997" fill="#fbbf24">⭐</text>
+</svg>
